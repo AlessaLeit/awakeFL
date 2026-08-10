@@ -1,17 +1,12 @@
 use anchor_lang::prelude::*;
 
+pub mod state;
+pub use state::*;
+
 // ATENÇÃO: este ID é um placeholder.
-// Após `anchor build`, rode `anchor keys sync` (ou copie de
-// `anchor keys list`) para substituir aqui E no Anchor.toml.
+// Após `anchor build`, rode `anchor keys sync` para substituir aqui E no Anchor.toml.
 // No Solana Playground o build já sincroniza este valor sozinho.
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
-
-/// Reputação atribuída a todo participante recém-registrado.
-pub const INITIAL_REPUTATION: u16 = 500;
-/// Teto da escala de reputação (0..=1000).
-pub const MAX_REPUTATION: u16 = 1000;
-/// Divisor aplicado à reputação ao penalizar um malicioso.
-pub const PENALTY_DIVISOR: u16 = 10;
 
 #[program]
 pub mod fl_reputation {
@@ -29,18 +24,15 @@ pub mod fl_reputation {
     }
 
     /// Registra o signer como participante, com reputação inicial 500.
-    /// Auto-registro: qualquer wallet pode entrar, a reputação é que decide o peso.
     pub fn register_participant(ctx: Context<RegisterParticipant>) -> Result<()> {
         let config = &mut ctx.accounts.config;
         let participant = &mut ctx.accounts.participant;
 
         participant.owner = ctx.accounts.owner.key();
         participant.reputation = INITIAL_REPUTATION;
-        participant.contributions_count = 0;
-        participant.validated_count = 0;
-        participant.last_score = 0;
-        participant.joined_round = config.current_round;
-        participant.banned = false;
+        participant.contrib_count = 0;
+        participant.is_banned = false;
+        participant.stake_amount = 0;
         participant.bump = ctx.bumps.participant;
 
         config.total_participants = config
@@ -57,69 +49,76 @@ pub mod fl_reputation {
         Ok(())
     }
 
-    /// Submete o hash do update de modelo da rodada corrente.
-    /// Não guardamos o modelo, só o compromisso criptográfico dele.
-    /// Um participante banido não consegue submeter (constraint abaixo).
-    pub fn submit_contribution(ctx: Context<SubmitContribution>, model_hash: [u8; 32]) -> Result<()> {
+    /// Submete o hash do update de pesos da rodada corrente, junto das
+    /// métricas auto-declaradas. Um participante banido não consegue submeter.
+    pub fn submit_contribution(
+        ctx: Context<SubmitContribution>,
+        update_hash: String,
+        n_samples: u64,
+        loss: f64,
+        accuracy: f64,
+    ) -> Result<()> {
+        // Sem esta checagem, uma String maior que MAX_HASH_LEN estoura o
+        // buffer alocado e a instrução falha com AccountDidNotSerialize,
+        // um erro bem menos legível do que este.
+        require!(update_hash.len() <= MAX_HASH_LEN, FlError::HashTooLong);
+
         let config = &ctx.accounts.config;
         let participant = &mut ctx.accounts.participant;
         let contribution = &mut ctx.accounts.contribution;
 
         contribution.participant = participant.key();
         contribution.round = config.current_round;
-        contribution.model_hash = model_hash;
-        contribution.score = 0;
-        contribution.validated = false;
-        contribution.timestamp = Clock::get()?.unix_timestamp;
+        contribution.update_hash = update_hash;
+        contribution.n_samples = n_samples;
+        contribution.loss = loss;
+        contribution.accuracy = accuracy;
+        contribution.status = ContributionStatus::Pendente;
         contribution.bump = ctx.bumps.contribution;
 
-        participant.contributions_count = participant
-            .contributions_count
+        participant.contrib_count = participant
+            .contrib_count
             .checked_add(1)
             .ok_or(FlError::MathOverflow)?;
 
         emit!(ContributionSubmitted {
             participant: participant.key(),
             round: contribution.round,
-            model_hash,
-            timestamp: contribution.timestamp,
+            n_samples,
         });
         Ok(())
     }
 
-    /// A autoridade avalia a contribuição com um score 0..=1000 e a
-    /// reputação é atualizada pela média móvel exponencial:
-    ///
+    /// A autoridade avalia a contribuição com um score 0..=1000.
+    /// A reputação é atualizada pela média móvel exponencial:
     ///   R(t) = 0.5 * R(t-1) + 0.5 * S(t)  ->  (R(t-1) + S(t)) / 2
-    ///
-    /// Aritmética inteira: a divisão trunca (perde no máximo 1 ponto).
-    pub fn validate_contribution(ctx: Context<ValidateContribution>, score: u16) -> Result<()> {
+    pub fn validate_contribution(ctx: Context<ValidateContribution>, score: u64) -> Result<()> {
         require!(score <= MAX_REPUTATION, FlError::InvalidScore);
 
         let participant = &mut ctx.accounts.participant;
         let contribution = &mut ctx.accounts.contribution;
 
-        require!(!contribution.validated, FlError::AlreadyValidated);
+        require!(
+            contribution.status == ContributionStatus::Pendente,
+            FlError::AlreadyValidated
+        );
 
         let previous = participant.reputation;
-        let new_reputation = ((previous as u32 + score as u32) / 2) as u16;
+        participant.apply_ema(score);
 
-        participant.reputation = new_reputation;
-        participant.last_score = score;
-        participant.validated_count = participant
-            .validated_count
-            .checked_add(1)
-            .ok_or(FlError::MathOverflow)?;
-
-        contribution.score = score;
-        contribution.validated = true;
+        // Metade da escala é o limiar entre contribuição aceita e rejeitada.
+        contribution.status = if score >= MAX_REPUTATION / 2 {
+            ContributionStatus::Aprovado
+        } else {
+            ContributionStatus::Rejeitado
+        };
 
         emit!(ContributionValidated {
             participant: participant.key(),
             round: contribution.round,
             score,
             previous_reputation: previous,
-            new_reputation,
+            new_reputation: participant.reputation,
         });
         Ok(())
     }
@@ -129,11 +128,11 @@ pub mod fl_reputation {
     /// acumulada em rodadas honestas é destruída de uma vez.
     pub fn penalize_participant(ctx: Context<PenalizeParticipant>, reason_code: u8) -> Result<()> {
         let participant = &mut ctx.accounts.participant;
-        require!(!participant.banned, FlError::AlreadyBanned);
+        require!(!participant.is_banned, FlError::AlreadyBanned);
 
         let previous = participant.reputation;
         participant.reputation = previous / PENALTY_DIVISOR;
-        participant.banned = true;
+        participant.is_banned = true;
 
         emit!(ParticipantPenalized {
             participant: participant.key(),
@@ -205,7 +204,7 @@ pub struct SubmitContribution<'info> {
         seeds = [b"participant", owner.key().as_ref()],
         bump = participant.bump,
         has_one = owner,
-        constraint = !participant.banned @ FlError::ParticipantBanned
+        constraint = !participant.is_banned @ FlError::ParticipantBanned
     )]
     pub participant: Account<'info, Participant>,
     #[account(
@@ -270,48 +269,6 @@ pub struct AdvanceRound<'info> {
 }
 
 // ---------------------------------------------------------------------------
-// Estado
-// ---------------------------------------------------------------------------
-
-#[account]
-#[derive(InitSpace)]
-pub struct Config {
-    /// Agregador da rodada: valida contribuições e penaliza.
-    pub authority: Pubkey,
-    pub current_round: u64,
-    pub total_participants: u64,
-    pub bump: u8,
-}
-
-#[account]
-#[derive(InitSpace)]
-pub struct Participant {
-    pub owner: Pubkey,
-    /// Escala 0..=1000, inicia em 500.
-    pub reputation: u16,
-    pub contributions_count: u64,
-    pub validated_count: u64,
-    pub last_score: u16,
-    pub joined_round: u64,
-    /// Banimento é permanente — não há instrução para reverter.
-    pub banned: bool,
-    pub bump: u8,
-}
-
-#[account]
-#[derive(InitSpace)]
-pub struct Contribution {
-    pub participant: Pubkey,
-    pub round: u64,
-    /// SHA-256 do update de modelo. O peso fica off-chain.
-    pub model_hash: [u8; 32],
-    pub score: u16,
-    pub validated: bool,
-    pub timestamp: i64,
-    pub bump: u8,
-}
-
-// ---------------------------------------------------------------------------
 // Eventos (a trilha de auditoria imutável)
 // ---------------------------------------------------------------------------
 
@@ -319,7 +276,7 @@ pub struct Contribution {
 pub struct ParticipantRegistered {
     pub participant: Pubkey,
     pub owner: Pubkey,
-    pub reputation: u16,
+    pub reputation: u64,
     pub round: u64,
 }
 
@@ -327,25 +284,24 @@ pub struct ParticipantRegistered {
 pub struct ContributionSubmitted {
     pub participant: Pubkey,
     pub round: u64,
-    pub model_hash: [u8; 32],
-    pub timestamp: i64,
+    pub n_samples: u64,
 }
 
 #[event]
 pub struct ContributionValidated {
     pub participant: Pubkey,
     pub round: u64,
-    pub score: u16,
-    pub previous_reputation: u16,
-    pub new_reputation: u16,
+    pub score: u64,
+    pub previous_reputation: u64,
+    pub new_reputation: u64,
 }
 
 #[event]
 pub struct ParticipantPenalized {
     pub participant: Pubkey,
     pub owner: Pubkey,
-    pub previous_reputation: u16,
-    pub new_reputation: u16,
+    pub previous_reputation: u64,
+    pub new_reputation: u64,
     pub reason_code: u8,
 }
 
@@ -370,6 +326,8 @@ pub enum FlError {
     AlreadyBanned,
     #[msg("Contribuicao nao pertence a este participante")]
     ContributionMismatch,
+    #[msg("update_hash excede o tamanho maximo")]
+    HashTooLong,
     #[msg("Overflow aritmetico")]
     MathOverflow,
 }
