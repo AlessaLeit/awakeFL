@@ -1,0 +1,437 @@
+// ============================================================================
+// VERSAO SOLANA PLAYGROUND — arquivo unico
+//
+// Cole este conteudo inteiro em `src/lib.rs` no Playground.
+// state.rs foi fundido aqui porque no Playground criar modulos extras exige
+// adicionar arquivos pela UI; um arquivo so e paste-and-go.
+//
+// NAO copie o declare_id! daqui: o Playground gera e sincroniza o Program ID
+// sozinho no primeiro build. Se ele reclamar do ID, use "Build" e deixe-o
+// reescrever a linha.
+//
+// A fonte da verdade continua sendo programs/fl-reputation/src/{lib,state}.rs.
+// Ao mudar algo la, regenere este arquivo.
+// ============================================================================
+
+use anchor_lang::prelude::*;
+
+declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+
+// ---------------------------------------------------------------------------
+// Constantes do modelo de reputacao
+// ---------------------------------------------------------------------------
+
+/// Reputacao atribuida a todo participante recem-registrado.
+pub const INITIAL_REPUTATION: u64 = 500;
+/// Teto da escala de reputacao (0..=1000).
+pub const MAX_REPUTATION: u64 = 1000;
+/// Divisor aplicado a reputacao ao penalizar um malicioso.
+pub const PENALTY_DIVISOR: u64 = 10;
+/// Comprimento maximo de `update_hash`. 64 = SHA-256 em hexadecimal.
+pub const MAX_HASH_LEN: usize = 64;
+
+// ---------------------------------------------------------------------------
+// Instrucoes
+// ---------------------------------------------------------------------------
+
+#[program]
+pub mod fl_reputation {
+    use super::*;
+
+    /// Cria o Config global do sistema. Chamado uma unica vez.
+    /// O signer vira a autoridade (o agregador da rodada de FL).
+    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+        let config = &mut ctx.accounts.config;
+        config.authority = ctx.accounts.authority.key();
+        config.current_round = 0;
+        config.total_participants = 0;
+        // Anchor < 0.30 usa: *ctx.bumps.get("config").unwrap()
+        config.bump = ctx.bumps.config;
+        Ok(())
+    }
+
+    /// Registra o signer como participante, com reputacao inicial 500.
+    pub fn register_participant(ctx: Context<RegisterParticipant>) -> Result<()> {
+        let config = &mut ctx.accounts.config;
+        let participant = &mut ctx.accounts.participant;
+
+        participant.owner = ctx.accounts.owner.key();
+        participant.reputation = INITIAL_REPUTATION;
+        participant.contrib_count = 0;
+        participant.is_banned = false;
+        participant.stake_amount = 0;
+        participant.bump = ctx.bumps.participant;
+
+        config.total_participants = config
+            .total_participants
+            .checked_add(1)
+            .ok_or(FlError::MathOverflow)?;
+
+        emit!(ParticipantRegistered {
+            participant: participant.key(),
+            owner: participant.owner,
+            reputation: participant.reputation,
+            round: config.current_round,
+        });
+        Ok(())
+    }
+
+    /// Submete o hash do update de pesos da rodada corrente, junto das
+    /// metricas auto-declaradas. Um participante banido nao consegue submeter.
+    pub fn submit_contribution(
+        ctx: Context<SubmitContribution>,
+        update_hash: String,
+        n_samples: u64,
+        loss: f64,
+        accuracy: f64,
+    ) -> Result<()> {
+        // Sem esta checagem, uma String maior que MAX_HASH_LEN estoura o buffer
+        // alocado e a instrucao falha com AccountDidNotSerialize, um erro bem
+        // menos legivel do que este.
+        require!(update_hash.len() <= MAX_HASH_LEN, FlError::HashTooLong);
+
+        let config = &ctx.accounts.config;
+        let participant = &mut ctx.accounts.participant;
+        let contribution = &mut ctx.accounts.contribution;
+
+        contribution.participant = participant.key();
+        contribution.round = config.current_round;
+        contribution.update_hash = update_hash;
+        contribution.n_samples = n_samples;
+        contribution.loss = loss;
+        contribution.accuracy = accuracy;
+        contribution.status = ContributionStatus::Pendente;
+        contribution.bump = ctx.bumps.contribution;
+
+        participant.contrib_count = participant
+            .contrib_count
+            .checked_add(1)
+            .ok_or(FlError::MathOverflow)?;
+
+        emit!(ContributionSubmitted {
+            participant: participant.key(),
+            round: contribution.round,
+            n_samples,
+        });
+        Ok(())
+    }
+
+    /// A autoridade avalia a contribuicao com um score 0..=1000.
+    /// A reputacao e atualizada pela media movel exponencial:
+    ///   R(t) = 0.5 * R(t-1) + 0.5 * S(t)  ->  (R(t-1) + S(t)) / 2
+    pub fn validate_contribution(ctx: Context<ValidateContribution>, score: u64) -> Result<()> {
+        require!(score <= MAX_REPUTATION, FlError::InvalidScore);
+
+        let participant = &mut ctx.accounts.participant;
+        let contribution = &mut ctx.accounts.contribution;
+
+        require!(
+            contribution.status == ContributionStatus::Pendente,
+            FlError::AlreadyValidated
+        );
+
+        let previous = participant.reputation;
+        participant.apply_ema(score);
+
+        // Metade da escala e o limiar entre contribuicao aceita e rejeitada.
+        contribution.status = if score >= MAX_REPUTATION / 2 {
+            ContributionStatus::Aprovado
+        } else {
+            ContributionStatus::Rejeitado
+        };
+
+        emit!(ContributionValidated {
+            participant: participant.key(),
+            round: contribution.round,
+            score,
+            previous_reputation: previous,
+            new_reputation: participant.reputation,
+        });
+        Ok(())
+    }
+
+    /// Penaliza um malicioso: reputacao / 10 e banimento PERMANENTE.
+    /// E o contra-ataque ao "sleepy adversary" — toda a reputacao acumulada
+    /// em rodadas honestas e destruida de uma vez.
+    pub fn penalize_participant(ctx: Context<PenalizeParticipant>, reason_code: u8) -> Result<()> {
+        let participant = &mut ctx.accounts.participant;
+        require!(!participant.is_banned, FlError::AlreadyBanned);
+
+        let previous = participant.reputation;
+        participant.reputation = previous / PENALTY_DIVISOR;
+        participant.is_banned = true;
+
+        emit!(ParticipantPenalized {
+            participant: participant.key(),
+            owner: participant.owner,
+            previous_reputation: previous,
+            new_reputation: participant.reputation,
+            reason_code,
+        });
+        Ok(())
+    }
+
+    /// Avanca a rodada global de FL. So a autoridade pode.
+    pub fn advance_round(ctx: Context<AdvanceRound>) -> Result<()> {
+        let config = &mut ctx.accounts.config;
+        config.current_round = config
+            .current_round
+            .checked_add(1)
+            .ok_or(FlError::MathOverflow)?;
+
+        emit!(RoundAdvanced {
+            round: config.current_round,
+        });
+        Ok(())
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Contextos de contas
+// ---------------------------------------------------------------------------
+
+#[derive(Accounts)]
+pub struct Initialize<'info> {
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + Config::INIT_SPACE,
+        seeds = [b"config"],
+        bump
+    )]
+    pub config: Account<'info, Config>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct RegisterParticipant<'info> {
+    #[account(mut, seeds = [b"config"], bump = config.bump)]
+    pub config: Account<'info, Config>,
+    #[account(
+        init,
+        payer = owner,
+        space = 8 + Participant::INIT_SPACE,
+        seeds = [b"participant", owner.key().as_ref()],
+        bump
+    )]
+    pub participant: Account<'info, Participant>,
+    #[account(mut)]
+    pub owner: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct SubmitContribution<'info> {
+    #[account(seeds = [b"config"], bump = config.bump)]
+    pub config: Account<'info, Config>,
+    #[account(
+        mut,
+        seeds = [b"participant", owner.key().as_ref()],
+        bump = participant.bump,
+        has_one = owner,
+        constraint = !participant.is_banned @ FlError::ParticipantBanned
+    )]
+    pub participant: Account<'info, Participant>,
+    #[account(
+        init,
+        payer = owner,
+        space = 8 + Contribution::INIT_SPACE,
+        seeds = [
+            b"contribution",
+            participant.key().as_ref(),
+            config.current_round.to_le_bytes().as_ref()
+        ],
+        bump
+    )]
+    pub contribution: Account<'info, Contribution>,
+    #[account(mut)]
+    pub owner: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct ValidateContribution<'info> {
+    #[account(seeds = [b"config"], bump = config.bump, has_one = authority)]
+    pub config: Account<'info, Config>,
+    #[account(
+        mut,
+        seeds = [b"participant", participant.owner.as_ref()],
+        bump = participant.bump
+    )]
+    pub participant: Account<'info, Participant>,
+    #[account(
+        mut,
+        seeds = [
+            b"contribution",
+            participant.key().as_ref(),
+            contribution.round.to_le_bytes().as_ref()
+        ],
+        bump = contribution.bump,
+        constraint = contribution.participant == participant.key() @ FlError::ContributionMismatch
+    )]
+    pub contribution: Account<'info, Contribution>,
+    pub authority: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct PenalizeParticipant<'info> {
+    #[account(seeds = [b"config"], bump = config.bump, has_one = authority)]
+    pub config: Account<'info, Config>,
+    #[account(
+        mut,
+        seeds = [b"participant", participant.owner.as_ref()],
+        bump = participant.bump
+    )]
+    pub participant: Account<'info, Participant>,
+    pub authority: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct AdvanceRound<'info> {
+    #[account(mut, seeds = [b"config"], bump = config.bump, has_one = authority)]
+    pub config: Account<'info, Config>,
+    pub authority: Signer<'info>,
+}
+
+// ---------------------------------------------------------------------------
+// Estado (era o state.rs)
+// ---------------------------------------------------------------------------
+
+#[account]
+#[derive(InitSpace)]
+pub struct Config {
+    pub authority: Pubkey,       // 32
+    pub current_round: u64,      // 8
+    pub total_participants: u64, // 8
+    pub bump: u8,                // 1
+}
+// INIT_SPACE = 49 | space = 8 + 49 = 57
+
+#[account]
+#[derive(InitSpace)]
+pub struct Participant {
+    /// Dono do no de treinamento.
+    pub owner: Pubkey, // 32
+    /// Score de reputacao, escala 0..=1000, inicia em 500.
+    pub reputation: u64, // 8
+    /// Numero de contribuicoes submetidas (validadas ou nao).
+    pub contrib_count: u64, // 8
+    /// Banimento permanente: nao ha instrucao que reverta.
+    pub is_banned: bool, // 1
+    /// Reservado para o mecanismo de stake/slashing (fora do escopo do MVP).
+    pub stake_amount: u64, // 8
+    /// Bump do PDA, guardado para nao recalcular find_program_address.
+    pub bump: u8, // 1
+}
+// INIT_SPACE = 32 + 8 + 8 + 1 + 8 + 1 = 58 | space = 8 + 58 = 66
+
+#[account]
+#[derive(InitSpace)]
+pub struct Contribution {
+    /// PDA do Participant que submeteu (nao a wallet dona).
+    pub participant: Pubkey, // 32
+    /// Rodada de treinamento a que esta contribuicao pertence.
+    pub round: u64, // 8
+    /// Hash da atualizacao de pesos. O tensor em si fica off-chain.
+    /// O #[max_len] e OBRIGATORIO para String: a conta precisa ter tamanho fixo.
+    #[max_len(MAX_HASH_LEN)]
+    pub update_hash: String, // 4 (prefixo) + 64 = 68
+    /// Numero de amostras usadas no treino local (peso do FedAvg).
+    pub n_samples: u64, // 8
+    /// Loss reportado pelo participante. Auto-declarado: nao e prova.
+    pub loss: f64, // 8
+    /// Acuracia reportada pelo participante. Idem.
+    pub accuracy: f64, // 8
+    pub status: ContributionStatus, // 1
+    pub bump: u8,                   // 1
+}
+// INIT_SPACE = 32 + 8 + 68 + 8 + 8 + 8 + 1 + 1 = 134 | space = 8 + 134 = 142
+
+/// Enum de variantes unitarias => 1 byte (tag) + maior variante (0).
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, InitSpace)]
+pub enum ContributionStatus {
+    Pendente,
+    Aprovado,
+    Rejeitado,
+}
+
+impl Default for ContributionStatus {
+    fn default() -> Self {
+        Self::Pendente
+    }
+}
+
+impl Participant {
+    /// Media movel exponencial: R(t) = 0.5*R(t-1) + 0.5*S(t)
+    /// Em aritmetica inteira vira (R(t-1) + S(t)) / 2 — a divisao trunca,
+    /// perdendo no maximo 1 ponto por rodada.
+    pub fn apply_ema(&mut self, score: u64) {
+        self.reputation = (self.reputation + score) / 2;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Eventos (a trilha de auditoria imutavel)
+// ---------------------------------------------------------------------------
+
+#[event]
+pub struct ParticipantRegistered {
+    pub participant: Pubkey,
+    pub owner: Pubkey,
+    pub reputation: u64,
+    pub round: u64,
+}
+
+#[event]
+pub struct ContributionSubmitted {
+    pub participant: Pubkey,
+    pub round: u64,
+    pub n_samples: u64,
+}
+
+#[event]
+pub struct ContributionValidated {
+    pub participant: Pubkey,
+    pub round: u64,
+    pub score: u64,
+    pub previous_reputation: u64,
+    pub new_reputation: u64,
+}
+
+#[event]
+pub struct ParticipantPenalized {
+    pub participant: Pubkey,
+    pub owner: Pubkey,
+    pub previous_reputation: u64,
+    pub new_reputation: u64,
+    pub reason_code: u8,
+}
+
+#[event]
+pub struct RoundAdvanced {
+    pub round: u64,
+}
+
+// ---------------------------------------------------------------------------
+// Erros
+// ---------------------------------------------------------------------------
+
+#[error_code]
+pub enum FlError {
+    #[msg("Score deve estar entre 0 e 1000")]
+    InvalidScore,
+    #[msg("Esta contribuicao ja foi validada")]
+    AlreadyValidated,
+    #[msg("Participante banido nao pode contribuir")]
+    ParticipantBanned,
+    #[msg("Participante ja esta banido")]
+    AlreadyBanned,
+    #[msg("Contribuicao nao pertence a este participante")]
+    ContributionMismatch,
+    #[msg("update_hash excede o tamanho maximo")]
+    HashTooLong,
+    #[msg("Overflow aritmetico")]
+    MathOverflow,
+}
