@@ -45,7 +45,7 @@ export default function Nav() {
         <div className="ml-auto flex items-center gap-2 md:ml-0">
           <ThemeToggle />
           <Link
-            href="/dashboard"
+            href="/simulacao"
             className="rounded-lg px-3.5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
             style={{ background: "var(--acento)" }}
           >

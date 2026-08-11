@@ -22,7 +22,7 @@ export default function Footer() {
           <a href={REPO} target="_blank" rel="noopener noreferrer" className="hover:underline">
             GitHub
           </a>
-          <Link href="/dashboard" className="hover:underline">
+          <Link href="/simulacao" className="hover:underline">
             Demo
           </Link>
         </div>

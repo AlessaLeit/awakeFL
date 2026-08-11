@@ -142,7 +142,7 @@ export default function Home() {
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/dashboard"
+                href="/simulacao"
                 className="rounded-lg px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
                 style={{ background: "var(--acento)" }}
               >
@@ -489,7 +489,7 @@ export default function Home() {
               momento exato do banimento.
             </p>
             <Link
-              href="/dashboard"
+              href="/simulacao"
               className="mt-7 inline-block rounded-lg px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
               style={{ background: "var(--acento)" }}
             >
