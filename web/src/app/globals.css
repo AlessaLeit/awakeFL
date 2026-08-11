@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Tokens de cor.
+   Os valores vêm da paleta validada: as duas colunas (claro/escuro) são
+   escolhidas para cada superfície, não um flip automático.
+   O gráfico é de ÊNFASE: um acento + cinza de recuo. O cinza "ler como cinza"
+   é intencional — é o que joga as séries de contexto para trás.
+--------------------------------------------------------------------------- */
+
+:root {
+  color-scheme: light;
+
+  --plano: #f9f9f7;
+  --superficie: #fcfcfb;
+  --superficie-2: #f2f1ed;
+
+  --tinta: #0b0b0b;
+  --tinta-2: #52514e;
+  --tinta-muda: #898781;
+
+  --grade: #e1e0d9;
+  --linha-base: #c3c2b7;
+  --borda: rgba(11, 11, 11, 0.1);
+
+  --acento: #2a78d6;
+  --acento-forte: #1c5cab;
+  --acento-lavado: rgba(42, 120, 214, 0.1);
+  --recuo: #898781;
+
+  --bom: #0ca30c;
+  --aviso: #fab219;
+  --serio: #ec835a;
+  --critico: #d03b3b;
+  --texto-bom: #006300;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+
+    --plano: #0d0d0d;
+    --superficie: #1a1a19;
+    --superficie-2: #232322;
+
+    --tinta: #ffffff;
+    --tinta-2: #c3c2b7;
+    --tinta-muda: #898781;
+
+    --grade: #2c2c2a;
+    --linha-base: #383835;
+    --borda: rgba(255, 255, 255, 0.1);
+
+    --acento: #3987e5;
+    --acento-forte: #86b6ef;
+    --acento-lavado: rgba(57, 135, 229, 0.14);
+    --recuo: #898781;
+
+    --texto-bom: #0ca30c;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --plano: #0d0d0d;
+  --superficie: #1a1a19;
+  --superficie-2: #232322;
+
+  --tinta: #ffffff;
+  --tinta-2: #c3c2b7;
+  --tinta-muda: #898781;
+
+  --grade: #2c2c2a;
+  --linha-base: #383835;
+  --borda: rgba(255, 255, 255, 0.1);
+
+  --acento: #3987e5;
+  --acento-forte: #86b6ef;
+  --acento-lavado: rgba(57, 135, 229, 0.14);
+  --recuo: #898781;
+
+  --texto-bom: #0ca30c;
+}
+
+html {
+  background: var(--plano);
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--plano);
+  color: var(--tinta);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Foco visível consistente — o padrão do browser some sobre superfícies escuras */
+:where(a, button, input, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Números que alinham em coluna (tabelas, eixos) — nunca em número grande */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
