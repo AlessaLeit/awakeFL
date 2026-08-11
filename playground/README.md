@@ -25,8 +25,24 @@ regenere estes arquivos.
 8. **Colar `anchor.test.ts`** e rodar **Test**.
 
 Depois do deploy, traga o Program ID de volta para o repo: `solana address -k`
-no Playground, ou copie do painel `Build & Deploy`. Cole em `Anchor.toml`
-(`[programs.devnet]`) e em `programs/fl-reputation/src/lib.rs` (`declare_id!`).
+no Playground, ou copie do painel `Build & Deploy`. Cole em três lugares:
+
+1. `Anchor.toml` → `[programs.devnet]` e `[programs.localnet]`
+2. `programs/fl-reputation/src/lib.rs` → `declare_id!`
+3. **O site** → variável `NEXT_PUBLIC_PROGRAM_ID`, em `web/.env.local` para
+   rodar local e no painel da Vercel para produção. Sem ela, `/devnet` mostra
+   "programa ainda não configurado". Ela é inlinada no build, então depois de
+   alterá-la na Vercel é preciso **Redeploy**.
+
+## Se você mexer no programa
+
+`web/src/lib/idl/fl_reputation.json` é o IDL que o site usa para montar as
+transações, e ele foi derivado de `programs/fl-reputation/src/`. Toda mudança de
+instrução, de campo, de ordem de campos ou de ordem das contas precisa ser
+refletida ali — senão o site assina transações que o programa rejeita, com erros
+de desserialização que não apontam para a causa. O Playground exporta o IDL
+gerado no painel `Build & Deploy`: baixar e substituir o arquivo é a forma mais
+segura de sincronizar.
 
 ## Diferenças que quebram se ignoradas
 
