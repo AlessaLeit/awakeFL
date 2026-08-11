@@ -1,0 +1,594 @@
+{
+  "address": "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS",
+  "metadata": {
+    "name": "fl_reputation",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Camada de reputacao on-chain para Federated Learning"
+  },
+  "instructions": [
+    {
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "register_participant",
+      "discriminator": [
+        248,
+        112,
+        38,
+        215,
+        226,
+        230,
+        249,
+        40
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "participant",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "submit_contribution",
+      "discriminator": [
+        123,
+        132,
+        230,
+        253,
+        141,
+        22,
+        214,
+        91
+      ],
+      "accounts": [
+        {
+          "name": "config"
+        },
+        {
+          "name": "participant",
+          "writable": true
+        },
+        {
+          "name": "contribution",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "update_hash",
+          "type": "string"
+        },
+        {
+          "name": "n_samples",
+          "type": "u64"
+        },
+        {
+          "name": "loss",
+          "type": "f64"
+        },
+        {
+          "name": "accuracy",
+          "type": "f64"
+        }
+      ]
+    },
+    {
+      "name": "validate_contribution",
+      "discriminator": [
+        191,
+        252,
+        119,
+        244,
+        216,
+        33,
+        245,
+        175
+      ],
+      "accounts": [
+        {
+          "name": "config"
+        },
+        {
+          "name": "participant",
+          "writable": true
+        },
+        {
+          "name": "contribution",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "score",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "penalize_participant",
+      "discriminator": [
+        193,
+        245,
+        240,
+        195,
+        174,
+        198,
+        6,
+        186
+      ],
+      "accounts": [
+        {
+          "name": "config"
+        },
+        {
+          "name": "participant",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "reason_code",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "advance_round",
+      "discriminator": [
+        230,
+        88,
+        119,
+        80,
+        54,
+        4,
+        212,
+        250
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Config",
+      "discriminator": [
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
+    },
+    {
+      "name": "Participant",
+      "discriminator": [
+        32,
+        142,
+        108,
+        79,
+        247,
+        179,
+        54,
+        6
+      ]
+    },
+    {
+      "name": "Contribution",
+      "discriminator": [
+        182,
+        187,
+        14,
+        111,
+        72,
+        167,
+        242,
+        212
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "ParticipantRegistered",
+      "discriminator": [
+        47,
+        115,
+        159,
+        109,
+        135,
+        121,
+        70,
+        193
+      ]
+    },
+    {
+      "name": "ContributionSubmitted",
+      "discriminator": [
+        233,
+        209,
+        91,
+        212,
+        239,
+        41,
+        224,
+        118
+      ]
+    },
+    {
+      "name": "ContributionValidated",
+      "discriminator": [
+        185,
+        201,
+        226,
+        178,
+        1,
+        119,
+        113,
+        253
+      ]
+    },
+    {
+      "name": "ParticipantPenalized",
+      "discriminator": [
+        229,
+        7,
+        229,
+        53,
+        135,
+        76,
+        194,
+        94
+      ]
+    },
+    {
+      "name": "RoundAdvanced",
+      "discriminator": [
+        215,
+        177,
+        143,
+        241,
+        202,
+        145,
+        181,
+        213
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidScore",
+      "msg": "Score deve estar entre 0 e 1000"
+    },
+    {
+      "code": 6001,
+      "name": "AlreadyValidated",
+      "msg": "Esta contribuicao ja foi validada"
+    },
+    {
+      "code": 6002,
+      "name": "ParticipantBanned",
+      "msg": "Participante banido nao pode contribuir"
+    },
+    {
+      "code": 6003,
+      "name": "AlreadyBanned",
+      "msg": "Participante ja esta banido"
+    },
+    {
+      "code": 6004,
+      "name": "ContributionMismatch",
+      "msg": "Contribuicao nao pertence a este participante"
+    },
+    {
+      "code": 6005,
+      "name": "HashTooLong",
+      "msg": "update_hash excede o tamanho maximo"
+    },
+    {
+      "code": 6006,
+      "name": "MathOverflow",
+      "msg": "Overflow aritmetico"
+    }
+  ],
+  "types": [
+    {
+      "name": "Config",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "current_round",
+            "type": "u64"
+          },
+          {
+            "name": "total_participants",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Participant",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "reputation",
+            "type": "u64"
+          },
+          {
+            "name": "contrib_count",
+            "type": "u64"
+          },
+          {
+            "name": "is_banned",
+            "type": "bool"
+          },
+          {
+            "name": "stake_amount",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Contribution",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "participant",
+            "type": "pubkey"
+          },
+          {
+            "name": "round",
+            "type": "u64"
+          },
+          {
+            "name": "update_hash",
+            "type": "string"
+          },
+          {
+            "name": "n_samples",
+            "type": "u64"
+          },
+          {
+            "name": "loss",
+            "type": "f64"
+          },
+          {
+            "name": "accuracy",
+            "type": "f64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "ContributionStatus"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ContributionStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pendente"
+          },
+          {
+            "name": "Aprovado"
+          },
+          {
+            "name": "Rejeitado"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ParticipantRegistered",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "participant",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "reputation",
+            "type": "u64"
+          },
+          {
+            "name": "round",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ContributionSubmitted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "participant",
+            "type": "pubkey"
+          },
+          {
+            "name": "round",
+            "type": "u64"
+          },
+          {
+            "name": "n_samples",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ContributionValidated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "participant",
+            "type": "pubkey"
+          },
+          {
+            "name": "round",
+            "type": "u64"
+          },
+          {
+            "name": "score",
+            "type": "u64"
+          },
+          {
+            "name": "previous_reputation",
+            "type": "u64"
+          },
+          {
+            "name": "new_reputation",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ParticipantPenalized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "participant",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "previous_reputation",
+            "type": "u64"
+          },
+          {
+            "name": "new_reputation",
+            "type": "u64"
+          },
+          {
+            "name": "reason_code",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RoundAdvanced",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "round",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}
