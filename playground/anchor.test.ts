@@ -138,10 +138,18 @@ describe("fl-reputation", () => {
   };
 
   before(async () => {
+    console.log("programId:", program.programId.toBase58());
+    console.log("configPda:", configPda.toBase58());
+    const saldo = await pg.connection.getBalance(authority.publicKey);
+    console.log("saldo da wallet:", saldo / web3.LAMPORTS_PER_SOL, "SOL");
+
     await fund(honest.publicKey, 0.05);
     await fund(sleepy.publicKey, 0.05);
 
-    // Idempotente: em re-execucoes na Devnet o Config ja existe.
+    // Idempotente em re-execucoes na Devnet, onde o Config sobrevive.
+    // ATENCAO: so engolir o erro de "conta ja existe". Qualquer outra falha
+    // precisa estourar aqui — senao o fetch seguinte quebra com
+    // "Account does not exist" e esconde a causa real.
     try {
       await program.methods
         .initialize()
@@ -153,6 +161,17 @@ describe("fl-reputation", () => {
         .rpc();
       console.log("Config criado");
     } catch (e) {
+      const msg = `${e}`;
+      const jaExiste =
+        msg.includes("already in use") ||
+        msg.includes("custom program error: 0x0");
+
+      if (!jaExiste) {
+        console.error("=== initialize FALHOU ===");
+        console.error(msg);
+        if (e.logs) console.error(e.logs.join("\n"));
+        throw e;
+      }
       console.log("Config ja existia, reaproveitando");
     }
 
