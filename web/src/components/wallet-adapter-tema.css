@@ -1,0 +1,88 @@
+/*
+ * Reveste o CSS do @solana/wallet-adapter-react-ui com os tokens do site.
+ * O padrão do pacote é um roxo fixo, com fonte e raio próprios — colado ao lado
+ * dos botões da página ele lê como um widget de terceiro, não como parte do
+ * produto. Importado DEPOIS do styles.css do pacote, senão não vence.
+ *
+ * O hover é por opacidade, como nos demais botões: trocar para --acento-forte
+ * quebraria o contraste do texto branco no modo escuro, onde esse token é o
+ * azul claro.
+ */
+
+.wallet-adapter-button {
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  height: 38px;
+  line-height: 1;
+  border-radius: 0.5rem;
+  padding: 0 0.875rem;
+  transition: opacity 0.15s ease;
+}
+
+.wallet-adapter-button-trigger {
+  background: var(--acento);
+  color: #fff;
+}
+
+.wallet-adapter-button:not([disabled]):hover {
+  background: var(--acento);
+  opacity: 0.9;
+}
+
+.wallet-adapter-button[disabled] {
+  opacity: 0.5;
+}
+
+/* Modal de seleção de carteira */
+.wallet-adapter-modal-wrapper {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 0.75rem;
+  font-family: inherit;
+  box-shadow: none;
+}
+
+.wallet-adapter-modal-title {
+  color: var(--tinta);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.wallet-adapter-modal-list .wallet-adapter-button {
+  background: var(--superficie-2);
+  color: var(--tinta);
+  border: 1px solid var(--borda);
+  height: 48px;
+}
+
+.wallet-adapter-modal-list .wallet-adapter-button:not([disabled]):hover {
+  background: var(--superficie-2);
+  opacity: 0.85;
+}
+
+.wallet-adapter-modal-list-more,
+.wallet-adapter-modal-button-close {
+  color: var(--tinta-2);
+  background: var(--superficie-2);
+}
+
+.wallet-adapter-modal-list-more svg,
+.wallet-adapter-modal-button-close svg {
+  fill: var(--tinta-2);
+}
+
+/* Dropdown do botão quando já há carteira conectada */
+.wallet-adapter-dropdown-list {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  font-family: inherit;
+}
+
+.wallet-adapter-dropdown-list-item {
+  color: var(--tinta);
+}
+
+.wallet-adapter-dropdown-list-item:not([disabled]):hover {
+  background: var(--superficie-2);
+}
