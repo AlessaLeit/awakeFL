@@ -34,9 +34,6 @@ export default function Nav() {
           <Link href="/#funcionamento" className="hover:underline">
             Como funciona
           </Link>
-          <Link href="/#planos" className="hover:underline">
-            Planos
-          </Link>
           <a href={REPO} target="_blank" rel="noopener noreferrer" className="hover:underline">
             GitHub
           </a>

@@ -35,53 +35,6 @@ const PASSOS = [
   },
 ];
 
-const PLANOS = [
-  {
-    nome: "Piloto",
-    preco: "Grátis",
-    periodo: "na Devnet",
-    para: "Provas de conceito e pesquisa acadêmica",
-    itens: [
-      "Até 5 instituições participantes",
-      "Rodadas ilimitadas na Devnet",
-      "Trilha de auditoria pública",
-      "Suporte pela comunidade",
-    ],
-    cta: "Começar",
-    destaque: false,
-  },
-  {
-    nome: "Consórcio",
-    preco: "R$ 2.400",
-    periodo: "/mês",
-    para: "Consórcios de hospitais, bancos e laboratórios",
-    itens: [
-      "Até 30 instituições participantes",
-      "Mainnet com custos de rede inclusos",
-      "Painel de reputação e alertas",
-      "Exportação de auditoria (CSV/JSON)",
-      "Suporte em horário comercial",
-    ],
-    cta: "Falar com vendas",
-    destaque: true,
-  },
-  {
-    nome: "Enterprise",
-    preco: "Sob consulta",
-    periodo: "",
-    para: "Redes reguladas com exigência de conformidade",
-    itens: [
-      "Participantes ilimitados",
-      "Regras de scoring customizadas",
-      "Integração com o pipeline de FL existente",
-      "SLA e suporte dedicado",
-      "Laudo de auditoria do programa",
-    ],
-    cta: "Falar com vendas",
-    destaque: false,
-  },
-];
-
 const FAQ = [
   {
     p: "Os dados de treinamento vão para a blockchain?",
@@ -363,76 +316,6 @@ export default function Home() {
               importa aqui: quem controla o histórico.
             </p>
           </div>
-        </section>
-
-        {/* Planos */}
-        <section id="planos" className="mx-auto max-w-6xl px-5 py-16 md:py-24">
-          <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">Planos</h2>
-          <p className="mt-4 max-w-2xl text-base leading-relaxed" style={{ color: "var(--tinta-2)" }}>
-            Preço por consórcio, não por chamada de API — o custo de rede é irrelevante
-            perto do valor de ter uma auditoria que ninguém consegue contestar.
-          </p>
-
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
-            {PLANOS.map((plano) => (
-              <div
-                key={plano.nome}
-                className="flex flex-col rounded-xl border p-6"
-                style={{
-                  borderColor: plano.destaque ? "var(--acento)" : "var(--borda)",
-                  background: "var(--superficie)",
-                }}
-              >
-                {plano.destaque && (
-                  <span
-                    className="mb-3 inline-block w-fit rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
-                    style={{ background: "var(--acento)" }}
-                  >
-                    Mais escolhido
-                  </span>
-                )}
-                <h3 className="text-lg font-semibold">{plano.nome}</h3>
-                <div className="mt-3 flex items-baseline gap-1.5">
-                  <span className="text-3xl font-semibold tracking-tight">{plano.preco}</span>
-                  {plano.periodo && (
-                    <span className="text-sm" style={{ color: "var(--tinta-2)" }}>
-                      {plano.periodo}
-                    </span>
-                  )}
-                </div>
-                <p className="mt-3 text-sm" style={{ color: "var(--tinta-2)" }}>
-                  {plano.para}
-                </p>
-                <ul className="mt-5 flex-1 space-y-2.5 text-sm">
-                  {plano.itens.map((item) => (
-                    <li key={item} className="flex gap-2.5">
-                      <span aria-hidden style={{ color: "var(--bom)" }}>
-                        ✓
-                      </span>
-                      <span style={{ color: "var(--tinta-2)" }}>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-                <a
-                  href={REPO}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-6 rounded-lg border px-4 py-2.5 text-center text-sm font-medium"
-                  style={
-                    plano.destaque
-                      ? { background: "var(--acento)", borderColor: "var(--acento)", color: "#fff" }
-                      : { borderColor: "var(--borda)", color: "var(--tinta)" }
-                  }
-                >
-                  {plano.cta}
-                </a>
-              </div>
-            ))}
-          </div>
-          <p className="mt-6 text-xs" style={{ color: "var(--tinta-muda)" }}>
-            Valores ilustrativos de um modelo de negócio em estudo. O projeto está em
-            fase de MVP e ainda não comercializa planos.
-          </p>
         </section>
 
         {/* FAQ */}
