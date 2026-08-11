@@ -101,6 +101,13 @@ export default function Home() {
               >
                 Ver a demo interativa
               </Link>
+              <Link
+                href="/devnet"
+                className="rounded-lg border px-5 py-3 text-sm font-medium transition-colors"
+                style={{ borderColor: "var(--borda)", color: "var(--tinta)" }}
+              >
+                Usar na Devnet
+              </Link>
               <a
                 href={REPO}
                 target="_blank"

@@ -23,7 +23,10 @@ export default function Footer() {
             GitHub
           </a>
           <Link href="/simulacao" className="hover:underline">
-            Demo
+            Simulação
+          </Link>
+          <Link href="/devnet" className="hover:underline">
+            Devnet
           </Link>
         </div>
       </div>
@@ -31,8 +34,9 @@ export default function Footer() {
         className="mx-auto max-w-6xl px-5 pb-8 text-xs"
         style={{ color: "var(--tinta-muda)" }}
       >
-        Os números exibidos na demo vêm de uma simulação determinística das regras do
-        programa, não de dados clínicos ou de produção.
+        Os números da simulação vêm de um modelo determinístico das regras do programa,
+        não de dados clínicos ou de produção. Os do console de Devnet são lidos das
+        contas reais do programa na Solana.
       </div>
     </footer>
   );
