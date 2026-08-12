@@ -66,14 +66,14 @@ export default function Home() {
         {/* Hero */}
         <section className="mx-auto max-w-6xl px-5 pt-16 pb-14 md:pt-24 md:pb-20">
           <div className="max-w-3xl">
-            <span
-              className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium"
-              style={{ borderColor: "var(--borda)", color: "var(--tinta-2)" }}
-            >
+            <span className="chip">
               <span
                 aria-hidden
                 className="inline-block h-1.5 w-1.5 rounded-full"
-                style={{ background: "var(--acento)" }}
+                style={{
+                  background: "var(--acento)",
+                  boxShadow: "0 0 8px 1px var(--acento-brilho)",
+                }}
               />
               Solana · Anchor · MVP em Devnet
             </span>
@@ -87,37 +87,37 @@ export default function Home() {
               className="mt-5 max-w-2xl text-lg leading-relaxed"
               style={{ color: "var(--tinta-2)" }}
             >
-              No Federated Learning, várias instituições treinam uma IA sem trocar
-              dados — e um único participante malicioso pode corromper o modelo de
-              todos sem deixar rastro. O fl-reputation registra cada contribuição de
-              forma imutável na Solana, mede confiança a cada rodada e bane quem ataca.
+              No Federated Learning, várias instituições treinam uma IA sem
+              trocar dados — e um único participante malicioso pode corromper o
+              modelo de todos sem deixar rastro. O AwakeFL registra cada
+              contribuição de forma imutável na Solana, mede confiança a cada
+              rodada e bane quem ataca.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/simulacao"
-                className="rounded-lg px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
-                style={{ background: "var(--acento)" }}
-              >
-                Ver a demo interativa
+              <Link href="/painel" className="btn-neon px-6 py-3.5 text-sm">
+                Entrar como participante
               </Link>
               <Link
-                href="/devnet"
-                className="rounded-lg border px-5 py-3 text-sm font-medium transition-colors"
-                style={{ borderColor: "var(--borda)", color: "var(--tinta)" }}
+                href="/simulacao"
+                className="btn-contorno px-5 py-3.5 text-sm"
               >
-                Usar na Devnet
+                Ver a demo interativa
               </Link>
               <a
                 href={REPO}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-lg border px-5 py-3 text-sm font-medium transition-colors"
-                style={{ borderColor: "var(--borda)", color: "var(--tinta)" }}
+                className="btn-fantasma px-5 py-3.5 text-sm"
               >
                 Ler o código
               </a>
             </div>
+
+            <p className="mt-4 text-xs" style={{ color: "var(--tinta-muda)" }}>
+              A área do participante pede uma carteira Solana em Devnet (Phantom
+              ou Solflare). A demo não pede nada.
+            </p>
           </div>
 
           {/* Números da simulação — o gancho do sleepy adversary */}
@@ -136,13 +136,12 @@ export default function Home() {
                 l: "de treinamento saem da instituição: só hashes e scores vão para a chain",
               },
             ].map((s) => (
-              <div
-                key={s.v}
-                className="rounded-xl border p-5"
-                style={{ borderColor: "var(--borda)", background: "var(--superficie)" }}
-              >
+              <div key={s.v} className="vidro p-5">
                 <dt className="text-2xl font-semibold tracking-tight">{s.v}</dt>
-                <dd className="mt-2 text-sm leading-relaxed" style={{ color: "var(--tinta-2)" }}>
+                <dd
+                  className="mt-2 text-sm leading-relaxed"
+                  style={{ color: "var(--tinta-2)" }}
+                >
                   {s.l}
                 </dd>
               </div>
@@ -154,18 +153,26 @@ export default function Home() {
         <section
           id="problema"
           className="border-y py-16 md:py-24"
-          style={{ borderColor: "var(--borda)", background: "var(--superficie)" }}
+          style={{
+            borderColor: "var(--borda)",
+            background: "var(--superficie)",
+          }}
         >
           <div className="mx-auto max-w-6xl px-5">
             <h2 className="max-w-2xl text-3xl font-semibold tracking-tight md:text-4xl">
               O atacante mais perigoso é o mais paciente
             </h2>
-            <p className="mt-4 max-w-2xl text-base leading-relaxed" style={{ color: "var(--tinta-2)" }}>
+            <p
+              className="mt-4 max-w-2xl text-base leading-relaxed"
+              style={{ color: "var(--tinta-2)" }}
+            >
               Um envenenador óbvio é fácil de barrar. O problema real é o{" "}
-              <strong style={{ color: "var(--tinta)" }}>sleepy adversary</strong>: ele
-              contribui honestamente por muitas rodadas, acumula reputação e peso na
-              agregação, e só então começa a envenenar — sutilmente o bastante para que
-              a detecção demore.
+              <strong style={{ color: "var(--tinta)" }}>
+                sleepy adversary
+              </strong>
+              : ele contribui honestamente por muitas rodadas, acumula reputação
+              e peso na agregação, e só então começa a envenenar — sutilmente o
+              bastante para que a detecção demore.
             </p>
 
             <div className="mt-10 grid gap-4 md:grid-cols-3">
@@ -183,13 +190,12 @@ export default function Home() {
                   d: "É o que a torna estável contra ruído — e o que abre a janela de dano. Por isso a punição precisa ser abrupta, não gradual.",
                 },
               ].map((c) => (
-                <div
-                  key={c.t}
-                  className="rounded-xl border p-5"
-                  style={{ borderColor: "var(--borda)", background: "var(--plano)" }}
-                >
+                <div key={c.t} className="vidro p-5">
                   <h3 className="text-base font-semibold">{c.t}</h3>
-                  <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--tinta-2)" }}>
+                  <p
+                    className="mt-2 text-sm leading-relaxed"
+                    style={{ color: "var(--tinta-2)" }}
+                  >
                     {c.d}
                   </p>
                 </div>
@@ -199,22 +205,25 @@ export default function Home() {
         </section>
 
         {/* Como funciona */}
-        <section id="funcionamento" className="mx-auto max-w-6xl px-5 py-16 md:py-24">
+        <section
+          id="funcionamento"
+          className="mx-auto max-w-6xl px-5 py-16 md:py-24"
+        >
           <h2 className="max-w-2xl text-3xl font-semibold tracking-tight md:text-4xl">
             Quatro instruções, um ciclo fechado
           </h2>
-          <p className="mt-4 max-w-2xl text-base leading-relaxed" style={{ color: "var(--tinta-2)" }}>
-            Todo o mecanismo cabe em quatro chamadas ao programa Anchor. Cada uma
-            deixa um registro que ninguém — nem a autoridade — consegue apagar.
+          <p
+            className="mt-4 max-w-2xl text-base leading-relaxed"
+            style={{ color: "var(--tinta-2)" }}
+          >
+            Todo o mecanismo cabe em quatro chamadas ao programa Anchor. Cada
+            uma deixa um registro que ninguém — nem a autoridade — consegue
+            apagar.
           </p>
 
           <ol className="mt-10 grid gap-4 md:grid-cols-2">
             {PASSOS.map((p) => (
-              <li
-                key={p.n}
-                className="rounded-xl border p-6"
-                style={{ borderColor: "var(--borda)", background: "var(--superficie)" }}
-              >
+              <li key={p.n} className="vidro p-6">
                 <div className="flex items-baseline gap-3">
                   <span
                     className="tabular text-sm font-semibold"
@@ -224,15 +233,18 @@ export default function Home() {
                   </span>
                   <h3 className="text-lg font-semibold">{p.titulo}</h3>
                 </div>
-                <p className="mt-2.5 text-sm leading-relaxed" style={{ color: "var(--tinta-2)" }}>
+                <p
+                  className="mt-2.5 text-sm leading-relaxed"
+                  style={{ color: "var(--tinta-2)" }}
+                >
                   {p.texto}
                 </p>
                 <code
-                  className="mt-4 inline-block rounded-md border px-2 py-1 text-xs"
+                  className="mono mt-4 inline-block rounded border px-2 py-1 text-xs"
                   style={{
                     borderColor: "var(--borda)",
-                    background: "var(--superficie-2)",
-                    color: "var(--tinta-2)",
+                    background: "var(--superficie-baixa)",
+                    color: "var(--acento)",
                   }}
                 >
                   {p.instrucao}()
@@ -242,22 +254,25 @@ export default function Home() {
           </ol>
 
           <div
-            className="mt-10 rounded-xl border p-6"
-            style={{ borderColor: "var(--borda)", background: "var(--acento-lavado)" }}
+            className="vidro mt-10 p-6"
+            style={{ boxShadow: "inset 3px 0 0 0 var(--acento)" }}
           >
             <h3 className="text-base font-semibold">A regra que define tudo</h3>
-            <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--tinta-2)" }}>
-              A reputação sobe devagar e cai de uma vez. A média móvel exponencial
-              pondera metade do histórico e metade da rodada atual, então nenhuma
-              rodada isolada — boa ou ruim — domina o resultado. Já a penalidade não
-              negocia: divide por dez e bane em definitivo.
+            <p
+              className="mt-2 text-sm leading-relaxed"
+              style={{ color: "var(--tinta-2)" }}
+            >
+              A reputação sobe devagar e cai de uma vez. A média móvel
+              exponencial pondera metade do histórico e metade da rodada atual,
+              então nenhuma rodada isolada — boa ou ruim — domina o resultado.
+              Já a penalidade não negocia: divide por dez e bane em definitivo.
             </p>
             <p
-              className="tabular mt-4 rounded-md border px-3 py-2 text-sm"
+              className="mono tabular mt-4 rounded border px-3 py-2.5 text-sm"
               style={{
                 borderColor: "var(--borda)",
-                background: "var(--superficie)",
-                color: "var(--tinta)",
+                background: "var(--superficie-baixa)",
+                color: "var(--acento)",
               }}
             >
               R(t) = 0,5 · R(t−1) + 0,5 · S(t)
@@ -268,49 +283,103 @@ export default function Home() {
         {/* Por que blockchain */}
         <section
           className="border-y py-16 md:py-24"
-          style={{ borderColor: "var(--borda)", background: "var(--superficie)" }}
+          style={{
+            borderColor: "var(--borda)",
+            background: "var(--superficie)",
+          }}
         >
           <div className="mx-auto max-w-6xl px-5">
             <h2 className="max-w-2xl text-3xl font-semibold tracking-tight md:text-4xl">
               Por que não um banco de dados
             </h2>
-            <p className="mt-4 max-w-2xl text-base leading-relaxed" style={{ color: "var(--tinta-2)" }}>
-              Esta é a pergunta que todo projeto com blockchain precisa responder sem
-              rodeios. A resposta aqui é específica: um consórcio de instituições
-              concorrentes não tem um terceiro em quem todas confiem.
+            <p
+              className="mt-4 max-w-2xl text-base leading-relaxed"
+              style={{ color: "var(--tinta-2)" }}
+            >
+              Esta é a pergunta que todo projeto com blockchain precisa
+              responder sem rodeios. A resposta aqui é específica: um consórcio
+              de instituições concorrentes não tem um terceiro em quem todas
+              confiem.
             </p>
 
             <div className="mt-8 overflow-x-auto">
               <table className="w-full min-w-[560px] border-collapse text-sm">
                 <thead>
                   <tr style={{ color: "var(--tinta-2)" }}>
-                    <th scope="col" className="border-b py-3 pr-4 text-left font-medium" style={{ borderColor: "var(--borda)" }}>
+                    <th
+                      scope="col"
+                      className="border-b py-3 pr-4 text-left font-medium"
+                      style={{ borderColor: "var(--borda)" }}
+                    >
                       Requisito
                     </th>
-                    <th scope="col" className="border-b px-4 py-3 text-left font-medium" style={{ borderColor: "var(--borda)" }}>
+                    <th
+                      scope="col"
+                      className="border-b px-4 py-3 text-left font-medium"
+                      style={{ borderColor: "var(--borda)" }}
+                    >
                       Servidor central
                     </th>
-                    <th scope="col" className="border-b px-4 py-3 text-left font-medium" style={{ borderColor: "var(--borda)" }}>
-                      fl-reputation
+                    <th
+                      scope="col"
+                      className="border-b px-4 py-3 text-left font-medium"
+                      style={{ borderColor: "var(--borda)" }}
+                    >
+                      AwakeFL
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {[
-                    ["Histórico à prova de reescrita", "Depende de quem administra", "Imutável por construção"],
-                    ["Auditoria por qualquer participante", "Só o que o dono expõe", "Aberta, sem pedir acesso"],
-                    ["Regra de punição não negociável", "Alterável a qualquer momento", "Fixada no programa publicado"],
-                    ["Custo de operação", "Baixo", "Frações de centavo por registro"],
+                    [
+                      "Histórico à prova de reescrita",
+                      "Depende de quem administra",
+                      "Imutável por construção",
+                    ],
+                    [
+                      "Auditoria por qualquer participante",
+                      "Só o que o dono expõe",
+                      "Aberta, sem pedir acesso",
+                    ],
+                    [
+                      "Regra de punição não negociável",
+                      "Alterável a qualquer momento",
+                      "Fixada no programa publicado",
+                    ],
+                    [
+                      "Custo de operação",
+                      "Baixo",
+                      "Frações de centavo por registro",
+                    ],
                     ["Latência", "Milissegundos", "Sub-segundo na Solana"],
                   ].map(([req, central, chain]) => (
                     <tr key={req}>
-                      <th scope="row" className="border-b py-3 pr-4 text-left font-normal" style={{ borderColor: "var(--borda)", color: "var(--tinta)" }}>
+                      <th
+                        scope="row"
+                        className="border-b py-3 pr-4 text-left font-normal"
+                        style={{
+                          borderColor: "var(--borda)",
+                          color: "var(--tinta)",
+                        }}
+                      >
                         {req}
                       </th>
-                      <td className="border-b px-4 py-3" style={{ borderColor: "var(--borda)", color: "var(--tinta-2)" }}>
+                      <td
+                        className="border-b px-4 py-3"
+                        style={{
+                          borderColor: "var(--borda)",
+                          color: "var(--tinta-2)",
+                        }}
+                      >
                         {central}
                       </td>
-                      <td className="border-b px-4 py-3" style={{ borderColor: "var(--borda)", color: "var(--tinta)" }}>
+                      <td
+                        className="border-b px-4 py-3"
+                        style={{
+                          borderColor: "var(--borda)",
+                          color: "var(--tinta)",
+                        }}
+                      >
                         {chain}
                       </td>
                     </tr>
@@ -319,8 +388,8 @@ export default function Home() {
               </table>
             </div>
             <p className="mt-4 text-sm" style={{ color: "var(--tinta-muda)" }}>
-              Um servidor central ganha em latência e custo. Perde no único ponto que
-              importa aqui: quem controla o histórico.
+              Um servidor central ganha em latência e custo. Perde no único
+              ponto que importa aqui: quem controla o histórico.
             </p>
           </div>
         </section>
@@ -328,13 +397,19 @@ export default function Home() {
         {/* FAQ */}
         <section
           className="border-t py-16 md:py-24"
-          style={{ borderColor: "var(--borda)", background: "var(--superficie)" }}
+          style={{
+            borderColor: "var(--borda)",
+            background: "var(--superficie)",
+          }}
         >
           <div className="mx-auto max-w-3xl px-5">
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
               Perguntas frequentes
             </h2>
-            <div className="mt-8 divide-y" style={{ borderColor: "var(--borda)" }}>
+            <div
+              className="mt-8 divide-y"
+              style={{ borderColor: "var(--borda)" }}
+            >
               {FAQ.map((f) => (
                 <details key={f.p} className="group py-4">
                   <summary
@@ -367,24 +442,38 @@ export default function Home() {
         {/* CTA final */}
         <section className="mx-auto max-w-6xl px-5 py-16 md:py-24">
           <div
-            className="rounded-2xl border p-8 md:p-12"
-            style={{ borderColor: "var(--borda)", background: "var(--acento-lavado)" }}
+            className="vidro p-8 md:p-12"
+            style={{
+              // O acento aqui é luz de fundo, não preenchimento: um halo atrás
+              // do vidro, para o cartão final puxar o olho sem virar um bloco
+              // verde chapado.
+              backgroundImage:
+                "radial-gradient(circle at 15% 0%, var(--acento-lavado), transparent 60%)",
+            }}
           >
             <h2 className="max-w-2xl text-3xl font-semibold tracking-tight md:text-4xl">
-              Veja um sleepy adversary perder tudo
+              Entre na rede — ou veja um sleepy adversary perder tudo
             </h2>
-            <p className="mt-4 max-w-xl text-base leading-relaxed" style={{ color: "var(--tinta-2)" }}>
-              A demo roda as doze rodadas com as mesmas regras do programa Anchor.
-              Avance rodada a rodada e acompanhe a reputação, as contribuições e o
-              momento exato do banimento.
-            </p>
-            <Link
-              href="/simulacao"
-              className="mt-7 inline-block rounded-lg px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
-              style={{ background: "var(--acento)" }}
+            <p
+              className="mt-4 max-w-xl text-base leading-relaxed"
+              style={{ color: "var(--tinta-2)" }}
             >
-              Abrir a demo
-            </Link>
+              A área do participante conecta sua carteira ao programa na Devnet:
+              registre seu nó, submeta contribuições e acompanhe a reputação
+              real. A demo, sem carteira, roda as doze rodadas com as mesmas
+              regras e mostra o momento exato do banimento.
+            </p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link href="/painel" className="btn-neon px-6 py-3.5 text-sm">
+                Entrar como participante
+              </Link>
+              <Link
+                href="/simulacao"
+                className="btn-contorno px-5 py-3.5 text-sm"
+              >
+                Abrir a demo
+              </Link>
+            </div>
           </div>
         </section>
       </main>

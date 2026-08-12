@@ -1,86 +1,70 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   Tokens de cor.
-   Os valores vêm da paleta validada: as duas colunas (claro/escuro) são
-   escolhidas para cada superfície, não um flip automático.
-   O gráfico é de ÊNFASE: um acento + cinza de recuo. O cinza "ler como cinza"
-   é intencional — é o que joga as séries de contexto para trás.
+   AwakeFL — design system "Neon Graphite".
+
+   Os valores vêm do DESIGN.md das telas do participante. É um sistema
+   deliberadamente MONO-TEMA: a paleta é construída sobre um grafite profundo
+   para que o verde neon funcione como fonte de luz. Não existe variante clara —
+   um "Neon Graphite claro" seria outro design, não o mesmo com as cores
+   invertidas.
+
+   Os nomes de token são os mesmos de antes (--plano, --tinta, --acento...),
+   então as páginas já existentes recebem o tema novo sem reescrita.
 --------------------------------------------------------------------------- */
 
 :root {
-  color-scheme: light;
-
-  --plano: #f9f9f7;
-  --superficie: #fcfcfb;
-  --superficie-2: #f2f1ed;
-
-  --tinta: #0b0b0b;
-  --tinta-2: #52514e;
-  --tinta-muda: #898781;
-
-  --grade: #e1e0d9;
-  --linha-base: #c3c2b7;
-  --borda: rgba(11, 11, 11, 0.1);
-
-  --acento: #2a78d6;
-  --acento-forte: #1c5cab;
-  --acento-lavado: rgba(42, 120, 214, 0.1);
-  --recuo: #898781;
-
-  --bom: #0ca30c;
-  --aviso: #fab219;
-  --serio: #ec835a;
-  --critico: #d03b3b;
-  --texto-bom: #006300;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme="light"])) {
-    color-scheme: dark;
-
-    --plano: #0d0d0d;
-    --superficie: #1a1a19;
-    --superficie-2: #232322;
-
-    --tinta: #ffffff;
-    --tinta-2: #c3c2b7;
-    --tinta-muda: #898781;
-
-    --grade: #2c2c2a;
-    --linha-base: #383835;
-    --borda: rgba(255, 255, 255, 0.1);
-
-    --acento: #3987e5;
-    --acento-forte: #86b6ef;
-    --acento-lavado: rgba(57, 135, 229, 0.14);
-    --recuo: #898781;
-
-    --texto-bom: #0ca30c;
-  }
-}
-
-:root[data-theme="dark"] {
   color-scheme: dark;
 
-  --plano: #0d0d0d;
-  --superficie: #1a1a19;
-  --superficie-2: #232322;
+  /* Superfícies — grafite em camadas tonais, do fundo para a frente */
+  --plano: #131313;
+  /* Um passo ABAIXO do plano: sidebar e campos, que devem recuar, não avançar */
+  --superficie-baixa: #0e0e0e;
+  --superficie: #1c1b1b;
+  --superficie-2: #201f1f;
+  --superficie-3: #2a2a2a;
 
-  --tinta: #ffffff;
-  --tinta-2: #c3c2b7;
-  --tinta-muda: #898781;
+  /* Vidro: as camadas 1 e 2 do sistema de elevação. Não são cores sólidas —
+     deixam o plano de fundo atravessar, que é o que dá profundidade. */
+  --vidro: rgba(32, 31, 31, 0.6);
+  --vidro-alto: rgba(42, 42, 42, 0.8);
+  --vidro-desfoque: 20px;
 
-  --grade: #2c2c2a;
-  --linha-base: #383835;
+  /* Tinta */
+  --tinta: #e5e2e1;
+  --tinta-2: #a8a5a4;
+  --tinta-muda: #7a7877;
+
+  /* Traços */
+  --grade: rgba(255, 255, 255, 0.05);
+  --linha-base: rgba(255, 255, 255, 0.12);
   --borda: rgba(255, 255, 255, 0.1);
+  --borda-luz: rgba(255, 255, 255, 0.12);
 
-  --acento: #3987e5;
-  --acento-forte: #86b6ef;
-  --acento-lavado: rgba(57, 135, 229, 0.14);
-  --recuo: #898781;
+  /* Acento — "Neon Venom". Usado com parcimônia: ação primária, status,
+     foco. Se estiver em todo lugar, deixa de ser fonte de luz. */
+  --acento: #4af403;
+  --acento-forte: #7bff51;
+  --acento-fundo: #44e400;
+  --acento-lavado: rgba(74, 244, 3, 0.1);
+  --acento-brilho: rgba(74, 244, 3, 0.15);
+  /* Tinta que vai SOBRE o acento. Verde neon é claro: texto branco em cima
+     dele fica ilegível, por isso o par correto é um verde quase preto. */
+  --sobre-acento: #042100;
+  --recuo: #7a7877;
 
-  --texto-bom: #0ca30c;
+  /* Semânticos */
+  --bom: #4af403;
+  --aviso: #fab219;
+  --serio: #ffb4ab;
+  --critico: #ff5449;
+  --critico-lavado: rgba(255, 84, 73, 0.12);
+  --texto-bom: #cdffb5;
+
+  /* Tipografia — Geist na interface, JetBrains Mono em rótulos e hashes.
+     As variáveis --fonte-* são injetadas pelo next/font no layout raiz. */
+  --tipo-ui: var(--fonte-geist), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --tipo-mono: var(--fonte-mono), ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 html {
@@ -91,7 +75,7 @@ html {
 body {
   background: var(--plano);
   color: var(--tinta);
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--tipo-ui);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -107,8 +91,8 @@ body {
   }
 }
 
-/* Foco visível consistente — o padrão do browser some sobre superfícies escuras */
-:where(a, button, input, select, [tabindex]):focus-visible {
+/* Foco visível consistente — o padrão do browser some sobre o grafite */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--acento);
   outline-offset: 2px;
   border-radius: 4px;
@@ -117,4 +101,145 @@ body {
 /* Números que alinham em coluna (tabelas, eixos) — nunca em número grande */
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------------
+   Primitivos do sistema
+--------------------------------------------------------------------------- */
+
+/* Rótulo técnico: mono, pequeno, tracking aberto para legibilidade no escuro */
+.rotulo {
+  font-family: var(--tipo-mono);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--tinta-2);
+}
+
+.mono {
+  font-family: var(--tipo-mono);
+}
+
+/* Card de vidro — nível 1 de elevação */
+.vidro {
+  background: var(--vidro);
+  backdrop-filter: blur(var(--vidro-desfoque));
+  -webkit-backdrop-filter: blur(var(--vidro-desfoque));
+  border: 1px solid var(--borda);
+  border-radius: 0.5rem;
+}
+
+/* Nível 2 — modais, popovers: mais opaco e com a borda que "pega luz" */
+.vidro-alto {
+  background: var(--vidro-alto);
+  backdrop-filter: blur(var(--vidro-desfoque));
+  -webkit-backdrop-filter: blur(var(--vidro-desfoque));
+  border: 1px solid var(--borda-luz);
+  border-radius: 0.5rem;
+}
+
+/* Ação primária: neon sólido com texto quase preto e emissão de luz */
+.btn-neon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.25rem;
+  background: var(--acento);
+  color: var(--sobre-acento);
+  font-weight: 600;
+  box-shadow: 0 0 24px 2px var(--acento-brilho);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-neon:hover {
+  background: var(--acento-forte);
+  box-shadow: 0 0 32px 4px var(--acento-brilho);
+}
+
+.btn-neon:disabled {
+  background: var(--superficie-3);
+  color: var(--tinta-muda);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Ação secundária: só o contorno neon, sem preenchimento */
+.btn-contorno {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--acento);
+  color: var(--acento);
+  background: transparent;
+  font-weight: 500;
+  transition: background 0.15s ease;
+}
+
+.btn-contorno:hover {
+  background: var(--acento-lavado);
+}
+
+/* Ação terciária: discreta, para "Cancelar" e afins */
+.btn-fantasma {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--borda);
+  color: var(--tinta-2);
+  background: transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-fantasma:hover {
+  color: var(--tinta);
+  border-color: var(--borda-luz);
+}
+
+/* Chip: pílula de contorno com texto mono */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  border: 1px solid var(--borda);
+  padding: 0.25rem 0.625rem;
+  font-family: var(--tipo-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: var(--tinta-2);
+}
+
+/* Campo: grafite fundo, borda que acende no foco */
+.campo {
+  width: 100%;
+  border-radius: 0.25rem;
+  border: 1px solid var(--borda);
+  background: var(--superficie-baixa);
+  padding: 0.75rem 0.875rem;
+  color: var(--tinta);
+  font-family: var(--tipo-mono);
+  font-size: 14px;
+  transition: border-color 0.15s ease;
+}
+
+.campo::placeholder {
+  color: var(--tinta-muda);
+}
+
+.campo:focus {
+  border-color: var(--acento);
+  outline: none;
+}
+
+/* Texto que emite luz — reservado para o número-herói de um painel */
+.neon {
+  color: var(--acento);
+  text-shadow: 0 0 18px var(--acento-brilho);
 }

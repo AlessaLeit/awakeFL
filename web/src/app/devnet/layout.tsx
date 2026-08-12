@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import SolanaProviders from "@/components/SolanaProviders";
 
 export const metadata: Metadata = {
-  title: "Devnet — fl-reputation",
+  title: "Devnet — AwakeFL",
   description:
-    "Console on-chain do fl-reputation na Devnet da Solana: registre um participante, submeta contribuições e valide ou penalize com transações reais.",
+    "Console on-chain do AwakeFL na Devnet da Solana: registre um participante, submeta contribuições e valide ou penalize com transações reais.",
 };
 
 export default function DevnetLayout({

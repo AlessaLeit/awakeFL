@@ -11,22 +11,33 @@ export default function Footer() {
       >
         <div>
           <div className="font-semibold" style={{ color: "var(--tinta)" }}>
-            fl-reputation
+            AwakeFL
           </div>
           <p className="mt-1 max-w-md">
-            Camada de reputação on-chain para Federated Learning. Projeto de MVP em
-            Anchor/Solana — Devnet.
+            Camada de reputação on-chain para Federated Learning. Projeto de MVP
+            em Anchor/Solana — Devnet.
           </p>
         </div>
         <div className="flex gap-5">
-          <a href={REPO} target="_blank" rel="noopener noreferrer" className="hover:underline">
+          <a
+            href={REPO}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-colors hover:text-[var(--tinta)]"
+          >
             GitHub
           </a>
-          <Link href="/simulacao" className="hover:underline">
+          <Link
+            href="/simulacao"
+            className="transition-colors hover:text-[var(--tinta)]"
+          >
             Simulação
           </Link>
-          <Link href="/devnet" className="hover:underline">
-            Devnet
+          <Link
+            href="/painel"
+            className="transition-colors hover:text-[var(--tinta)]"
+          >
+            Área do participante
           </Link>
         </div>
       </div>
@@ -34,9 +45,9 @@ export default function Footer() {
         className="mx-auto max-w-6xl px-5 pb-8 text-xs"
         style={{ color: "var(--tinta-muda)" }}
       >
-        Os números da simulação vêm de um modelo determinístico das regras do programa,
-        não de dados clínicos ou de produção. Os do console de Devnet são lidos das
-        contas reais do programa na Solana.
+        Os números da simulação vêm de um modelo determinístico das regras do
+        programa, não de dados clínicos ou de produção. Os do console de Devnet
+        são lidos das contas reais do programa na Solana.
       </div>
     </footer>
   );

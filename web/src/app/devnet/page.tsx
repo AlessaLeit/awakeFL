@@ -1,10 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { BN, type Wallet } from "@coral-xyz/anchor";
-import { useAnchorWallet, useConnection, useWallet } from "@solana/wallet-adapter-react";
+import {
+  useAnchorWallet,
+  useConnection,
+  useWallet,
+} from "@solana/wallet-adapter-react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import StatTile from "@/components/StatTile";
@@ -61,7 +66,9 @@ export default function Devnet() {
   const [contribuicoes, setContribuicoes] = useState<ContribuicaoConta[]>([]);
   // O saldo guarda de quem ele é: sem isso, trocar de carteira mostra por um
   // instante o saldo da anterior.
-  const [saldo, setSaldo] = useState<{ dono: string; sol: number } | null>(null);
+  const [saldo, setSaldo] = useState<{ dono: string; sol: number } | null>(
+    null,
+  );
   const [carregando, setCarregando] = useState(false);
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -75,14 +82,16 @@ export default function Devnet() {
   const [scores, setScores] = useState<Record<string, string>>({});
 
   const meuParticipantePda = useMemo(
-    () => (programId && publicKey ? pdaParticipant(programId, publicKey) : null),
+    () =>
+      programId && publicKey ? pdaParticipant(programId, publicKey) : null,
     [programId, publicKey],
   );
 
   const meuParticipante = useMemo(
     () =>
       meuParticipantePda
-        ? (participantes.find((p) => p.endereco.equals(meuParticipantePda)) ?? null)
+        ? (participantes.find((p) => p.endereco.equals(meuParticipantePda)) ??
+          null)
         : null,
     [participantes, meuParticipantePda],
   );
@@ -162,13 +171,21 @@ export default function Devnet() {
     async (
       chave: string,
       rotulo: string,
-      fn: (program: FlProgram, programId: PublicKey, dono: PublicKey) => Promise<string>,
+      fn: (
+        program: FlProgram,
+        programId: PublicKey,
+        dono: PublicKey,
+      ) => Promise<string>,
     ) => {
       if (!programId || !anchorWallet || !publicKey) return;
       setOcupado(chave);
       setErro(null);
       try {
-        const program = walletProgram(connection, anchorWallet as Wallet, programId);
+        const program = walletProgram(
+          connection,
+          anchorWallet as Wallet,
+          programId,
+        );
         const sig = await fn(program, programId, publicKey);
         setRegistros((r) => [{ sig, rotulo }, ...r].slice(0, 12));
         await carregar();
@@ -212,7 +229,9 @@ export default function Devnet() {
       const participante = pdaParticipant(pid, dono);
       // O hash é calculado no browser a partir da semente: o que vai para a
       // chain é o compromisso, nunca o tensor de pesos.
-      const hash = await sha256Hex(`${semente}|${dono.toBase58()}|${config.currentRound}`);
+      const hash = await sha256Hex(
+        `${semente}|${dono.toBase58()}|${config.currentRound}`,
+      );
       return (program.methods as Metodos)
         .submitContribution(
           hash,
@@ -231,28 +250,34 @@ export default function Devnet() {
     });
 
   const validar = (c: ContribuicaoConta, score: number) =>
-    enviar(`validar-${c.endereco.toBase58()}`, "validate_contribution", async (program, pid, dono) =>
-      (program.methods as Metodos)
-        .validateContribution(new BN(score))
-        .accountsPartial({
-          config: pdaConfig(pid),
-          participant: c.participant,
-          contribution: c.endereco,
-          authority: dono,
-        })
-        .rpc(),
+    enviar(
+      `validar-${c.endereco.toBase58()}`,
+      "validate_contribution",
+      async (program, pid, dono) =>
+        (program.methods as Metodos)
+          .validateContribution(new BN(score))
+          .accountsPartial({
+            config: pdaConfig(pid),
+            participant: c.participant,
+            contribution: c.endereco,
+            authority: dono,
+          })
+          .rpc(),
     );
 
   const penalizar = (p: ParticipanteConta) =>
-    enviar(`penalizar-${p.endereco.toBase58()}`, "penalize_participant", async (program, pid, dono) =>
-      (program.methods as Metodos)
-        .penalizeParticipant(1)
-        .accountsPartial({
-          config: pdaConfig(pid),
-          participant: p.endereco,
-          authority: dono,
-        })
-        .rpc(),
+    enviar(
+      `penalizar-${p.endereco.toBase58()}`,
+      "penalize_participant",
+      async (program, pid, dono) =>
+        (program.methods as Metodos)
+          .penalizeParticipant(1)
+          .accountsPartial({
+            config: pdaConfig(pid),
+            participant: p.endereco,
+            authority: dono,
+          })
+          .rpc(),
     );
 
   const avancarRodada = () =>
@@ -269,10 +294,12 @@ export default function Devnet() {
 
   const jaContribuiuNestaRodada = Boolean(
     config &&
-      meuParticipantePda &&
-      contribuicoes.some(
-        (c) => c.round === config.currentRound && c.participant.equals(meuParticipantePda),
-      ),
+    meuParticipantePda &&
+    contribuicoes.some(
+      (c) =>
+        c.round === config.currentRound &&
+        c.participant.equals(meuParticipantePda),
+    ),
   );
 
   const pendentes = config
@@ -286,21 +313,34 @@ export default function Devnet() {
       <>
         <Nav />
         <main className="mx-auto max-w-3xl px-5 py-16">
-          <h1 className="text-2xl font-semibold tracking-tight">Console da Devnet</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Console da Devnet
+          </h1>
           <div
-            className="mt-6 rounded-xl border p-6"
-            style={{ borderColor: "var(--aviso)", background: "var(--superficie)" }}
+            className="vidro mt-6 p-6"
+            style={{
+              borderColor: "var(--aviso)",
+            }}
           >
-            <h2 className="text-base font-semibold">Programa ainda não configurado</h2>
-            <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--tinta-2)" }}>
-              Esta página fala com um programa Anchor publicado na Devnet, e nenhum
-              Program ID foi informado. Depois do deploy, defina a variável de
-              ambiente <code>NEXT_PUBLIC_PROGRAM_ID</code> com o endereço do programa
-              e publique de novo.
+            <h2 className="text-base font-semibold">
+              Programa ainda não configurado
+            </h2>
+            <p
+              className="mt-2 text-sm leading-relaxed"
+              style={{ color: "var(--tinta-2)" }}
+            >
+              Esta página fala com um programa Anchor publicado na Devnet, e
+              nenhum Program ID foi informado. Depois do deploy, defina a
+              variável de ambiente <code>NEXT_PUBLIC_PROGRAM_ID</code> com o
+              endereço do programa e publique de novo.
             </p>
             <p className="mt-4 text-sm" style={{ color: "var(--tinta-2)" }}>
               Enquanto isso, a{" "}
-              <a href="/simulacao" className="underline" style={{ color: "var(--acento)" }}>
+              <a
+                href="/simulacao"
+                className="underline"
+                style={{ color: "var(--acento)" }}
+              >
                 simulação do ciclo
               </a>{" "}
               mostra as mesmas regras sem precisar de carteira.
@@ -318,10 +358,25 @@ export default function Devnet() {
       <main className="mx-auto max-w-6xl px-5 py-8">
         <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Console da Devnet</h1>
-            <p className="mt-1.5 max-w-2xl text-sm" style={{ color: "var(--tinta-2)" }}>
-              Aqui não há simulação: cada botão assina e envia uma transação real para
-              a Devnet da Solana, e cada número abaixo foi lido das contas do programa.
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Console da Devnet
+            </h1>
+            <p
+              className="mt-1.5 max-w-2xl text-sm"
+              style={{ color: "var(--tinta-2)" }}
+            >
+              Aqui não há simulação: cada botão assina e envia uma transação
+              real para a Devnet da Solana, e cada número abaixo foi lido das
+              contas do programa. Esta é a visão crua de todas as contas — para
+              operar como participante, use a{" "}
+              <Link
+                href="/painel"
+                className="underline"
+                style={{ color: "var(--acento)" }}
+              >
+                área do participante
+              </Link>
+              .
             </p>
             <p className="mt-2 text-xs" style={{ color: "var(--tinta-muda)" }}>
               programa{" "}
@@ -337,7 +392,10 @@ export default function Devnet() {
           </div>
           <div className="flex items-center gap-3">
             {saldoSol !== null && (
-              <span className="tabular text-sm" style={{ color: "var(--tinta-2)" }}>
+              <span
+                className="tabular text-sm"
+                style={{ color: "var(--tinta-2)" }}
+              >
                 {saldoSol.toFixed(3)} SOL
               </span>
             )}
@@ -347,8 +405,11 @@ export default function Devnet() {
 
         {erro && (
           <div
-            className="mb-6 rounded-xl border p-4 text-sm"
-            style={{ borderColor: "var(--critico)", background: "var(--superficie)" }}
+            className="vidro mb-6 p-4 text-sm"
+            style={{
+              borderColor: "var(--critico)",
+              background: "var(--critico-lavado)",
+            }}
           >
             <strong style={{ color: "var(--critico)" }}>Falhou:</strong>{" "}
             <span style={{ color: "var(--tinta-2)" }}>{erro}</span>
@@ -357,13 +418,18 @@ export default function Devnet() {
 
         {connected && semSaldo && (
           <div
-            className="mb-6 rounded-xl border p-4 text-sm"
-            style={{ borderColor: "var(--aviso)", background: "var(--superficie)" }}
+            className="vidro mb-6 p-4 text-sm"
+            style={{ borderColor: "var(--aviso)" }}
           >
             <span style={{ color: "var(--tinta-2)" }}>
               Sua carteira está sem SOL de Devnet — toda conta criada aqui paga
               aluguel. Peça no{" "}
-              <a href={FAUCET} target="_blank" rel="noopener noreferrer" className="underline">
+              <a
+                href={FAUCET}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
                 faucet oficial
               </a>{" "}
               e recarregue.
@@ -376,7 +442,9 @@ export default function Devnet() {
           <StatTile
             rotulo="Rodada corrente"
             valor={config ? config.currentRound : "—"}
-            nota={config ? "lida do Config on-chain" : "config não inicializado"}
+            nota={
+              config ? "lida do Config on-chain" : "config não inicializado"
+            }
           />
           <StatTile
             rotulo="Participantes"
@@ -397,23 +465,17 @@ export default function Devnet() {
         </div>
 
         {!connected && (
-          <div
-            className="mb-6 rounded-xl border p-5"
-            style={{ borderColor: "var(--borda)", background: "var(--superficie)" }}
-          >
+          <div className="vidro mb-6 p-5">
             <h2 className="text-base font-semibold">Conecte uma carteira</h2>
             <p className="mt-2 text-sm" style={{ color: "var(--tinta-2)" }}>
-              Phantom ou Solflare, com a rede em <strong>Devnet</strong>. Sem carteira
-              a página só lê o estado do programa.
+              Phantom ou Solflare, com a rede em <strong>Devnet</strong>. Sem
+              carteira a página só lê o estado do programa.
             </p>
           </div>
         )}
 
         {/* Config / autoridade */}
-        <section
-          className="mb-6 rounded-xl border p-5"
-          style={{ borderColor: "var(--borda)", background: "var(--superficie)" }}
-        >
+        <section className="vidro mb-6 p-5">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
             <h2 className="text-base font-semibold">Config do sistema</h2>
             {config ? (
@@ -443,14 +505,14 @@ export default function Devnet() {
           {!config ? (
             <>
               <p className="mt-2 text-sm" style={{ color: "var(--tinta-2)" }}>
-                O <code>Config</code> é criado uma única vez e quem assinar vira a
-                autoridade — o agregador que valida contribuições e pune maliciosos.
+                O <code>Config</code> é criado uma única vez e quem assinar vira
+                a autoridade — o agregador que valida contribuições e pune
+                maliciosos.
               </p>
               <button
                 onClick={inicializar}
                 disabled={!connected || ocupado !== null}
-                className="mt-4 rounded-lg px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
-                style={{ background: "var(--acento)" }}
+                className="btn-neon mt-4 px-4 py-2.5 text-sm disabled:opacity-50"
               >
                 {ocupado === "init" ? "Assinando…" : "Inicializar programa"}
               </button>
@@ -458,14 +520,13 @@ export default function Devnet() {
           ) : souAutoridade ? (
             <>
               <p className="mt-2 text-sm" style={{ color: "var(--tinta-2)" }}>
-                Você é o agregador desta instância. Avançar a rodada libera um novo
-                slot de contribuição para todos os participantes.
+                Você é o agregador desta instância. Avançar a rodada libera um
+                novo slot de contribuição para todos os participantes.
               </p>
               <button
                 onClick={avancarRodada}
                 disabled={ocupado !== null}
-                className="mt-4 rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50"
-                style={{ borderColor: "var(--borda)", color: "var(--tinta)" }}
+                className="btn-contorno mt-4 px-4 py-2.5 text-sm disabled:opacity-50"
               >
                 {ocupado === "rodada"
                   ? "Assinando…"
@@ -474,33 +535,31 @@ export default function Devnet() {
             </>
           ) : (
             <p className="mt-2 text-sm" style={{ color: "var(--tinta-2)" }}>
-              Validar e penalizar exige a chave da autoridade. Com esta carteira você
-              pode se registrar e contribuir.
+              Validar e penalizar exige a chave da autoridade. Com esta carteira
+              você pode se registrar e contribuir.
             </p>
           )}
         </section>
 
         {/* Meu participante */}
         {connected && config && (
-          <section
-            className="mb-6 rounded-xl border p-5"
-            style={{ borderColor: "var(--borda)", background: "var(--superficie)" }}
-          >
+          <section className="vidro mb-6 p-5">
             <h2 className="text-base font-semibold">Meu nó de treinamento</h2>
 
             {!meuParticipante ? (
               <>
                 <p className="mt-2 text-sm" style={{ color: "var(--tinta-2)" }}>
-                  Esta carteira ainda não tem conta de participante. O registro cria um
-                  PDA com reputação inicial 500.
+                  Esta carteira ainda não tem conta de participante. O registro
+                  cria um PDA com reputação inicial 500.
                 </p>
                 <button
                   onClick={registrar}
                   disabled={ocupado !== null}
-                  className="mt-4 rounded-lg px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
-                  style={{ background: "var(--acento)" }}
+                  className="btn-neon mt-4 px-4 py-2.5 text-sm disabled:opacity-50"
                 >
-                  {ocupado === "registrar" ? "Assinando…" : "Registrar participante"}
+                  {ocupado === "registrar"
+                    ? "Assinando…"
+                    : "Registrar participante"}
                 </button>
               </>
             ) : (
@@ -511,7 +570,9 @@ export default function Devnet() {
                     <span
                       className="tabular text-lg font-semibold"
                       style={{
-                        color: meuParticipante.isBanned ? "var(--critico)" : "var(--tinta)",
+                        color: meuParticipante.isBanned
+                          ? "var(--critico)"
+                          : "var(--tinta)",
                       }}
                     >
                       {meuParticipante.reputation}
@@ -519,7 +580,10 @@ export default function Devnet() {
                   </span>
                   <span style={{ color: "var(--tinta-2)" }}>
                     contribuições{" "}
-                    <span className="tabular font-semibold" style={{ color: "var(--tinta)" }}>
+                    <span
+                      className="tabular font-semibold"
+                      style={{ color: "var(--tinta)" }}
+                    >
                       {meuParticipante.contribCount}
                     </span>
                   </span>
@@ -535,15 +599,21 @@ export default function Devnet() {
                 </div>
 
                 {meuParticipante.isBanned ? (
-                  <p className="mt-4 text-sm" style={{ color: "var(--critico)" }}>
-                    Banido. O programa não expõe nenhuma instrução que reverta isto —
-                    nem para a autoridade.
+                  <p
+                    className="mt-4 text-sm"
+                    style={{ color: "var(--critico)" }}
+                  >
+                    Banido. O programa não expõe nenhuma instrução que reverta
+                    isto — nem para a autoridade.
                   </p>
                 ) : jaContribuiuNestaRodada ? (
-                  <p className="mt-4 text-sm" style={{ color: "var(--tinta-2)" }}>
+                  <p
+                    className="mt-4 text-sm"
+                    style={{ color: "var(--tinta-2)" }}
+                  >
                     Você já submeteu na rodada {config.currentRound}. O PDA da
-                    contribuição é único por rodada, então uma segunda tentativa falharia
-                    on-chain. Aguarde a autoridade avançar a rodada.
+                    contribuição é único por rodada, então uma segunda tentativa
+                    falharia on-chain. Aguarde a autoridade avançar a rodada.
                   </p>
                 ) : (
                   <div className="mt-5">
@@ -551,73 +621,72 @@ export default function Devnet() {
                       Submeter contribuição da rodada {config.currentRound}
                     </h3>
                     <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                      <label className="text-xs" style={{ color: "var(--tinta-2)" }}>
+                      <label
+                        className="text-xs"
+                        style={{ color: "var(--tinta-2)" }}
+                      >
                         Semente do hash
                         <input
                           value={semente}
                           onChange={(e) => setSemente(e.target.value)}
-                          className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-                          style={{
-                            borderColor: "var(--borda)",
-                            background: "var(--plano)",
-                            color: "var(--tinta)",
-                          }}
+                          className="campo mt-2"
                         />
                       </label>
-                      <label className="text-xs" style={{ color: "var(--tinta-2)" }}>
+                      <label
+                        className="text-xs"
+                        style={{ color: "var(--tinta-2)" }}
+                      >
                         Amostras (n_samples)
                         <input
                           value={nSamples}
-                          onChange={(e) => setNSamples(e.target.value.replace(/\D/g, ""))}
+                          onChange={(e) =>
+                            setNSamples(e.target.value.replace(/\D/g, ""))
+                          }
                           inputMode="numeric"
-                          className="tabular mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-                          style={{
-                            borderColor: "var(--borda)",
-                            background: "var(--plano)",
-                            color: "var(--tinta)",
-                          }}
+                          className="campo tabular mt-2"
                         />
                       </label>
-                      <label className="text-xs" style={{ color: "var(--tinta-2)" }}>
+                      <label
+                        className="text-xs"
+                        style={{ color: "var(--tinta-2)" }}
+                      >
                         Loss
                         <input
                           value={loss}
                           onChange={(e) => setLoss(e.target.value)}
                           inputMode="decimal"
-                          className="tabular mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-                          style={{
-                            borderColor: "var(--borda)",
-                            background: "var(--plano)",
-                            color: "var(--tinta)",
-                          }}
+                          className="campo tabular mt-2"
                         />
                       </label>
-                      <label className="text-xs" style={{ color: "var(--tinta-2)" }}>
+                      <label
+                        className="text-xs"
+                        style={{ color: "var(--tinta-2)" }}
+                      >
                         Acurácia
                         <input
                           value={accuracy}
                           onChange={(e) => setAccuracy(e.target.value)}
                           inputMode="decimal"
-                          className="tabular mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-                          style={{
-                            borderColor: "var(--borda)",
-                            background: "var(--plano)",
-                            color: "var(--tinta)",
-                          }}
+                          className="campo tabular mt-2"
                         />
                       </label>
                     </div>
                     <button
                       onClick={submeter}
                       disabled={ocupado !== null}
-                      className="mt-4 rounded-lg px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
-                      style={{ background: "var(--acento)" }}
+                      className="btn-neon mt-4 px-4 py-2.5 text-sm disabled:opacity-50"
                     >
-                      {ocupado === "submeter" ? "Assinando…" : "Submeter contribuição"}
+                      {ocupado === "submeter"
+                        ? "Assinando…"
+                        : "Submeter contribuição"}
                     </button>
-                    <p className="mt-2 text-xs" style={{ color: "var(--tinta-muda)" }}>
-                      O SHA-256 é calculado no browser: só o hash de 64 caracteres vai
-                      para a chain, junto das métricas auto-declaradas.
+                    <p
+                      className="mt-2 text-xs"
+                      style={{ color: "var(--tinta-muda)" }}
+                    >
+                      O SHA-256 é calculado no browser: só o hash de 64
+                      caracteres vai para a chain, junto das métricas
+                      auto-declaradas.
                     </p>
                   </div>
                 )}
@@ -630,7 +699,9 @@ export default function Devnet() {
           {/* Participantes */}
           <section className="lg:col-span-3">
             <div className="mb-2 flex items-baseline justify-between">
-              <h2 className="text-base font-semibold">Participantes on-chain</h2>
+              <h2 className="text-base font-semibold">
+                Participantes on-chain
+              </h2>
               <button
                 onClick={carregar}
                 disabled={carregando}
@@ -640,30 +711,42 @@ export default function Devnet() {
                 {carregando ? "lendo…" : "recarregar"}
               </button>
             </div>
-            <div
-              className="overflow-x-auto rounded-xl border"
-              style={{ borderColor: "var(--borda)", background: "var(--superficie)" }}
-            >
+            <div className="vidro overflow-x-auto ">
               <table className="w-full min-w-[480px] border-collapse text-sm">
                 <thead>
                   <tr style={{ color: "var(--tinta-2)" }}>
-                    <th scope="col" className="px-4 py-2.5 text-left font-medium">
+                    <th
+                      scope="col"
+                      className="px-4 py-2.5 text-left font-medium"
+                    >
                       Conta
                     </th>
-                    <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                    <th
+                      scope="col"
+                      className="px-4 py-2.5 text-right font-medium"
+                    >
                       Reputação
                     </th>
-                    <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                    <th
+                      scope="col"
+                      className="px-4 py-2.5 text-right font-medium"
+                    >
                       Contrib.
                     </th>
-                    <th scope="col" className="px-4 py-2.5 text-left font-medium">
+                    <th
+                      scope="col"
+                      className="px-4 py-2.5 text-left font-medium"
+                    >
                       Situação
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {participantes.length === 0 && (
-                    <tr className="border-t" style={{ borderColor: "var(--borda)" }}>
+                    <tr
+                      className="border-t"
+                      style={{ borderColor: "var(--borda)" }}
+                    >
                       <td
                         colSpan={4}
                         className="px-4 py-6 text-center"
@@ -677,11 +760,19 @@ export default function Devnet() {
                   )}
                   {participantes.map((p) => {
                     const meu = Boolean(
-                      meuParticipantePda && p.endereco.equals(meuParticipantePda),
+                      meuParticipantePda &&
+                      p.endereco.equals(meuParticipantePda),
                     );
                     return (
-                      <tr key={p.endereco.toBase58()} className="border-t" style={{ borderColor: "var(--borda)" }}>
-                        <th scope="row" className="px-4 py-2.5 text-left font-normal">
+                      <tr
+                        key={p.endereco.toBase58()}
+                        className="border-t"
+                        style={{ borderColor: "var(--borda)" }}
+                      >
+                        <th
+                          scope="row"
+                          className="px-4 py-2.5 text-left font-normal"
+                        >
                           <a
                             href={explorerConta(p.owner)}
                             target="_blank"
@@ -692,34 +783,51 @@ export default function Devnet() {
                             {encurta(p.owner)}
                           </a>
                           {meu && (
-                            <span className="ml-2 text-xs" style={{ color: "var(--acento)" }}>
+                            <span
+                              className="ml-2 text-xs"
+                              style={{ color: "var(--acento)" }}
+                            >
                               você
                             </span>
                           )}
                         </th>
                         <td
                           className="tabular px-4 py-2.5 text-right font-semibold"
-                          style={{ color: p.isBanned ? "var(--critico)" : "var(--tinta)" }}
+                          style={{
+                            color: p.isBanned
+                              ? "var(--critico)"
+                              : "var(--tinta)",
+                          }}
                         >
                           {p.reputation}
                         </td>
-                        <td className="tabular px-4 py-2.5 text-right" style={{ color: "var(--tinta-2)" }}>
+                        <td
+                          className="tabular px-4 py-2.5 text-right"
+                          style={{ color: "var(--tinta-2)" }}
+                        >
                           {p.contribCount}
                         </td>
                         <td className="px-4 py-2.5">
                           {p.isBanned ? (
-                            <span style={{ color: "var(--critico)" }}>⊘ banido</span>
+                            <span style={{ color: "var(--critico)" }}>
+                              ⊘ banido
+                            </span>
                           ) : souAutoridade ? (
                             <button
                               onClick={() => penalizar(p)}
                               disabled={ocupado !== null}
-                              className="rounded-md border px-2 py-1 text-xs font-medium disabled:opacity-50"
-                              style={{ borderColor: "var(--critico)", color: "var(--critico)" }}
+                              className="rounded border px-2 py-1 text-xs disabled:opacity-50"
+                              style={{
+                                borderColor: "var(--critico)",
+                                color: "var(--critico)",
+                              }}
                             >
                               Penalizar
                             </button>
                           ) : (
-                            <span style={{ color: "var(--tinta-2)" }}>ativo</span>
+                            <span style={{ color: "var(--tinta-2)" }}>
+                              ativo
+                            </span>
                           )}
                         </td>
                       </tr>
@@ -731,33 +839,48 @@ export default function Devnet() {
 
             {/* Contribuições */}
             <h2 className="mb-2 mt-6 text-base font-semibold">Contribuições</h2>
-            <div
-              className="overflow-x-auto rounded-xl border"
-              style={{ borderColor: "var(--borda)", background: "var(--superficie)" }}
-            >
+            <div className="vidro overflow-x-auto ">
               <table className="w-full min-w-[560px] border-collapse text-sm">
                 <thead>
                   <tr style={{ color: "var(--tinta-2)" }}>
-                    <th scope="col" className="px-4 py-2.5 text-left font-medium">
+                    <th
+                      scope="col"
+                      className="px-4 py-2.5 text-left font-medium"
+                    >
                       Rodada
                     </th>
-                    <th scope="col" className="px-4 py-2.5 text-left font-medium">
+                    <th
+                      scope="col"
+                      className="px-4 py-2.5 text-left font-medium"
+                    >
                       Participante
                     </th>
-                    <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                    <th
+                      scope="col"
+                      className="px-4 py-2.5 text-right font-medium"
+                    >
                       Amostras
                     </th>
-                    <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                    <th
+                      scope="col"
+                      className="px-4 py-2.5 text-right font-medium"
+                    >
                       Acurácia
                     </th>
-                    <th scope="col" className="px-4 py-2.5 text-left font-medium">
+                    <th
+                      scope="col"
+                      className="px-4 py-2.5 text-left font-medium"
+                    >
                       Status
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {contribuicoes.length === 0 && (
-                    <tr className="border-t" style={{ borderColor: "var(--borda)" }}>
+                    <tr
+                      className="border-t"
+                      style={{ borderColor: "var(--borda)" }}
+                    >
                       <td
                         colSpan={5}
                         className="px-4 py-6 text-center"
@@ -770,8 +893,15 @@ export default function Devnet() {
                   {contribuicoes.map((c) => {
                     const chave = c.endereco.toBase58();
                     return (
-                      <tr key={chave} className="border-t" style={{ borderColor: "var(--borda)" }}>
-                        <td className="tabular px-4 py-2.5" style={{ color: "var(--tinta-2)" }}>
+                      <tr
+                        key={chave}
+                        className="border-t"
+                        style={{ borderColor: "var(--borda)" }}
+                      >
+                        <td
+                          className="tabular px-4 py-2.5"
+                          style={{ color: "var(--tinta-2)" }}
+                        >
                           R{c.round}
                         </td>
                         <td className="px-4 py-2.5">
@@ -785,10 +915,16 @@ export default function Devnet() {
                             {encurta(c.participant)}
                           </a>
                         </td>
-                        <td className="tabular px-4 py-2.5 text-right" style={{ color: "var(--tinta-2)" }}>
+                        <td
+                          className="tabular px-4 py-2.5 text-right"
+                          style={{ color: "var(--tinta-2)" }}
+                        >
                           {c.nSamples}
                         </td>
-                        <td className="tabular px-4 py-2.5 text-right" style={{ color: "var(--tinta-2)" }}>
+                        <td
+                          className="tabular px-4 py-2.5 text-right"
+                          style={{ color: "var(--tinta-2)" }}
+                        >
                           {(c.accuracy * 100).toFixed(1)}%
                         </td>
                         <td className="px-4 py-2.5">
@@ -810,34 +946,34 @@ export default function Devnet() {
                                 onChange={(e) =>
                                   setScores((s) => ({
                                     ...s,
-                                    [chave]: e.target.value.replace(/\D/g, "").slice(0, 4),
+                                    [chave]: e.target.value
+                                      .replace(/\D/g, "")
+                                      .slice(0, 4),
                                   }))
                                 }
                                 placeholder="0–1000"
                                 inputMode="numeric"
-                                className="tabular w-20 rounded-md border px-2 py-1 text-xs"
-                                style={{
-                                  borderColor: "var(--borda)",
-                                  background: "var(--plano)",
-                                  color: "var(--tinta)",
-                                }}
+                                className="campo tabular w-20 px-2 py-1 text-xs"
                               />
                               <button
-                                onClick={() => validar(c, Number(scores[chave]))}
+                                onClick={() =>
+                                  validar(c, Number(scores[chave]))
+                                }
                                 disabled={
                                   ocupado !== null ||
                                   scores[chave] === undefined ||
                                   scores[chave] === "" ||
                                   Number(scores[chave]) > 1000
                                 }
-                                className="rounded-md px-2 py-1 text-xs font-medium text-white disabled:opacity-40"
-                                style={{ background: "var(--acento)" }}
+                                className="btn-neon px-2 py-1 text-xs disabled:opacity-40"
                               >
                                 Validar
                               </button>
                             </span>
                           ) : (
-                            <span style={{ color: "var(--aviso)" }}>• Pendente</span>
+                            <span style={{ color: "var(--aviso)" }}>
+                              • Pendente
+                            </span>
                           )}
                         </td>
                       </tr>
@@ -850,15 +986,17 @@ export default function Devnet() {
 
           {/* Transações desta sessão */}
           <section className="lg:col-span-2">
-            <h2 className="mb-2 text-base font-semibold">Transações desta sessão</h2>
-            <ol
-              className="max-h-[520px] overflow-y-auto rounded-xl border text-sm"
-              style={{ borderColor: "var(--borda)", background: "var(--superficie)" }}
-            >
+            <h2 className="mb-2 text-base font-semibold">
+              Transações desta sessão
+            </h2>
+            <ol className="vidro max-h-[520px] overflow-y-auto text-sm">
               {registros.length === 0 && (
-                <li className="px-4 py-6 text-center" style={{ color: "var(--tinta-muda)" }}>
-                  Nada enviado ainda. Cada ação aqui vira uma assinatura verificável no
-                  explorador.
+                <li
+                  className="px-4 py-6 text-center"
+                  style={{ color: "var(--tinta-muda)" }}
+                >
+                  Nada enviado ainda. Cada ação aqui vira uma assinatura
+                  verificável no explorador.
                 </li>
               )}
               {registros.map((r) => (
@@ -867,7 +1005,10 @@ export default function Devnet() {
                   className="border-b px-4 py-2.5 last:border-b-0"
                   style={{ borderColor: "var(--borda)" }}
                 >
-                  <code className="text-xs font-medium" style={{ color: "var(--tinta)" }}>
+                  <code
+                    className="text-xs font-medium"
+                    style={{ color: "var(--tinta)" }}
+                  >
                     {r.rotulo}()
                   </code>
                   <a
@@ -886,9 +1027,9 @@ export default function Devnet() {
         </div>
 
         <p className="mt-8 text-xs" style={{ color: "var(--tinta-muda)" }}>
-          Devnet da Solana. O SOL usado aqui não tem valor e as contas são públicas —
-          qualquer pessoa audita este estado sem pedir acesso, que é exatamente o ponto
-          do projeto.
+          Devnet da Solana. O SOL usado aqui não tem valor e as contas são
+          públicas — qualquer pessoa audita este estado sem pedir acesso, que é
+          exatamente o ponto do projeto.
         </p>
       </main>
       <Footer />

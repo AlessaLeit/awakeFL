@@ -3,33 +3,47 @@ export default function StatTile({
   valor,
   nota,
   tom = "neutro",
+  icone,
 }: {
   rotulo: string;
   valor: string | number;
   nota?: string;
-  tom?: "neutro" | "critico" | "bom";
+  tom?: "neutro" | "critico" | "bom" | "neon";
+  /** Glifo curto à direita do rótulo, como nos painéis das telas do participante. */
+  icone?: string;
 }) {
   const corValor =
     tom === "critico"
       ? "var(--critico)"
       : tom === "bom"
         ? "var(--texto-bom)"
-        : "var(--tinta)";
+        : tom === "neon"
+          ? "var(--acento)"
+          : "var(--tinta)";
 
   return (
-    <div
-      className="rounded-xl border p-4"
-      style={{ borderColor: "var(--borda)", background: "var(--superficie)" }}
-    >
-      <div className="text-xs" style={{ color: "var(--tinta-2)" }}>
-        {rotulo}
+    <div className="vidro p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="rotulo">{rotulo}</div>
+        {icone && (
+          <span
+            aria-hidden
+            className="text-sm"
+            style={{ color: "var(--acento)" }}
+          >
+            {icone}
+          </span>
+        )}
       </div>
       {/* Figuras proporcionais: tabular-nums deixa números grandes frouxos */}
-      <div className="mt-1.5 text-3xl font-semibold leading-none" style={{ color: corValor }}>
+      <div
+        className={`mt-2 text-3xl font-semibold leading-none ${tom === "neon" ? "neon" : ""}`}
+        style={tom === "neon" ? undefined : { color: corValor }}
+      >
         {valor}
       </div>
       {nota && (
-        <div className="mt-1.5 text-xs" style={{ color: "var(--tinta-muda)" }}>
+        <div className="mt-2 text-xs" style={{ color: "var(--tinta-muda)" }}>
           {nota}
         </div>
       )}

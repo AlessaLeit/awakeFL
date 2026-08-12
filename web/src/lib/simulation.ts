@@ -1,5 +1,5 @@
 /**
- * Simulação determinística do ciclo de reputação do fl-reputation.
+ * Simulação determinística do ciclo de reputação do AwakeFL.
  *
  * Reproduz fielmente as regras do programa Anchor:
  *   - reputação inicial 500, escala 0..1000
@@ -67,11 +67,7 @@ export const INSTITUICOES: Instituicao[] = [
 ];
 
 export type StatusContribuicao =
-  | "Aprovado"
-  | "Rejeitado"
-  | "Pendente"
-  | "Banido"
-  | "Ausente";
+  "Aprovado" | "Rejeitado" | "Pendente" | "Banido" | "Ausente";
 
 export interface EstadoInstituicao {
   id: string;
@@ -83,10 +79,7 @@ export interface EstadoInstituicao {
 }
 
 export type TipoEvento =
-  | "registro"
-  | "contribuicao"
-  | "validacao"
-  | "penalidade";
+  "registro" | "contribuicao" | "validacao" | "penalidade";
 
 export interface Evento {
   rodada: number;
@@ -234,5 +227,7 @@ export function instituicaoPorId(id: string): Instituicao {
 
 /** Pico histórico de reputação — usado para mostrar o quanto o sleepy perdeu. */
 export function picoDe(id: string): number {
-  return Math.max(...RODADAS.map((r) => r.estados.find((e) => e.id === id)!.reputacao));
+  return Math.max(
+    ...RODADAS.map((r) => r.estados.find((e) => e.id === id)!.reputacao),
+  );
 }

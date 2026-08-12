@@ -2,8 +2,8 @@ import type { StatusContribuicao } from "@/lib/simulation";
 
 /**
  * Cor de status NUNCA carrega significado sozinha: cada badge traz
- * ícone + rótulo, porque na superfície clara o amarelo e o laranja
- * ficam abaixo de 3:1 de contraste.
+ * ícone + rótulo. No grafite, o amarelo e o laranja ficam abaixo de 3:1
+ * de contraste, então a forma precisa distinguir tanto quanto a cor.
  */
 const MAPA: Record<StatusContribuicao, { icone: string; cor: string }> = {
   Aprovado: { icone: "✓", cor: "var(--bom)" },
@@ -13,12 +13,19 @@ const MAPA: Record<StatusContribuicao, { icone: string; cor: string }> = {
   Ausente: { icone: "–", cor: "var(--tinta-muda)" },
 };
 
-export default function StatusBadge({ status }: { status: StatusContribuicao }) {
+export default function StatusBadge({
+  status,
+}: {
+  status: StatusContribuicao;
+}) {
   const { icone, cor } = MAPA[status];
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium"
-      style={{ borderColor: "var(--borda)", color: "var(--tinta-2)" }}
+      className="chip"
+      style={{
+        borderColor: `color-mix(in srgb, ${cor} 40%, transparent)`,
+        background: `color-mix(in srgb, ${cor} 8%, transparent)`,
+      }}
     >
       <span aria-hidden style={{ color: cor }}>
         {icone}

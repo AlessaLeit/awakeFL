@@ -1,11 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import {
-  INSTITUICOES,
-  RODADA_DA_PENALIDADE,
-  serieDe,
-} from "@/lib/simulation";
+import { INSTITUICOES, RODADA_DA_PENALIDADE, serieDe } from "@/lib/simulation";
 
 const W = 760;
 const H = 320;
@@ -62,7 +58,10 @@ export default function ReputationChart({ rodada }: { rodada: number }) {
     e.preventDefault();
     setFoco((f) => {
       const atual = f ?? n - 1;
-      return Math.min(n - 1, Math.max(0, atual + (e.key === "ArrowRight" ? 1 : -1)));
+      return Math.min(
+        n - 1,
+        Math.max(0, atual + (e.key === "ArrowRight" ? 1 : -1)),
+      );
     });
   };
 
@@ -77,17 +76,20 @@ export default function ReputationChart({ rodada }: { rodada: number }) {
     <figure className="m-0">
       <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
         <figcaption>
-          <h3 className="text-base font-semibold" style={{ color: "var(--tinta)" }}>
+          <h3
+            className="text-base font-semibold"
+            style={{ color: "var(--tinta)" }}
+          >
             Reputação por rodada de treinamento
           </h3>
           <p className="mt-0.5 text-sm" style={{ color: "var(--tinta-2)" }}>
-            Instituto Delta em destaque; as demais instituições ao fundo, como contexto.
+            Instituto Delta em destaque; as demais instituições ao fundo, como
+            contexto.
           </p>
         </figcaption>
         <button
           onClick={() => setVerTabela((v) => !v)}
-          className="rounded-lg border px-2.5 py-1.5 text-xs font-medium"
-          style={{ borderColor: "var(--borda)", color: "var(--tinta-2)" }}
+          className="btn-fantasma px-2.5 py-1.5 text-xs"
           aria-expanded={verTabela}
         >
           {verTabela ? "Ver gráfico" : "Ver tabela"}
@@ -95,13 +97,18 @@ export default function ReputationChart({ rodada }: { rodada: number }) {
       </div>
 
       {/* Legenda sempre presente: identidade nunca depende só da cor */}
-      <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1.5 text-xs" style={{ color: "var(--tinta-2)" }}>
+      <ul
+        className="mb-2 flex flex-wrap gap-x-4 gap-y-1.5 text-xs"
+        style={{ color: "var(--tinta-2)" }}
+      >
         {series.map(({ inst, destaque }) => (
           <li key={inst.id} className="flex items-center gap-1.5">
             <span
               aria-hidden
               className="inline-block h-0.5 w-4 rounded-full"
-              style={{ background: destaque ? "var(--acento)" : "var(--recuo)" }}
+              style={{
+                background: destaque ? "var(--acento)" : "var(--recuo)",
+              }}
             />
             <span style={{ color: destaque ? "var(--tinta)" : undefined }}>
               {inst.nome}
@@ -152,7 +159,12 @@ export default function ReputationChart({ rodada }: { rodada: number }) {
             ))}
 
             {/* Linha de partida: todo participante entra com 500 */}
-            <text x={PAD.left + 4} y={y(500) - 6} fontSize={10} fill="var(--tinta-muda)">
+            <text
+              x={PAD.left + 4}
+              y={y(500) - 6}
+              fontSize={10}
+              fill="var(--tinta-muda)"
+            >
               inicial 500
             </text>
 
@@ -286,15 +298,16 @@ export default function ReputationChart({ rodada }: { rodada: number }) {
 
           {foco !== null && (
             <div
-              className="pointer-events-none absolute top-2 z-10 w-52 rounded-lg border p-2.5 text-xs shadow-lg"
+              className="vidro-alto pointer-events-none absolute top-2 z-10 w-52 p-2.5 text-xs"
               style={{
-                borderColor: "var(--borda)",
-                background: "var(--superficie)",
                 left: `calc(${(x(foco) / W) * 100}% + ${foco > n / 2 ? "-14rem" : "0.75rem"})`,
               }}
               role="status"
             >
-              <div className="mb-1.5 font-semibold" style={{ color: "var(--tinta)" }}>
+              <div
+                className="mb-1.5 font-semibold"
+                style={{ color: "var(--tinta)" }}
+              >
                 {rotulos[foco]}
               </div>
               <dl className="space-y-1">
@@ -306,9 +319,16 @@ export default function ReputationChart({ rodada }: { rodada: number }) {
                       <span
                         aria-hidden
                         className="inline-block h-0.5 w-3 shrink-0 rounded-full"
-                        style={{ background: destaque ? "var(--acento)" : "var(--recuo)" }}
+                        style={{
+                          background: destaque
+                            ? "var(--acento)"
+                            : "var(--recuo)",
+                        }}
                       />
-                      <dt className="truncate" style={{ color: "var(--tinta-2)" }}>
+                      <dt
+                        className="truncate"
+                        style={{ color: "var(--tinta-2)" }}
+                      >
                         {inst.sigla}
                       </dt>
                       <dd
@@ -343,7 +363,11 @@ function TabelaSerie({
         </caption>
         <thead>
           <tr style={{ color: "var(--tinta-2)" }}>
-            <th scope="col" className="border-b py-2 pr-3 text-left font-medium" style={{ borderColor: "var(--borda)" }}>
+            <th
+              scope="col"
+              className="border-b py-2 pr-3 text-left font-medium"
+              style={{ borderColor: "var(--borda)" }}
+            >
               Instituição
             </th>
             {rotulos.map((r) => (
@@ -372,7 +396,10 @@ function TabelaSerie({
                 <td
                   key={i}
                   className="tabular border-b py-2 px-2 text-right"
-                  style={{ borderColor: "var(--borda)", color: "var(--tinta-2)" }}
+                  style={{
+                    borderColor: "var(--borda)",
+                    color: "var(--tinta-2)",
+                  }}
                 >
                   {v}
                 </td>

@@ -69,38 +69,42 @@ export default function Dashboard() {
       <Nav />
       <main className="mx-auto max-w-6xl px-5 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">Demo do ciclo de reputação</h1>
-          <p className="mt-1.5 max-w-2xl text-sm" style={{ color: "var(--tinta-2)" }}>
-            Cinco instituições treinando um modelo em conjunto. Avance as rodadas e
-            observe o Instituto Delta construir reputação por oito rodadas antes de
-            envenenar o modelo — e o que acontece quando é detectado.
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Demo do ciclo de reputação
+          </h1>
+          <p
+            className="mt-1.5 max-w-2xl text-sm"
+            style={{ color: "var(--tinta-2)" }}
+          >
+            Cinco instituições treinando um modelo em conjunto. Avance as
+            rodadas e observe o Instituto Delta construir reputação por oito
+            rodadas antes de envenenar o modelo — e o que acontece quando é
+            detectado.
           </p>
         </div>
 
         {/* Uma única barra de filtro acima de tudo que ela controla */}
-        <div
-          className="mb-6 flex flex-wrap items-center gap-4 rounded-xl border p-4"
-          style={{ borderColor: "var(--borda)", background: "var(--superficie)" }}
-        >
+        <div className="vidro mb-6 flex flex-wrap items-center gap-4 p-4">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setTocando((t) => !t)}
-              className="rounded-lg px-3.5 py-2 text-sm font-medium text-white"
-              style={{ background: "var(--acento)" }}
+              className="btn-neon px-3.5 py-2 text-sm"
             >
               {tocando ? "Pausar" : "Reproduzir"}
             </button>
             <button
               onClick={reiniciar}
-              className="rounded-lg border px-3 py-2 text-sm font-medium"
-              style={{ borderColor: "var(--borda)", color: "var(--tinta-2)" }}
+              className="btn-fantasma px-3 py-2 text-sm"
             >
               Reiniciar
             </button>
           </div>
 
           <label className="flex min-w-[240px] flex-1 items-center gap-3 text-sm">
-            <span className="whitespace-nowrap" style={{ color: "var(--tinta-2)" }}>
+            <span
+              className="whitespace-nowrap"
+              style={{ color: "var(--tinta-2)" }}
+            >
               Rodada
             </span>
             <input
@@ -150,18 +154,24 @@ export default function Dashboard() {
 
         {/* Narrativa do sleepy adversary, ligada ao estado atual */}
         <div
-          className="mb-6 rounded-xl border p-4"
+          className="vidro mb-6 p-4"
           style={{
             borderColor: delta.banido ? "var(--critico)" : "var(--borda)",
-            background: "var(--superficie)",
+            background: delta.banido ? "var(--critico-lavado)" : undefined,
           }}
         >
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <span className="text-sm font-semibold">Instituto Delta</span>
             <StatusBadge status={delta.status} />
-            <span className="ml-auto text-sm" style={{ color: "var(--tinta-2)" }}>
+            <span
+              className="ml-auto text-sm"
+              style={{ color: "var(--tinta-2)" }}
+            >
               reputação{" "}
-              <span className="tabular font-semibold" style={{ color: "var(--tinta)" }}>
+              <span
+                className="tabular font-semibold"
+                style={{ color: "var(--tinta)" }}
+              >
                 {delta.reputacao}
               </span>
               {delta.banido && (
@@ -183,33 +193,39 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <section
-          className="mb-6 rounded-xl border p-4"
-          style={{ borderColor: "var(--borda)", background: "var(--superficie)" }}
-        >
+        <section className="vidro mb-6 p-4">
           <ReputationChart rodada={rodada} />
         </section>
 
         <div className="grid gap-6 lg:grid-cols-5">
           <section className="lg:col-span-3">
             <h2 className="mb-2 text-base font-semibold">Participantes</h2>
-            <div
-              className="overflow-x-auto rounded-xl border"
-              style={{ borderColor: "var(--borda)", background: "var(--superficie)" }}
-            >
+            <div className="vidro overflow-x-auto ">
               <table className="w-full min-w-[460px] border-collapse text-sm">
                 <thead>
                   <tr style={{ color: "var(--tinta-2)" }}>
-                    <th scope="col" className="px-4 py-2.5 text-left font-medium">
+                    <th
+                      scope="col"
+                      className="px-4 py-2.5 text-left font-medium"
+                    >
                       Instituição
                     </th>
-                    <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                    <th
+                      scope="col"
+                      className="px-4 py-2.5 text-right font-medium"
+                    >
                       Reputação
                     </th>
-                    <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                    <th
+                      scope="col"
+                      className="px-4 py-2.5 text-right font-medium"
+                    >
                       Contrib.
                     </th>
-                    <th scope="col" className="px-4 py-2.5 text-left font-medium">
+                    <th
+                      scope="col"
+                      className="px-4 py-2.5 text-left font-medium"
+                    >
                       Status
                     </th>
                   </tr>
@@ -221,18 +237,34 @@ export default function Dashboard() {
                     .map((e) => {
                       const inst = instituicaoPorId(e.id);
                       return (
-                        <tr key={e.id} className="border-t" style={{ borderColor: "var(--borda)" }}>
-                          <th scope="row" className="px-4 py-2.5 text-left font-normal">
-                            <span style={{ color: "var(--tinta)" }}>{inst.nome}</span>
+                        <tr
+                          key={e.id}
+                          className="border-t"
+                          style={{ borderColor: "var(--borda)" }}
+                        >
+                          <th
+                            scope="row"
+                            className="px-4 py-2.5 text-left font-normal"
+                          >
+                            <span style={{ color: "var(--tinta)" }}>
+                              {inst.nome}
+                            </span>
                             {inst.perfil === "sleepy" && (
-                              <span className="ml-2 text-xs" style={{ color: "var(--tinta-muda)" }}>
+                              <span
+                                className="ml-2 text-xs"
+                                style={{ color: "var(--tinta-muda)" }}
+                              >
                                 sleepy adversary
                               </span>
                             )}
                           </th>
                           <td
                             className="tabular px-4 py-2.5 text-right font-semibold"
-                            style={{ color: e.banido ? "var(--critico)" : "var(--tinta)" }}
+                            style={{
+                              color: e.banido
+                                ? "var(--critico)"
+                                : "var(--tinta)",
+                            }}
                           >
                             {e.reputacao}
                           </td>
@@ -254,11 +286,10 @@ export default function Dashboard() {
           </section>
 
           <section className="lg:col-span-2">
-            <h2 className="mb-2 text-base font-semibold">Trilha de auditoria</h2>
-            <ol
-              className="max-h-[420px] overflow-y-auto rounded-xl border text-sm"
-              style={{ borderColor: "var(--borda)", background: "var(--superficie)" }}
-            >
+            <h2 className="mb-2 text-base font-semibold">
+              Trilha de auditoria
+            </h2>
+            <ol className="vidro max-h-[420px] overflow-y-auto text-sm">
               {eventos.map((ev, i) => (
                 <li
                   key={`${ev.assinatura}-${i}`}
@@ -276,7 +307,9 @@ export default function Dashboard() {
                       className="text-xs font-medium uppercase tracking-wide"
                       style={{
                         color:
-                          ev.tipo === "penalidade" ? "var(--critico)" : "var(--tinta-muda)",
+                          ev.tipo === "penalidade"
+                            ? "var(--critico)"
+                            : "var(--tinta-muda)",
                       }}
                     >
                       {ev.tipo}
@@ -298,9 +331,9 @@ export default function Dashboard() {
         </div>
 
         <p className="mt-8 text-xs" style={{ color: "var(--tinta-muda)" }}>
-          Simulação determinística das regras do programa Anchor (EMA de fator 0,5 e
-          penalidade de divisão por 10). Não há conexão com a Devnet nesta página, e as
-          assinaturas exibidas são decorativas.
+          Simulação determinística das regras do programa Anchor (EMA de fator
+          0,5 e penalidade de divisão por 10). Não há conexão com a Devnet nesta
+          página, e as assinaturas exibidas são decorativas.
         </p>
       </main>
       <Footer />
