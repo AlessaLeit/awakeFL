@@ -1,10 +1,10 @@
 // ============================================================================
 // VERSAO SOLANA PLAYGROUND — cole em `tests/anchor.test.ts`
 //
-// Diferencas em relacao a tests/fl-reputation.ts (versao Anchor local):
+// Diferencas em relacao a tests/awakefl.ts (versao Anchor local):
 //
 //  1. `pg.program` / `pg.wallet` / `pg.connection` no lugar de
-//     `anchor.workspace.FlReputation` e do provider.
+//     `anchor.workspace.Awakefl` e do provider.
 //  2. `anchor`, `web3`, `BN` e `assert` sao GLOBAIS no Playground — nao ha
 //     imports neste arquivo, e adicionar imports quebra a execucao.
 //  3. Nada de `require("crypto")`: o Playground roda no browser. O hash e
@@ -17,7 +17,7 @@
 //     como zero. Sem isso, a segunda execucao falha inteira.
 // ============================================================================
 
-describe("fl-reputation", () => {
+describe("awakefl", () => {
   const program = pg.program;
   const authority = pg.wallet;
 

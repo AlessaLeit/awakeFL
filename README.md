@@ -1,10 +1,13 @@
-# fl-reputation
+# AwakeFL
 
 Camada de reputação on-chain para **Federated Learning**, em Anchor/Solana.
 
 Registra cada contribuição de forma imutável, mede reputação continuamente e
 pune participantes maliciosos — em especial o *sleepy adversary*, que acumula
 reputação com rodadas honestas antes de envenenar o modelo.
+
+O site fica em [`web/`](web/README.md): landing, demo determinística e a **área
+do participante** (`/painel`), que fala com o programa na Devnet.
 
 ## Modelo
 
@@ -72,12 +75,12 @@ anchor deploy --provider.cluster devnet
 
 O Playground usa uma estrutura mais enxuta. Copie:
 
-- `programs/fl-reputation/src/lib.rs` → `src/lib.rs`
-- `tests/fl-reputation.ts` → `tests/anchor.test.ts`
+- `programs/awakefl/src/lib.rs` → `src/lib.rs`
+- `tests/awakefl.ts` → `tests/anchor.test.ts`
 
 No Playground o `declare_id!` é sincronizado automaticamente no build, e o
 cluster é escolhido na UI (canto inferior esquerdo) — não há `Anchor.toml`.
-Nos testes, troque `anchor.workspace.FlReputation` por `pg.program`.
+Nos testes, troque `anchor.workspace.Awakefl` por `pg.program`.
 
 ## Ciclo da demo
 

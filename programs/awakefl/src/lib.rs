@@ -9,7 +9,7 @@ pub use state::*;
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
 #[program]
-pub mod fl_reputation {
+pub mod awakefl {
     use super::*;
 
     /// Cria o Config global do sistema. Chamado uma única vez.

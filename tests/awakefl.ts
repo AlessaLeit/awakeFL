@@ -1,15 +1,15 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program, BN } from "@coral-xyz/anchor";
-import { FlReputation } from "../target/types/fl_reputation";
+import { Awakefl } from "../target/types/awakefl";
 import { assert } from "chai";
 import { Keypair, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { createHash } from "crypto";
 
-describe("fl-reputation", () => {
+describe("awakefl", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
-  const program = anchor.workspace.FlReputation as Program<FlReputation>;
+  const program = anchor.workspace.Awakefl as Program<Awakefl>;
   const authority = provider.wallet as anchor.Wallet;
 
   // honesto = contribui bem sempre; sleepy = constroi reputacao e depois envenena
@@ -18,13 +18,13 @@ describe("fl-reputation", () => {
 
   const [configPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("config")],
-    program.programId
+    program.programId,
   );
 
   const participantPda = (owner: PublicKey) =>
     PublicKey.findProgramAddressSync(
       [Buffer.from("participant"), owner.toBuffer()],
-      program.programId
+      program.programId,
     )[0];
 
   const contributionPda = (participant: PublicKey, round: number) =>
@@ -34,7 +34,7 @@ describe("fl-reputation", () => {
         participant.toBuffer(),
         new BN(round).toArrayLike(Buffer, "le", 8),
       ],
-      program.programId
+      program.programId,
     )[0];
 
   // SHA-256 em hex: 64 chars, exatamente o MAX_HASH_LEN do programa
@@ -43,7 +43,7 @@ describe("fl-reputation", () => {
   const fund = async (kp: Keypair) => {
     const sig = await provider.connection.requestAirdrop(
       kp.publicKey,
-      2 * LAMPORTS_PER_SOL
+      2 * LAMPORTS_PER_SOL,
     );
     const bh = await provider.connection.getLatestBlockhash();
     await provider.connection.confirmTransaction({ signature: sig, ...bh });
@@ -77,10 +77,17 @@ describe("fl-reputation", () => {
   };
 
   const reputationOf = async (owner: PublicKey) =>
-    (await program.account.participant.fetch(participantPda(owner))).reputation.toNumber();
+    (
+      await program.account.participant.fetch(participantPda(owner))
+    ).reputation.toNumber();
 
   // Rodada completa: submeter -> validar -> devolver a reputacao resultante
-  const round = async (who: Keypair, roundNo: number, score: number, tag: string) => {
+  const round = async (
+    who: Keypair,
+    roundNo: number,
+    score: number,
+    tag: string,
+  ) => {
     await submit(who, roundNo, tag);
     await validate(who.publicKey, roundNo, score);
     return reputationOf(who.publicKey);
@@ -121,7 +128,9 @@ describe("fl-reputation", () => {
         .rpc();
     }
 
-    const p = await program.account.participant.fetch(participantPda(honest.publicKey));
+    const p = await program.account.participant.fetch(
+      participantPda(honest.publicKey),
+    );
     assert.equal(p.reputation.toNumber(), 500);
     assert.isFalse(p.isBanned);
     assert.equal(p.contribCount.toNumber(), 0);
@@ -135,7 +144,7 @@ describe("fl-reputation", () => {
     await submit(honest, 0, "honest-r0");
 
     const c = await program.account.contribution.fetch(
-      contributionPda(participantPda(honest.publicKey), 0)
+      contributionPda(participantPda(honest.publicKey), 0),
     );
     assert.equal(c.updateHash, hashOf("honest-r0"));
     assert.equal(c.updateHash.length, 64);
@@ -149,7 +158,7 @@ describe("fl-reputation", () => {
     assert.equal(await reputationOf(honest.publicKey), 700);
 
     const c = await program.account.contribution.fetch(
-      contributionPda(participantPda(honest.publicKey), 0)
+      contributionPda(participantPda(honest.publicKey), 0),
     );
     assert.deepEqual(c.status, { aprovado: {} });
   });
@@ -159,7 +168,7 @@ describe("fl-reputation", () => {
     assert.equal(await round(honest, 1, 200, "honest-r1"), 450); // (700 + 200) / 2
 
     const c = await program.account.contribution.fetch(
-      contributionPda(participantPda(honest.publicKey), 1)
+      contributionPda(participantPda(honest.publicKey), 1),
     );
     assert.deepEqual(c.status, { rejeitado: {} });
   });
@@ -250,7 +259,9 @@ describe("fl-reputation", () => {
       })
       .rpc();
 
-    const acc = await program.account.participant.fetch(participantPda(sleepy.publicKey));
+    const acc = await program.account.participant.fetch(
+      participantPda(sleepy.publicKey),
+    );
     assert.equal(acc.reputation.toNumber(), 87); // 875 / 10, divisao inteira
     assert.isTrue(acc.isBanned);
   });

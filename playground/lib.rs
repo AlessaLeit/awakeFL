@@ -9,7 +9,7 @@
 // sozinho no primeiro build. Se ele reclamar do ID, use "Build" e deixe-o
 // reescrever a linha.
 //
-// A fonte da verdade continua sendo programs/fl-reputation/src/{lib,state}.rs.
+// A fonte da verdade continua sendo programs/awakefl/src/{lib,state}.rs.
 // Ao mudar algo la, regenere este arquivo.
 // ============================================================================
 
@@ -35,7 +35,7 @@ pub const MAX_HASH_LEN: usize = 64;
 // ---------------------------------------------------------------------------
 
 #[program]
-pub mod fl_reputation {
+pub mod awakefl {
     use super::*;
 
     /// Cria o Config global do sistema. Chamado uma unica vez.
