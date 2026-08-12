@@ -1,6 +1,12 @@
-import { AnchorProvider, BN, Program, type Idl, type Wallet } from "@coral-xyz/anchor";
+import {
+  AnchorProvider,
+  BN,
+  Program,
+  type Idl,
+  type Wallet,
+} from "@coral-xyz/anchor";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
-import rawIdl from "@/lib/idl/fl_reputation.json";
+import rawIdl from "@/lib/idl/awakefl.json";
 
 /**
  * O Program ID vem do deploy na Devnet, não do repo: o `declare_id!` versionado
@@ -36,10 +42,16 @@ export const SYSTEM_PROGRAM_ID = SystemProgram.programId;
 // ---------------------------------------------------------------------------
 
 export function pdaConfig(programId: PublicKey): PublicKey {
-  return PublicKey.findProgramAddressSync([Buffer.from("config")], programId)[0];
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("config")],
+    programId,
+  )[0];
 }
 
-export function pdaParticipant(programId: PublicKey, owner: PublicKey): PublicKey {
+export function pdaParticipant(
+  programId: PublicKey,
+  owner: PublicKey,
+): PublicKey {
   return PublicKey.findProgramAddressSync(
     [Buffer.from("participant"), owner.toBuffer()],
     programId,
@@ -73,7 +85,10 @@ function idlFor(programId: PublicKey): Idl {
 export type FlProgram = Program<Idl>;
 
 /** Program somente-leitura: serve para quem abre a página sem carteira. */
-export function readProgram(connection: Connection, programId: PublicKey): FlProgram {
+export function readProgram(
+  connection: Connection,
+  programId: PublicKey,
+): FlProgram {
   // O AnchorProvider exige uma wallet, mas nenhum caminho de leitura a usa.
   const provider = new AnchorProvider(connection, {} as Wallet, {
     commitment: "confirmed",
@@ -143,7 +158,10 @@ export function normalizaConfig(raw: any): ConfigConta {
   };
 }
 
-export function normalizaParticipante(endereco: PublicKey, raw: any): ParticipanteConta {
+export function normalizaParticipante(
+  endereco: PublicKey,
+  raw: any,
+): ParticipanteConta {
   return {
     endereco,
     owner: raw.owner as PublicKey,
@@ -186,12 +204,30 @@ export const encurta = (valor: PublicKey | string, n = 4) => {
   return `${s.slice(0, n)}…${s.slice(-n)}`;
 };
 
-/** SHA-256 em hexadecimal — o mesmo formato de 64 chars que o programa espera. */
-export async function sha256Hex(texto: string): Promise<string> {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(texto));
+function paraHex(buf: ArrayBuffer): string {
   return Array.from(new Uint8Array(buf))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
+}
+
+/** SHA-256 em hexadecimal — o mesmo formato de 64 chars que o programa espera. */
+export async function sha256Hex(texto: string): Promise<string> {
+  return paraHex(
+    await crypto.subtle.digest("SHA-256", new TextEncoder().encode(texto)),
+  );
+}
+
+/**
+ * SHA-256 do conteúdo bruto de um arquivo — os pesos do modelo local.
+ *
+ * O arquivo é lido e digerido inteiramente no browser: nada é enviado a lugar
+ * nenhum, e o que vai para a chain são os 64 caracteres do digest. É essa
+ * assimetria que preserva a premissa do Federated Learning.
+ */
+export async function sha256DeArquivo(arquivo: File): Promise<string> {
+  return paraHex(
+    await crypto.subtle.digest("SHA-256", await arquivo.arrayBuffer()),
+  );
 }
 
 /**

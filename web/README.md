@@ -1,13 +1,14 @@
-# fl-reputation — site
+# AwakeFL — site
 
-Landing + duas demos do ciclo de reputação, em Next.js 16 (App Router),
-React 19 e Tailwind v4.
+Landing, demo do ciclo de reputação e a **área do participante**, em Next.js 16
+(App Router), React 19 e Tailwind v4, sobre o design system **Neon Graphite**.
 
 | Rota | O que é |
 |---|---|
 | `/` | Landing: o problema do sleepy adversary e o mecanismo |
 | `/simulacao` | Simulação determinística das regras, **sem** blockchain |
-| `/devnet` | Console **on-chain**: carteira, transações reais na Devnet |
+| `/devnet` | Console **on-chain** cru: todas as contas do programa, transações reais |
+| `/painel` | **Área do participante**: visão geral, contribuição, extrato, regras, validador |
 
 ## Rodar local
 
@@ -49,26 +50,87 @@ busca o estado da chain no browser, depois da hidratação.
 ```
 web/src/
 ├── app/
-│   ├── layout.tsx           metadata, tema antes da 1ª pintura
-│   ├── globals.css          tokens de cor (claro/escuro)
+│   ├── layout.tsx           metadata + fontes (Geist, JetBrains Mono)
+│   ├── globals.css          ★ tokens e primitivos do Neon Graphite
 │   ├── page.tsx             landing
 │   ├── simulacao/           demo determinística (sem chain)
-│   └── devnet/
-│       ├── layout.tsx       metadata + providers de carteira
-│       └── page.tsx         console on-chain
+│   ├── devnet/              console on-chain cru
+│   └── painel/              ★ área do participante
+│       ├── layout.tsx       providers de carteira + estado + casca
+│       ├── page.tsx         Visão Geral
+│       ├── contribuir/      Nova Contribuição
+│       ├── extrato/         Extrato
+│       ├── regras/          Protocolo & Regras
+│       └── validador/       Consenso de Rede
 ├── components/
-│   ├── Nav.tsx  Footer.tsx  ThemeToggle.tsx
+│   ├── Nav.tsx  Footer.tsx  Marca.tsx
 │   ├── SolanaProviders.tsx  Connection/Wallet/Modal + polyfill de Buffer
 │   ├── StatTile.tsx         KPI
 │   ├── StatusBadge.tsx      status sempre com ícone + rótulo
-│   └── ReputationChart.tsx  gráfico SVG próprio
+│   ├── ReputationChart.tsx  gráfico SVG próprio
+│   └── painel/
+│       ├── PainelShell.tsx      sidebar, topo e portão de carteira
+│       ├── ConexaoWallet.tsx    tela de autenticação de rede
+│       ├── ProjecaoReputacao.tsx  curva da EMA (projeção, não histórico)
+│       ├── Cabecalho.tsx  Icones.tsx
 └── lib/
     ├── simulation.ts        as regras do programa, em TypeScript
     ├── idl/
-    │   └── fl_reputation.json   ★ IDL do programa (spec 0.1.0, snake_case)
+    │   └── awakefl.json     ★ IDL do programa (spec 0.1.0, snake_case)
     └── anchor/
-        └── program.ts       PDAs, Program, normalização das contas
+        ├── program.ts       PDAs, Program, normalização das contas
+        └── estado.tsx       ★ provider de estado on-chain do /painel
 ```
+
+## Design system — Neon Graphite
+
+Grafite profundo (`#131313`) como tela de fundo para que o verde neon
+(`#4AF403`) funcione como **fonte de luz**, não como preenchimento. Geist na
+interface, JetBrains Mono em rótulos, hashes e métricas.
+
+**É mono-tema, de propósito.** Não existe variante clara: um "Neon Graphite
+claro" seria outro design, não este com as cores invertidas. Por isso o
+alternador de tema foi removido — ele prometia uma escolha que o sistema não
+tem. Os tokens antigos (`--plano`, `--tinta`, `--acento`…) foram mantidos com
+valores novos, o que retinge as páginas antigas sem reescrevê-las.
+
+Primitivos em `globals.css`, usados como classe:
+
+| Classe | Papel |
+|---|---|
+| `.vidro` / `.vidro-alto` | cartões e modais: translucidez + `blur(20px)` |
+| `.btn-neon` | ação primária — neon sólido, texto quase preto, halo |
+| `.btn-contorno` / `.btn-fantasma` | secundária e terciária |
+| `.campo` | input grafite, borda que acende no foco |
+| `.chip` / `.rotulo` / `.mono` | pílulas e texto técnico em mono |
+
+⚠️ O texto sobre o acento é `--sobre-acento` (verde quase preto), **nunca
+branco**: o neon é claro demais para carregar tinta clara.
+
+## A área do participante (`/painel`)
+
+Cinco telas sobre uma casca única (sidebar + topo), com o portão de conexão de
+carteira no lugar do conteúdo enquanto não há wallet. O estado on-chain vive num
+provider (`lib/anchor/estado.tsx`) — sem ele, cada rota refaria as leituras da
+Devnet ao navegar e as telas discordariam sobre a rodada corrente.
+
+| Tela | Ligação com a chain |
+|---|---|
+| Visão Geral | conta do participante, `register_participant` |
+| Nova Contribuição | `submit_contribution` (hash calculado no browser) |
+| Extrato | derivado das contribuições + assinaturas da sessão |
+| Regras | estático, mas escrito a partir do programa |
+| Validador | `initialize`, `validate_contribution`, `penalize_participant`, `advance_round` |
+
+Duas honestidades que a interface preserva em vez de disfarçar:
+
+- **A projeção de reputação não é histórico.** O programa guarda só a reputação
+  corrente; as anteriores existem apenas nos eventos das transações passadas, e
+  lê-las exigiria um indexador. A curva mostra para onde a EMA leva dado um
+  score constante, com a mesma aritmética inteira do programa.
+- **O extrato não tem data nas contribuições.** As contas do programa não
+  guardam timestamp. As assinaturas têm hora porque foram feitas na aba aberta,
+  e somem ao recarregar.
 
 ## A ligação com a chain (`/devnet`)
 
@@ -83,11 +145,11 @@ Cada botão da página assina e envia uma transação de verdade; nada é simula
 
 ### O IDL
 
-`src/lib/idl/fl_reputation.json` é escrito em **snake_case**, o formato cru do
+`src/lib/idl/awakefl.json` é escrito em **snake_case**, o formato cru do
 Anchor ≥ 0.31; o construtor de `Program` converte para camelCase sozinho. Os
 discriminadores são `sha256("global:"|"account:"|"event:" + nome)[0..8]`.
 
-**Ele precisa acompanhar o programa.** Se `programs/fl-reputation/src/` mudar
+**Ele precisa acompanhar o programa.** Se `programs/awakefl/src/` mudar
 (instrução nova, campo novo, ordem de campos, ordem das contas), o IDL fica
 dessincronizado e as transações passam a falhar com erros de desserialização
 que não apontam para a causa. O `address` dentro do JSON é ignorado em runtime —
