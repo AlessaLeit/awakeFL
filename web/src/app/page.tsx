@@ -2,7 +2,7 @@ import Link from "next/link";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 
-const REPO = "https://github.com/AlessaLeit/fl-reputation";
+const REPO = "https://github.com/AlessaLeit/awakeFL";
 
 const PASSOS = [
   {

@@ -31,7 +31,7 @@ npm run start
 O repositório tem o programa Anchor na raiz e o site em `web/`, então a Vercel
 precisa saber onde olhar:
 
-1. https://vercel.com/new → importe `AlessaLeit/fl-reputation`
+1. https://vercel.com/new → importe `AlessaLeit/awakeFL`
 2. **Root Directory: `web`** ← o passo que quebra se for esquecido
 3. Framework Preset: `Next.js` (detectado sozinho)
 4. Build Command, Output e Install: deixe os padrões

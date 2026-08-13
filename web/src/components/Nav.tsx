@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Marca from "./Marca";
 
-const REPO = "https://github.com/AlessaLeit/fl-reputation";
+const REPO = "https://github.com/AlessaLeit/awakeFL";
 
 export default function Nav() {
   return (

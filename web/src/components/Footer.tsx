@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-const REPO = "https://github.com/AlessaLeit/fl-reputation";
+const REPO = "https://github.com/AlessaLeit/awakeFL";
 
 export default function Footer() {
   return (
