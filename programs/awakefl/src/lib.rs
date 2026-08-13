@@ -3,10 +3,10 @@ use anchor_lang::prelude::*;
 pub mod state;
 pub use state::*;
 
-// ATENÇÃO: este ID é um placeholder.
-// Após `anchor build`, rode `anchor keys sync` para substituir aqui E no Anchor.toml.
-// No Solana Playground o build já sincroniza este valor sozinho.
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+// Program ID do deploy na Devnet (Solana Playground, 2026-08-12).
+// Se um dia rodar `anchor build` local, `anchor keys sync` mantém este valor e
+// o do Anchor.toml em sincronia.
+declare_id!("GhMhTkv7jeHMejEyypQaEFPqduHgXDSzE5g7jE3rXGRA");
 
 #[program]
 pub mod awakefl {

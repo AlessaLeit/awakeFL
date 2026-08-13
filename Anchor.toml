@@ -5,14 +5,13 @@ anchor_version = "0.31.1"
 resolution = true
 skip-lint = false
 
-# Substitua o ID abaixo pelo valor de `anchor keys list` apos o primeiro build.
-# Ele precisa ser IDENTICO ao declare_id!() em programs/awakefl/src/lib.rs.
-# `anchor keys sync` faz os dois de uma vez.
+# Program ID do deploy na Devnet. Precisa ser IDENTICO ao declare_id!() em
+# programs/awakefl/src/lib.rs — `anchor keys sync` faz os dois de uma vez.
 [programs.devnet]
-awakefl = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+awakefl = "GhMhTkv7jeHMejEyypQaEFPqduHgXDSzE5g7jE3rXGRA"
 
 [programs.localnet]
-awakefl = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+awakefl = "GhMhTkv7jeHMejEyypQaEFPqduHgXDSzE5g7jE3rXGRA"
 
 [registry]
 url = "https://api.apr.dev"

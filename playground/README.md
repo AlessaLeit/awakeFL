@@ -34,6 +34,38 @@ no Playground, ou copie do painel `Build & Deploy`. Cole em três lugares:
    "programa ainda não configurado". Ela é inlinada no build, então depois de
    alterá-la na Vercel é preciso **Redeploy**.
 
+## Deploy atual
+
+| | |
+|---|---|
+| Program ID | `GhMhTkv7jeHMejEyypQaEFPqduHgXDSzE5g7jE3rXGRA` |
+| Rede | Devnet |
+| Data | 2026-08-12 |
+| IDL do build | [`idl-gerado.json`](idl-gerado.json) |
+
+O `idl-gerado.json` é o IDL que o Playground produziu, no **formato legado**
+(pré-0.30: sem `address`, sem `discriminator`, com `isMut`/`isSigner`). Ele não
+é o que o site consome — o `@coral-xyz/anchor` 0.32 exige o formato novo —, mas
+é a **verdade do que foi compilado**, e por isso fica versionado aqui como
+referência de conferência.
+
+## As duas verificações
+
+Rode as duas de dentro de `web/` depois de qualquer rebuild:
+
+```bash
+npm run comparar-idl    # o IDL do site bate com o do build?
+npm run verificar       # o programa existe na Devnet e as contas batem?
+```
+
+`comparar-idl` confere nome, tipo e **ordem** de cada argumento, conta e campo
+entre os dois formatos — a ordem é o que quebra na prática, porque o Anchor
+serializa posicionalmente e uma troca produz erro que não aponta a causa.
+
+`verificar` consulta a Devnet: o ID é válido e concorda com `declare_id!` e
+`Anchor.toml`, a conta existe e é executável, e cada conta on-chain tem
+discriminador reconhecido e o tamanho previsto em `state.rs`.
+
 ## Se você mexer no programa
 
 `web/src/lib/idl/awakefl.json` é o IDL que o site usa para montar as

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "verificar": "node scripts/verificar-programa.mjs"
+    "verificar": "node scripts/verificar-programa.mjs",
+    "comparar-idl": "node scripts/comparar-idl.mjs"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
