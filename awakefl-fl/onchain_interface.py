@@ -37,10 +37,28 @@ import numpy as np
 
 logger = logging.getLogger("awakefl.onchain")
 
-# Program ID do AwakeFL publicado na Devnet (mantido em sincronia com o Anchor.toml
-# do repositorio principal). Serve como documentacao aqui; a integracao real le
-# esse valor do IDL.
-DEVNET_PROGRAM_ID = "AwakeFLprogram11111111111111111111111111111"
+# Program ID do AwakeFL publicado na Devnet, identico ao `declare_id!` de
+# programs/awakefl/src/lib.rs e ao Anchor.toml. A integracao real deve ler esse
+# valor do IDL; aqui ele serve de default e de documentacao.
+DEVNET_PROGRAM_ID = "GhMhTkv7jeHMejEyypQaEFPqduHgXDSzE5g7jE3rXGRA"
+
+# --- Constantes espelhadas do programa (programs/awakefl/src/state.rs) ------
+# Se qualquer uma destas mudar do lado Rust, muda aqui tambem: sao o contrato
+# entre as duas camadas.
+SEED_CONFIG = b"config"
+SEED_PARTICIPANT = b"participant"
+SEED_CONTRIBUTION = b"contribution"
+MAX_HASH_LEN = 64          # SHA-256 em hexadecimal, do jeito que a conta guarda
+PROGRAM_MAX_REPUTATION = 1_000
+PENALTY_DIVISOR = 10
+
+# `penalize_participant` recebe um `reason_code: u8`. O programa nao interpreta
+# o codigo (so o emite no evento), mas fixamos a tabela aqui para que a trilha
+# de auditoria seja legivel.
+REASON_CODES: Dict[str, int] = {
+    "reputation_below_threshold": 1,
+    "manual_authority_action": 2,
+}
 
 
 # ---------------------------------------------------------------------------
@@ -102,12 +120,15 @@ class ContributionRecord:
 
 @dataclass
 class BanRecord:
-    """Evento de banimento permanente (equivale a instrucao `ban_participant`)."""
+    """Evento de banimento permanente (equivale a instrucao `penalize_participant`)."""
 
     round_number: int
     participant_id: int
     reputation_bps: int
     reason: str = "reputation_below_threshold"
+    # `reason_code: u8` e o argumento que a instrucao realmente recebe; o texto
+    # acima existe so para o JSON exportado ficar legivel.
+    reason_code: int = 1
 
 
 class SimulatedOnChainLedger:
@@ -167,7 +188,12 @@ class SimulatedOnChainLedger:
         """Registra o banimento permanente de um participante."""
         from reputation import to_basis_points
 
-        record = BanRecord(round_number, participant_id, to_basis_points(reputation))
+        record = BanRecord(
+            round_number,
+            participant_id,
+            to_basis_points(reputation),
+            reason_code=REASON_CODES["reputation_below_threshold"],
+        )
         self.bans.append(record)
         self._append_block(asdict(record))
         logger.info(
@@ -234,30 +260,57 @@ class SimulatedOnChainLedger:
 # ---------------------------------------------------------------------------
 #
 # Quando a camada on-chain estiver pronta, estas funcoes passam a usar
-# `solana-py` + `anchorpy`. A assinatura ja esta no formato final para que o
-# `server.py` nao precise mudar - basta injetar um ledger real no lugar do
-# `SimulatedOnChainLedger`.
+# `solana-py` + `anchorpy`. Cada uma corresponde a UMA instrucao do programa,
+# com o mesmo nome e a mesma lista de argumentos - se um nome divergir, a
+# integracao falha em runtime com um erro obscuro de IDL, entao a regra e:
+# um stub por instrucao, batendo com programs/awakefl/src/lib.rs.
+#
+# Quem chama o que (o programa separa os papeis por signer):
+#
+#     participante  -> register_participant, submit_contribution
+#     autoridade    -> initialize, validate_contribution,
+#                      penalize_participant, advance_round
+#
+# A autoridade e o agregador da rodada, ou seja, o `server.py` deste projeto.
 
 
-def anchor_submit_contribution(
-    participant_pubkey: str,
-    round_number: int,
-    weights_hash: str,
-    metrics: Dict[str, float],
-    program_id: str = DEVNET_PROGRAM_ID,
-) -> str:
-    """[STUB] Chama a instrucao `submit_contribution` do programa Anchor.
+# --- Derivacao dos PDAs ----------------------------------------------------
+# Reproduzem exatamente os `seeds = [...]` dos contextos de conta do programa.
+# Ficam como funcoes puras (recebem o resolvedor) para poderem ser testadas sem
+# a dependencia de solders/solana-py instalada.
 
-    Implementacao prevista::
 
-        provider = anchorpy.Provider.local()               # ou Devnet + keypair
-        program  = anchorpy.Program(idl, PublicKey(program_id), provider)
-        pda, _   = PublicKey.find_program_address(
-            [b"contribution", bytes(PublicKey(participant_pubkey)),
-             round_number.to_bytes(8, "little")], program.program_id)
-        await program.rpc["submit_contribution"](
-            bytes.fromhex(weights_hash), int(metrics["accuracy"] * 10_000),
-            ctx=Context(accounts={"contribution": pda, ...}))
+def derive_config_pda(find_program_address, program_id: str):
+    """PDA do Config global: seeds `["config"]`."""
+    return find_program_address([SEED_CONFIG], program_id)
+
+
+def derive_participant_pda(find_program_address, owner_pubkey, program_id):
+    """PDA do Participant: seeds `["participant", owner]` - a *wallet* dona."""
+    return find_program_address([SEED_PARTICIPANT, bytes(owner_pubkey)], program_id)
+
+
+def derive_contribution_pda(find_program_address, participant_pda, round_number: int, program_id):
+    """PDA da Contribution: seeds `["contribution", participant_PDA, round_u64_le]`.
+
+    Atencao a primeira seed: e o **PDA do Participant**, nao a wallet dona.
+    Derivar a partir da wallet gera um endereco que existe, mas que o programa
+    rejeita com ConstraintSeeds - erro classico e chato de diagnosticar.
+    """
+    return find_program_address(
+        [SEED_CONTRIBUTION, bytes(participant_pda), round_number.to_bytes(8, "little")],
+        program_id,
+    )
+
+
+# --- Instrucoes ------------------------------------------------------------
+
+
+def anchor_initialize(authority_pubkey: str, program_id: str = DEVNET_PROGRAM_ID) -> str:
+    """[STUB] `initialize()` - cria o Config global. Chamado uma unica vez.
+
+    O signer vira `config.authority`, que e quem podera validar contribuicoes,
+    penalizar participantes e avancar a rodada.
 
     Returns:
         Assinatura da transacao (base58).
@@ -267,33 +320,121 @@ def anchor_submit_contribution(
     )
 
 
-def anchor_update_reputation(
-    participant_pubkey: str,
+def anchor_register_participant(owner_pubkey: str, program_id: str = DEVNET_PROGRAM_ID) -> str:
+    """[STUB] `register_participant()` - registra o signer como participante.
+
+    Quem assina e a propria instituicao (nao a autoridade): entrar na federacao
+    e um ato voluntario e a conta fica presa aquela wallet via `has_one = owner`.
+    A conta nasce com `reputation = INITIAL_REPUTATION` (500 na escala 0..1000).
+    """
+    raise NotImplementedError("Integracao Anchor ainda nao conectada.")
+
+
+def anchor_submit_contribution(
+    owner_pubkey: str,
     round_number: int,
-    score_bps: int,
+    update_hash: str,
+    n_samples: int,
+    loss: float,
+    accuracy: float,
     program_id: str = DEVNET_PROGRAM_ID,
 ) -> str:
-    """[STUB] Chama `update_reputation`, que recalcula R(t) = 0,5R(t-1) + 0,5S(t) on-chain.
+    """[STUB] `submit_contribution(update_hash, n_samples, loss, accuracy)`.
 
-    O calculo e refeito *dentro* do programa (nao confiamos no valor enviado pelo
-    servidor): a instrucao recebe apenas `score_bps` e aplica a formula com
-    aritmetica inteira sobre a conta PDA de reputacao do participante.
+    Args:
+        owner_pubkey: wallet da instituicao (assina a transacao).
+        round_number: usado apenas para derivar o PDA; o programa grava
+            `config.current_round`, entao os dois precisam coincidir.
+        update_hash: SHA-256 dos pesos em **hexadecimal** (string de 64 chars,
+            o que `hash_weights()` ja devolve). O programa recebe `String`, nao
+            bytes - passar `bytes.fromhex(...)` quebra a serializacao.
+        n_samples: numero de amostras locais (o peso do FedAvg).
+        loss, accuracy: metricas AUTO-DECLARADAS. O programa as guarda como
+            evidencia; elas nao influenciam o score.
+
+    Implementacao prevista::
+
+        program = anchorpy.Program(idl, Pubkey.from_string(program_id), provider)
+        config_pda, _ = derive_config_pda(Pubkey.find_program_address, program.program_id)
+        part_pda,   _ = derive_participant_pda(
+            Pubkey.find_program_address, Pubkey.from_string(owner_pubkey), program.program_id)
+        contrib_pda, _ = derive_contribution_pda(
+            Pubkey.find_program_address, part_pda, round_number, program.program_id)
+        await program.rpc["submit_contribution"](
+            update_hash, n_samples, loss, accuracy,
+            ctx=Context(accounts={
+                "config": config_pda, "participant": part_pda,
+                "contribution": contrib_pda, "owner": owner_pubkey,
+                "system_program": SYS_PROGRAM_ID}))
+
+    Raises (do lado do programa):
+        HashTooLong se `len(update_hash) > MAX_HASH_LEN`;
+        ParticipantBanned se a conta ja estiver banida.
     """
     raise NotImplementedError("Integracao Anchor ainda nao conectada.")
 
 
-def anchor_ban_participant(
-    participant_pubkey: str, round_number: int, program_id: str = DEVNET_PROGRAM_ID
+def anchor_validate_contribution(
+    owner_pubkey: str,
+    round_number: int,
+    score: int,
+    program_id: str = DEVNET_PROGRAM_ID,
 ) -> str:
-    """[STUB] Chama `ban_participant`: divide a reputacao por 10 e marca `banned = true`.
+    """[STUB] `validate_contribution(score)` - a autoridade avalia e a EMA roda on-chain.
 
-    A conta nao tem instrucao de reversao - o banimento e permanente por design.
+    O programa aplica `R(t) = (R(t-1) + S(t)) / 2` em aritmetica inteira sobre a
+    conta do participante. Repare que o servidor envia **apenas o score**, nunca
+    a reputacao ja calculada: quem detem a formula e a cadeia, e por isso o
+    resultado e auditavel por terceiros.
+
+    Args:
+        score: inteiro em 0..=1000. Converta o S(t) off-chain com
+            `reputation.to_program_scale()`. Acima de 1000 o programa
+            responde InvalidScore; `score >= 500` marca a contribuicao como
+            Aprovado, abaixo disso Rejeitado.
+
+    Raises (do lado do programa):
+        AlreadyValidated se a contribuicao nao estiver mais Pendente.
     """
     raise NotImplementedError("Integracao Anchor ainda nao conectada.")
 
 
-def anchor_fetch_reputation(
-    participant_pubkey: str, program_id: str = DEVNET_PROGRAM_ID
+def anchor_penalize_participant(
+    owner_pubkey: str,
+    reason_code: int = REASON_CODES["reputation_below_threshold"],
+    program_id: str = DEVNET_PROGRAM_ID,
+) -> str:
+    """[STUB] `penalize_participant(reason_code)` - reputacao / 10 e ban permanente.
+
+    Nao existe instrucao de reversao no programa: o banimento e definitivo por
+    design. `reason_code` e um u8 livre, so emitido no evento
+    `ParticipantPenalized`; use a tabela `REASON_CODES`.
+
+    Raises (do lado do programa):
+        AlreadyBanned se a conta ja estiver banida.
+    """
+    raise NotImplementedError("Integracao Anchor ainda nao conectada.")
+
+
+def anchor_advance_round(authority_pubkey: str, program_id: str = DEVNET_PROGRAM_ID) -> str:
+    """[STUB] `advance_round()` - incrementa `config.current_round`.
+
+    Deve ser chamada UMA vez ao fim de cada rodada de FL, depois de todas as
+    contribuicoes daquela rodada terem sido validadas. Avancar antes da hora
+    inutiliza os PDAs de contribuicao ja derivados para a rodada corrente.
+    """
+    raise NotImplementedError("Integracao Anchor ainda nao conectada.")
+
+
+def anchor_fetch_participant(
+    owner_pubkey: str, program_id: str = DEVNET_PROGRAM_ID
 ) -> Dict[str, Any]:
-    """[STUB] Le a conta de reputacao on-chain (`{reputation_bps, banned, last_round}`)."""
+    """[STUB] Le a conta `Participant` on-chain.
+
+    Returns:
+        `{owner, reputation, contrib_count, is_banned, stake_amount}` -
+        `reputation` na escala 0..=1000 do programa. Use
+        `reputation / PROGRAM_MAX_REPUTATION` para voltar a escala [0,1] usada
+        pelo `reputation.py`.
+    """
     raise NotImplementedError("Integracao Anchor ainda nao conectada.")

@@ -233,11 +233,29 @@ As métricas são **declaradas** pelo participante, ou seja, potencialmente
 mentira. É justamente por isso que a reputação é calculada a partir do *update*
 e não do que o cliente diz.
 
-As funções `anchor_submit_contribution()`, `anchor_update_reputation()`,
-`anchor_ban_participant()` e `anchor_fetch_reputation()` são *stubs*
-documentados: mantêm a assinatura da chamada real ao programa Anchor, para que
-trocar `SimulatedOnChainLedger` por um cliente Solana de verdade não mude nada
-no resto do código.
+Há um *stub* documentado para cada instrução do programa Anchor
+(`GhMhTkv7jeHMejEyypQaEFPqduHgXDSzE5g7jE3rXGRA` na Devnet), com o mesmo nome e
+os mesmos argumentos, mais os derivadores de PDA:
+
+| Stub | Instrução | Quem assina |
+| --- | --- | --- |
+| `anchor_initialize` | `initialize()` | autoridade |
+| `anchor_register_participant` | `register_participant()` | a instituição |
+| `anchor_submit_contribution` | `submit_contribution(update_hash, n_samples, loss, accuracy)` | a instituição |
+| `anchor_validate_contribution` | `validate_contribution(score)` | autoridade |
+| `anchor_penalize_participant` | `penalize_participant(reason_code)` | autoridade |
+| `anchor_advance_round` | `advance_round()` | autoridade |
+| `anchor_fetch_participant` | leitura da conta `Participant` | — |
+
+A **autoridade é o agregador da rodada**, ou seja, o `server.py` deste projeto.
+O servidor envia apenas o **score**, nunca a reputação já calculada: a fórmula
+`R(t) = (R(t-1) + S(t)) / 2` roda dentro do programa, em aritmética inteira, e é
+isso que torna o resultado auditável por terceiros.
+
+Duas armadilhas de integração já documentadas nos stubs: `update_hash` viaja
+como **String hexadecimal** de 64 chars (não bytes), e o PDA da contribuição usa
+como seed o **PDA do Participant**, não a wallet dona — derivar da wallet gera um
+endereço válido que o programa rejeita com `ConstraintSeeds`.
 
 ---
 

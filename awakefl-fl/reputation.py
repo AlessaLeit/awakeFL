@@ -194,15 +194,42 @@ def next_reputation(previous: float, score: float, alpha: float = 0.5) -> float:
 
 
 def to_basis_points(reputation: float) -> int:
-    """Converte R in [0,1] para ponto fixo u16 (10_000 = 1.0), formato usado on-chain.
+    """Converte R in [0,1] para ponto fixo (10_000 = 1.0).
 
     Solana/Anchor nao usa ponto flutuante em estado de conta (nao-determinismo
-    entre validadores). O programa armazena `reputation_bps: u16` e replica as
-    mesmas contas com aritmetica inteira.
+    entre validadores), entao tudo que atravessa a fronteira on-chain precisa
+    virar inteiro. Esta e a representacao *interna* de maior precisao, usada no
+    livro-razao e nos relatorios. Para o valor que realmente vai numa instrucao
+    do programa, use `to_program_scale()`.
     """
     if not np.isfinite(reputation):
         return 0
     return int(round(float(np.clip(reputation, 0.0, 1.0)) * 10_000))
+
+
+# Teto da escala de reputacao do programa Anchor (`MAX_REPUTATION` em state.rs).
+# Mantido aqui para que a conversao quebre alto e claro se um dos lados mudar.
+PROGRAM_MAX_REPUTATION = 1_000
+
+
+def to_program_scale(reputation: float) -> int:
+    """Converte R in [0,1] para a escala inteira 0..=1000 do programa Anchor.
+
+    E este o valor aceito por `validate_contribution(score)` e armazenado em
+    `Participant.reputation`. A conversao e simplesmente `R * 1000`, ou seja,
+    um decimo do valor em basis points - a escala do programa e mais grosseira
+    de proposito (cabe em u64 com folga e a EMA inteira `(R + S) / 2` perde no
+    maximo 1 ponto por rodada).
+
+    ATENCAO - divergencia em aberto: a *faixa* das duas escalas esta alinhada
+    aqui, mas o *valor inicial* nao. Off-chain todo participante nasce com
+    R = 1.0 (equivalente a 1000); o programa registra `INITIAL_REPUTATION = 500`.
+    Enquanto essa decisao nao for tomada, um participante recem-registrado tem
+    reputacao diferente conforme o lado que se olhe.
+    """
+    if not np.isfinite(reputation):
+        return 0
+    return int(round(float(np.clip(reputation, 0.0, 1.0)) * PROGRAM_MAX_REPUTATION))
 
 
 # ---------------------------------------------------------------------------

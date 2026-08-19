@@ -16,6 +16,8 @@ from reputation import (
     magnitude_score,
     next_reputation,
     to_basis_points,
+    to_program_scale,
+    PROGRAM_MAX_REPUTATION,
 )
 
 
@@ -81,6 +83,22 @@ def test_basis_points():
     assert to_basis_points(1.0) == 10_000
     assert to_basis_points(0.4) == 4_000
     assert to_basis_points(0.0) == 0
+
+
+def test_escala_do_programa_anchor():
+    """A faixa 0..=1000 precisa bater com MAX_REPUTATION do state.rs."""
+    assert to_program_scale(1.0) == PROGRAM_MAX_REPUTATION == 1_000
+    assert to_program_scale(0.4) == 400  # limiar de banimento off-chain
+    assert to_program_scale(0.0) == 0
+    # Um decimo dos basis points, sem excecao: e a mesma grandeza em duas escalas.
+    for r in (0.0, 0.137, 0.5, 0.999, 1.0):
+        assert to_program_scale(r) == pytest.approx(to_basis_points(r) / 10, abs=1)
+
+
+def test_escala_do_programa_e_robusta_a_lixo():
+    assert to_program_scale(float("nan")) == 0
+    assert to_program_scale(2.5) == PROGRAM_MAX_REPUTATION
+    assert to_program_scale(-1.0) == 0
 
 
 # ---------------------------------------------------------------------------
