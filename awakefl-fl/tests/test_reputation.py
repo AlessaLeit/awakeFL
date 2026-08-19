@@ -106,10 +106,13 @@ def test_escala_do_programa_e_robusta_a_lixo():
 # ---------------------------------------------------------------------------
 
 
-def test_reputacao_inicial_e_um():
+def test_reputacao_inicial_e_neutra():
+    """Todos entram em 0.5, o mesmo INITIAL_REPUTATION=500 da conta on-chain."""
     ledger = ReputationLedger(num_participants=5)
-    assert all(v == 1.0 for v in ledger.snapshot().values())
+    assert all(v == 0.5 for v in ledger.snapshot().values())
+    assert all(to_program_scale(v) == 500 for v in ledger.snapshot().values())
     assert ledger.banned_ids == []
+    assert all(s.contrib_count == 0 for s in ledger.states.values())
 
 
 def _updates(n_honestos: int, atacante: np.ndarray | None = None, dim: int = 20):
@@ -196,6 +199,49 @@ def test_grace_rounds_protege_o_inicio():
     assert ledger.banned_ids == []
     ledger.process_round(4, _updates(5, atacante=-np.ones(20) * 5.0))
     assert 5 in ledger.banned_ids
+
+
+def test_graca_conta_tempo_de_casa_e_nao_rodada_global():
+    """Quem entra depois leva a mesma protecao de quem estava la desde o inicio.
+
+    Esta e a diferenca que so aparece on-chain, onde `register_participant` pode
+    acontecer em qualquer rodada. Com graca por rodada global, o participante 5
+    entraria na rodada 20 sem protecao nenhuma, em R = 0.5, e seria banido na
+    primeira rodada de azar.
+    """
+    ledger = ReputationLedger(num_participants=6, ban_threshold=0.9, grace_rounds=2)
+
+    # Rodadas 1..20: so os cinco honestos participam (o 5 ainda nao se registrou).
+    for rnd in range(1, 21):
+        ledger.process_round(rnd, _updates(5))
+    assert ledger.states[5].contrib_count == 0
+
+    # O participante 5 entra na rodada 21 ja se comportando mal.
+    for rnd in (21, 22):
+        ledger.process_round(rnd, _updates(5, atacante=-np.ones(20) * 5.0))
+    assert ledger.banned_ids == [], "as 2 primeiras contribuicoes dele sao imunes"
+
+    ledger.process_round(23, _updates(5, atacante=-np.ones(20) * 5.0))
+    assert 5 in ledger.banned_ids, "na 3a contribuicao a protecao acabou"
+
+
+def test_valor_inicial_nao_muda_a_deteccao():
+    """R0 e parametro de whitewashing, nao de deteccao.
+
+    A EMA esquece o valor inicial (peso 0.5^t), entao mudar R0 desloca no maximo
+    uma rodada o momento do banimento. E o achado empirico que justificou adotar
+    o valor neutro sem perder capacidade de defesa.
+    """
+    bans = {}
+    for r0 in (1.0, 0.5):
+        ledger = ReputationLedger(num_participants=6, ban_threshold=0.4,
+                                  initial=r0, grace_rounds=2)
+        for rnd in range(1, 12):
+            ledger.process_round(rnd, _updates(5, atacante=-np.ones(20) * 5.0))
+        bans[r0] = ledger.states[5].banned_round
+
+    assert all(b is not None for b in bans.values())
+    assert abs(bans[1.0] - bans[0.5]) <= 1
 
 
 def test_veto_de_norma_pega_update_amplificado():

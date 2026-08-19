@@ -103,7 +103,7 @@ Principais flags (`python run_experiments.py --help` lista todas):
 - **federação:** `--clients`, `--rounds`, `--local-epochs`, `--batch-size`, `--lr`, `--fraction-fit`
 - **dados:** `--dataset {mnist,fashion_mnist}`, `--partition {iid,non_iid}`, `--alpha` (Dirichlet), `--train-subset`, `--test-subset`
 - **ataque:** `--attack {label_flipping,gradient_poisoning,backdoor,free_rider}`, `--malicious-fraction`, `--malicious-ids 2 5`, `--attack-start-round`
-- **reputação:** `--threshold` (limiar de banimento), `--rep-alpha`, `--grace-rounds`, `--no-weighted-aggregation`
+- **reputação:** `--threshold` (limiar de banimento), `--rep-alpha`, `--rep-initial`, `--grace-rounds`, `--no-weighted-aggregation`
 - **execução:** `--scenarios A B C`, `--backend {local,flower}`, `--results-dir`, `--seed`, `--device`, `--log-level`
 
 **Backends.** O padrão é `local`: as rodadas são executadas sequencialmente no
@@ -141,11 +141,29 @@ abaixo do limiar já não entra no modelo global daquela rodada.
 
 ### Reputação — escala e fórmula
 
-Reputação **R ∈ [0, 1]**: `1.0` = plenamente confiável (valor inicial de
-**todos** os participantes, presunção de boa-fé), `0.0` = sem credibilidade.
-Perde-se reputação por evidência. On-chain isso vira um `u64` em ponto fixo
-(1.0 ≡ 10 000 *basis points*), porque a Solana não trabalha com float — a
-conversão está em `reputation.to_basis_points()`.
+Reputação **R ∈ [0, 1]**: `1.0` = plenamente confiável, `0.5` = **neutro, valor
+inicial de todos**, `0.0` = sem credibilidade. Todo participante entra em 0,5 e
+precisa *ganhar* a confiança do grupo (na prática sobe para ~0,93 em 4 rodadas).
+
+Esse valor espelha `INITIAL_REPUTATION = 500` do programa Anchor, na escala
+0..=1000 — a Solana não trabalha com float, então tudo que cruza a fronteira
+vira inteiro (`reputation.to_program_scale()`; `to_basis_points()` dá a
+representação interna de maior precisão, com 10 000 ≡ 1.0).
+
+**Por que neutro e não 1,0?** Porque `register_participant` é aberto: qualquer
+wallet se registra pelo custo do rent de uma conta de 66 bytes. Se o
+recém-chegado nascesse com reputação máxima, o banimento permanente valeria
+zero — bastaria gerar outra wallet e voltar com a ficha limpa (*whitewashing*).
+Começar no meio da escala faz a identidade acumulada valer alguma coisa. O preço
+disso é o *cold start*, tratado pelo período de graça.
+
+> **Achado experimental.** O valor inicial **não é** um parâmetro de detecção.
+> Reaplicando a EMA sobre os mesmos S(t) observados, sair de R₀ = 1,0 para
+> R₀ = 0,5 antecipou o banimento em 1 rodada em apenas 1 dos 3 atacantes — o
+> peso de R₀ cai para 3% em 5 rodadas e R(t) converge para a média de S(t)
+> independentemente de onde começou. R₀ governa resistência a whitewashing e
+> proteção ao recém-chegado, não latência de detecção. Reproduza a comparação
+> com `--rep-initial 1.0`.
 
 **Score de consistência S(t) ∈ [0, 1]** mede o quanto a contribuição combina
 com o consenso dos participantes ainda confiáveis, combinando dois sinais:
@@ -187,9 +205,17 @@ comportamento anômalo sustentado derruba R geometricamente.
 
 **Banimento:** quando `R(t) < ban_threshold` (padrão 0,4), a reputação é
 **dividida por 10** e o participante é banido **permanentemente, sem reversão** —
-não volta a ser amostrado nem entra na agregação em nenhuma rodada futura. As
-`grace_rounds` iniciais (padrão 1) ficam imunes, porque nas primeiras rodadas o
-modelo global ainda está instável e todos parecem inconsistentes.
+não volta a ser amostrado nem entra na agregação em nenhuma rodada futura.
+
+As `grace_rounds` (padrão 2) protegem as primeiras contribuições **de cada
+participante**, contadas por *tempo de casa* (`contrib_count`) e não pelo número
+global da rodada. Isso cobre dois casos: o início da federação, quando o modelo
+global ainda está instável e todos parecem inconsistentes; e quem entra no meio
+do caminho — com graça por rodada global, um hospital que se registrasse na
+rodada 50 entraria sem proteção nenhuma, em R = 0,5, a um passo do limiar, justo
+quando é o único carregando aquela distribuição de dados. `contrib_count` é
+exatamente o campo que a conta `Participant` já mantém on-chain. Na simulação,
+em que todos entram na rodada 1, os dois critérios coincidem.
 
 Há ainda um **veto por norma** (`reputation.norm_veto_ratio`, padrão 2,5): um
 update mais de 2,5× maior (ou menor) que a norma mediana perde o crédito do
@@ -279,7 +305,8 @@ endereço válido que o programa rejeita com `ConstraintSeeds`.
    no banimento; os honestos ficam em um patamar alto e estável.
 
 Resultado de referência (configuração padrão, `label_flipping`, seed 42):
-A = 98,65% · B = 83,95% · C = 97,95%, com precisão e recall de detecção = 1,00.
+A = 98,65% · B = 83,95% · C = 98,20%, com precisão e recall de detecção = 1,00
+e banimentos nas rodadas 6, 6 e 7.
 
 ---
 

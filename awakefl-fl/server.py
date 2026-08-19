@@ -152,11 +152,11 @@ def run_federated(
 
     ledger = ReputationLedger(
         num_participants=len(clients),
-        initial=reputation_cfg.get("initial", 1.0),
+        initial=reputation_cfg.get("initial", 0.5),
         alpha=reputation_cfg.get("alpha", 0.5),
         ban_threshold=reputation_cfg.get("ban_threshold", 0.4),
         ban_penalty_divisor=reputation_cfg.get("ban_penalty_divisor", 10.0),
-        grace_rounds=reputation_cfg.get("grace_rounds", 1),
+        grace_rounds=reputation_cfg.get("grace_rounds", 2),
         weight_direction=reputation_cfg.get("weight_direction", 0.7),
         weight_magnitude=reputation_cfg.get("weight_magnitude", 0.3),
         norm_veto_ratio=reputation_cfg.get("norm_veto_ratio", 2.5),
@@ -441,11 +441,11 @@ def run_flower_simulation(
     attack = attack or AttackConfig()
     ledger = ReputationLedger(
         num_participants=len(clients),
-        initial=reputation_cfg.get("initial", 1.0),
+        initial=reputation_cfg.get("initial", 0.5),
         alpha=reputation_cfg.get("alpha", 0.5),
         ban_threshold=reputation_cfg.get("ban_threshold", 0.4),
         ban_penalty_divisor=reputation_cfg.get("ban_penalty_divisor", 10.0),
-        grace_rounds=reputation_cfg.get("grace_rounds", 1),
+        grace_rounds=reputation_cfg.get("grace_rounds", 2),
         weight_direction=reputation_cfg.get("weight_direction", 0.7),
         weight_magnitude=reputation_cfg.get("weight_magnitude", 0.3),
         norm_veto_ratio=reputation_cfg.get("norm_veto_ratio", 2.5),

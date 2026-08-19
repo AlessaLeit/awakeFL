@@ -10,12 +10,29 @@ linha a linha e testar com `pytest` isoladamente.
 1. Escala da reputacao
 --------------------------------------------------------------------------
 R in [0, 1]:
-    1.0 = participante plenamente confiavel (valor inicial de todos)
+    1.0 = participante plenamente confiavel
+    0.5 = NEUTRO - valor inicial de todos
     0.0 = participante sem nenhuma credibilidade
-Todo participante entra com R = 1.0 (presuncao de boa-fe) e *perde* reputacao
-por evidencia. On-chain isso vira um u64 em ponto fixo (ex.: 1.0 == 10_000
-basis points), porque Solana nao trabalha com float; a conversao esta
-documentada em `to_basis_points()`.
+
+Todo participante entra em R = 0.5 e precisa *ganhar* a confianca do grupo
+contribuindo de forma consistente (na pratica sobe para ~0.93 em 4 rodadas).
+Esse valor espelha `INITIAL_REPUTATION = 500` do programa Anchor, na escala
+0..=1000; a conversao esta em `to_program_scale()` (e `to_basis_points()` da a
+representacao interna de maior precisao).
+
+Por que neutro e nao 1.0 (presuncao de boa-fe)? Porque `register_participant`
+e aberto - qualquer wallet se registra pelo custo do rent de uma conta de 66
+bytes. Se o recem-chegado nascesse com reputacao maxima, o banimento
+permanente valeria zero: bastaria gerar outra wallet e voltar com a ficha
+limpa (whitewashing). Comecar no meio faz a identidade acumulada valer alguma
+coisa. O preco disso e o cold start, tratado pelo `grace_rounds` abaixo.
+
+Achado experimental que motivou a escolha (ver README): o valor inicial NAO e
+um parametro de deteccao. Reaplicando a EMA sobre os mesmos S(t) observados,
+sair de R0 = 1.0 para R0 = 0.5 antecipou o banimento em 1 rodada em apenas 1
+dos 3 atacantes - porque o peso de R0 cai para 3% em 5 rodadas e R(t) converge
+para a media de S(t) independentemente de onde comecou. R0 e um parametro de
+resistencia a whitewashing e de protecao ao recem-chegado, nao de deteccao.
 
 --------------------------------------------------------------------------
 2. Score de consistencia S(t)
@@ -73,9 +90,14 @@ e nao volta a ser pontuado. A irreversibilidade e proposital: o livro-razao e
 imutavel, e um atacante que pudesse "esperar esfriar" teria incentivo a atacar
 de forma intermitente.
 
-`grace_rounds` protege as primeiras rodadas: no inicio o modelo global e
-aleatorio e os updates honestos divergem muito entre si, o que geraria
-banimentos por ruido.
+`grace_rounds` protege as primeiras contribuicoes de CADA participante - e nao
+as primeiras rodadas da federacao. A diferenca importa: se a imunidade fosse
+contada pelo numero global da rodada, um hospital que se registrasse na rodada
+50 entraria sem protecao nenhuma, em R = 0.5, a um passo do limiar 0.4, num
+momento em que ele e o unico carregando aquela distribuicao de dados. Contando
+por tempo de casa (`contrib_count`, o mesmo campo que a conta PDA on-chain ja
+mantem), a protecao acompanha o participante. Na simulacao, em que todos entram
+na rodada 1, os dois criterios coincidem.
 """
 
 from __future__ import annotations
@@ -242,17 +264,22 @@ class ParticipantState:
     """Estado reputacional de um participante (espelha a conta PDA on-chain)."""
 
     participant_id: int
-    reputation: float = 1.0
+    reputation: float = 0.5
     banned: bool = False
     banned_round: Optional[int] = None
     scores: List[float] = field(default_factory=list)
     history: List[float] = field(default_factory=list)
+    # Numero de contribuicoes pontuadas. Espelha `Participant.contrib_count` da
+    # conta on-chain e serve de "tempo de casa" para o periodo de graca.
+    contrib_count: int = 0
 
     def as_dict(self) -> dict:
         return {
             "participant_id": self.participant_id,
             "reputation": round(self.reputation, 6),
             "reputation_bps": to_basis_points(self.reputation),
+            "reputation_onchain": to_program_scale(self.reputation),
+            "contrib_count": self.contrib_count,
             "banned": self.banned,
             "banned_round": self.banned_round,
             "history": [round(v, 6) for v in self.history],
@@ -283,11 +310,11 @@ class ReputationLedger:
     def __init__(
         self,
         num_participants: int,
-        initial: float = 1.0,
+        initial: float = 0.5,
         alpha: float = 0.5,
         ban_threshold: float = 0.4,
         ban_penalty_divisor: float = 10.0,
-        grace_rounds: int = 1,
+        grace_rounds: int = 2,
         weight_direction: float = 0.7,
         weight_magnitude: float = 0.3,
         norm_veto_ratio: float = 2.5,
@@ -388,9 +415,16 @@ class ReputationLedger:
             if state.banned:  # banimento permanente: nada mais muda
                 continue
             state.scores.append(score)
+            state.contrib_count += 1
             state.reputation = next_reputation(state.reputation, score, self.alpha)
 
-            in_grace = round_number <= self.grace_rounds
+            # Graca por TEMPO DE CASA, nao por rodada global: as primeiras
+            # `grace_rounds` contribuicoes de cada participante sao imunes ao
+            # banimento. Protege tanto o inicio da federacao (modelo global
+            # ainda aleatorio, todos parecem inconsistentes) quanto quem entra
+            # no meio do caminho - que comeca em R = 0.5, perto do limiar, e
+            # seria banido por duas rodadas de azar.
+            in_grace = state.contrib_count <= self.grace_rounds
             if self.enabled and not in_grace and state.reputation < self.ban_threshold:
                 state.reputation = state.reputation / self.ban_penalty_divisor
                 state.banned = True

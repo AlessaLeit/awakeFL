@@ -4,7 +4,19 @@ use anchor_lang::prelude::*;
 // Constantes do modelo de reputacao
 // ---------------------------------------------------------------------------
 
-/// Reputacao atribuida a todo participante recem-registrado.
+/// Reputacao atribuida a todo participante recem-registrado: NEUTRA, metade
+/// da escala. Espelhada off-chain em `reputation.initial = 0.5`.
+///
+/// Nao e o topo da escala de proposito. `register_participant` e aberto: uma
+/// wallet nova custa o rent de uma conta de 66 bytes. Se o recem-chegado
+/// nascesse com 1000, o banimento permanente valeria zero — bastaria registrar
+/// outra wallet e voltar com a ficha limpa (whitewashing). Comecar no meio faz
+/// a reputacao acumulada valer alguma coisa.
+///
+/// A contrapartida e o cold start: quem entra fica a apenas 100 pontos do
+/// limiar de banimento praticado pelo agregador (400). Por isso a autoridade
+/// deve conceder um periodo de graca contado por `contrib_count` — tempo de
+/// casa do participante, nao numero da rodada global.
 pub const INITIAL_REPUTATION: u64 = 500;
 /// Teto da escala de reputacao (0..=1000).
 pub const MAX_REPUTATION: u64 = 1000;
@@ -40,7 +52,11 @@ pub struct Participant {
     pub owner: Pubkey, // 32
     /// Score de reputacao, escala 0..=1000, inicia em 500.
     pub reputation: u64, // 8
-    /// Numero de contribuicoes submetidas (validadas ou nao).
+    /// Numero de contribuicoes submetidas (validadas ou nao). Alem da
+    /// estatistica, e o "tempo de casa" do participante: o agregador usa este
+    /// contador para decidir o periodo de graca antes de poder penalizar,
+    /// de modo que quem se registra na rodada 50 tenha a mesma protecao de
+    /// quem estava la desde a primeira.
     pub contrib_count: u64, // 8
     /// Banimento permanente: nao ha instrucao que reverta.
     pub is_banned: bool, // 1

@@ -161,8 +161,17 @@ def build_markdown(histories: Dict[str, History], summary: dict, images: Dict[st
     lines.append(f"| Epocas locais | {cfg['federation']['local_epochs']} |")
     lines.append(f"| Ataque | `{cfg['attack']['type']}` |")
     lines.append(f"| Participantes maliciosos | {summary['scenarios'].get('B', {}).get('malicious_ids')} |")
-    lines.append(f"| Limiar de banimento | {cfg['reputation']['ban_threshold']} |")
-    lines.append(f"| Formula | R(t) = {cfg['reputation']['alpha']}*R(t-1) + {round(1 - cfg['reputation']['alpha'], 3)}*S(t) |")
+    rep_cfg = cfg["reputation"]
+    inicial = rep_cfg.get("initial", 0.5)
+    lines.append(
+        f"| Reputacao inicial | {inicial} "
+        f"(= {int(round(inicial * 1000))} na escala 0..1000 do Anchor) |"
+    )
+    lines.append(f"| Limiar de banimento | {rep_cfg['ban_threshold']} |")
+    lines.append(
+        f"| Graca | {rep_cfg.get('grace_rounds', 2)} primeiras contribuicoes de cada participante |"
+    )
+    lines.append(f"| Formula | R(t) = {rep_cfg['alpha']}*R(t-1) + {round(1 - rep_cfg['alpha'], 3)}*S(t) |")
     lines.append(f"| Seed | {cfg['seed']} |\n")
 
     lines.append("## 2. Resultado final\n")

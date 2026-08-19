@@ -44,11 +44,16 @@ attack:
 
 # --- Reputacao (espelho off-chain da logica que ira para o Anchor) ---------
 reputation:
-  initial: 1.0            # reputacao inicial de todos (escala [0, 1])
+  initial: 0.5            # reputacao inicial de todos, escala [0,1] (NEUTRO)
+                          # 0.5 == INITIAL_REPUTATION=500 do programa Anchor.
+                          # Neutro e nao 1.0 para que o banimento permanente tenha
+                          # valor: com reputacao maxima de graca, o atacante banido
+                          # so criaria outra wallet (whitewashing).
   alpha: 0.5              # R(t) = alpha*R(t-1) + (1-alpha)*S(t)
   ban_threshold: 0.4      # abaixo disso -> reputacao / 10 + banimento permanente
   ban_penalty_divisor: 10 # divisor aplicado a reputacao no momento do banimento
-  grace_rounds: 1         # rodadas iniciais sem banimento (o modelo ainda esta instavel)
+  grace_rounds: 2         # primeiras contribuicoes DE CADA participante sem banimento
+                          # (tempo de casa, nao rodada global: protege quem entra depois)
   weight_direction: 0.7   # peso do termo de similaridade de cosseno em S(t)
   weight_magnitude: 0.3   # peso do termo de coerencia de norma em S(t)
   norm_veto_ratio: 2.5    # update >2.5x (ou <1/2.5x) a mediana perde o credito de direcao

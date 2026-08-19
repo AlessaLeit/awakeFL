@@ -58,8 +58,8 @@ def load_config(path: Path) -> dict:
         "data": {"dataset": "mnist", "data_dir": "./data", "partition": "non_iid",
                  "dirichlet_alpha": 0.7, "train_subset": 12000, "test_subset": 2000},
         "attack": {"type": "label_flipping", "malicious_fraction": 0.3},
-        "reputation": {"initial": 1.0, "alpha": 0.5, "ban_threshold": 0.4,
-                       "ban_penalty_divisor": 10, "grace_rounds": 1,
+        "reputation": {"initial": 0.5, "alpha": 0.5, "ban_threshold": 0.4,
+                       "ban_penalty_divisor": 10, "grace_rounds": 2,
                        "weight_direction": 0.7, "weight_magnitude": 0.3,
                        "weighted_aggregation": True},
         "output": {"results_dir": "./results", "log_level": "INFO"},
@@ -99,7 +99,10 @@ def parse_args(argv=None) -> argparse.Namespace:
     g = p.add_argument_group("reputacao")
     g.add_argument("--threshold", type=float, dest="ban_threshold", help="limiar de banimento")
     g.add_argument("--rep-alpha", type=float, dest="rep_alpha", help="alpha da media movel de R(t)")
-    g.add_argument("--grace-rounds", type=int)
+    g.add_argument("--rep-initial", type=float, dest="rep_initial",
+                   help="reputacao inicial de todos (0.5 = neutro, espelha o Anchor)")
+    g.add_argument("--grace-rounds", type=int,
+                   help="contribuicoes iniciais de cada participante imunes ao banimento")
     g.add_argument("--no-weighted-aggregation", action="store_true",
                    help="no cenario C, banir mas NAO ponderar o FedAvg pela reputacao")
 
@@ -141,6 +144,7 @@ def merge_config(cfg: dict, args: argparse.Namespace) -> dict:
         "reputation": {
             "ban_threshold": args.ban_threshold,
             "alpha": args.rep_alpha,
+            "initial": args.rep_initial,
             "grace_rounds": args.grace_rounds,
             "weighted_aggregation": False if args.no_weighted_aggregation else None,
         },
