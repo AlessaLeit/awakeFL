@@ -1,0 +1,11 @@
+# Ambiente virtual e caches
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Dataset baixado pelo torchvision (nao versionar: ~50 MB)
+data/
+
+# Saidas dos experimentos (regeradas por `python run_experiments.py`)
+results*/

@@ -1,0 +1,61 @@
+# ===========================================================================
+# AwakeFL - configuracao dos experimentos de Federated Learning
+# ===========================================================================
+# Todos os valores aqui podem ser sobrescritos pela linha de comando, ex.:
+#     python run_experiments.py --rounds 20 --attack backdoor --threshold 0.5
+# A precedencia e: CLI > config.yaml > defaults do codigo.
+# ===========================================================================
+
+# --- Reprodutibilidade -----------------------------------------------------
+seed: 42                  # semente unica para numpy / torch / random
+
+# --- Federacao -------------------------------------------------------------
+federation:
+  num_clients: 10         # N instituicoes participantes
+  rounds: 12              # rodadas de comunicacao (global epochs)
+  local_epochs: 1         # epocas de treino local por rodada
+  batch_size: 32
+  learning_rate: 0.05     # SGD com momentum
+  momentum: 0.9
+  fraction_fit: 1.0       # fracao de clientes amostrada por rodada (1.0 = todos)
+
+# --- Dados -----------------------------------------------------------------
+data:
+  dataset: mnist          # mnist | fashion_mnist
+  data_dir: ./data
+  partition: non_iid      # iid | non_iid  (non_iid usa particao de Dirichlet)
+  dirichlet_alpha: 0.7    # menor = mais heterogeneo (mais dificil para o FL)
+  train_subset: 12000     # amostras de treino usadas no total (0 = dataset inteiro)
+  test_subset: 2000       # amostras do conjunto de teste global do servidor
+
+# --- Ataque ----------------------------------------------------------------
+attack:
+  type: label_flipping    # label_flipping | gradient_poisoning | backdoor | free_rider
+  malicious_fraction: 0.3 # fracao de participantes maliciosos (usada se malicious_ids for vazio)
+  malicious_ids: []       # IDs explicitos, ex.: [2, 5]. Se preenchido, ignora a fracao acima.
+  start_round: 1          # a partir de qual rodada o ataque comeca (1 = desde o inicio)
+  # Parametros especificos de cada ataque
+  flip_map: null          # null => y -> (num_classes - 1 - y). Ou um dict {0: 1, 1: 0}
+  poison_scale: 5.0       # gradient_poisoning: multiplicador aplicado ao update invertido
+  backdoor_target: 0      # backdoor: classe alvo para amostras com o gatilho
+  backdoor_fraction: 0.5  # fracao das amostras locais que recebem o gatilho
+  backdoor_scale: 3.0     # backdoor: fator de amplificacao do update (model replacement)
+  free_rider_noise: 0.001 # free_rider: ruido gaussiano para disfarcar a copia dos pesos
+
+# --- Reputacao (espelho off-chain da logica que ira para o Anchor) ---------
+reputation:
+  initial: 1.0            # reputacao inicial de todos (escala [0, 1])
+  alpha: 0.5              # R(t) = alpha*R(t-1) + (1-alpha)*S(t)
+  ban_threshold: 0.4      # abaixo disso -> reputacao / 10 + banimento permanente
+  ban_penalty_divisor: 10 # divisor aplicado a reputacao no momento do banimento
+  grace_rounds: 1         # rodadas iniciais sem banimento (o modelo ainda esta instavel)
+  weight_direction: 0.7   # peso do termo de similaridade de cosseno em S(t)
+  weight_magnitude: 0.3   # peso do termo de coerencia de norma em S(t)
+  norm_veto_ratio: 2.5    # update >2.5x (ou <1/2.5x) a mediana perde o credito de direcao
+                          # (fecha a brecha do model replacement / backdoor amplificado)
+  weighted_aggregation: true  # ponderar o FedAvg pela reputacao quando a defesa esta ativa
+
+# --- Saidas ----------------------------------------------------------------
+output:
+  results_dir: ./results
+  log_level: INFO

@@ -1,0 +1,25 @@
+# ---------------------------------------------------------------------------
+# AwakeFL - camada off-chain (simulacao de Federated Learning)
+# ---------------------------------------------------------------------------
+# Instalacao basica (roda os 3 cenarios com o motor local, sem Ray):
+#     pip install -r requirements.txt
+#
+# Se o PyTorch nao instalar pelo PyPI padrao (Windows/CPU), use:
+#     pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+#
+# Backend opcional do Flower com simulacao paralela (traz o Ray junto, pesado):
+#     pip install "flwr[simulation]>=1.7"
+# ---------------------------------------------------------------------------
+
+torch>=2.1
+torchvision>=0.16
+numpy>=1.24
+matplotlib>=3.7
+PyYAML>=6.0
+pytest>=7.4
+
+# Framework de FL. Mantemos a instalacao "magra" de proposito: o motor local
+# (server.run_federated) nao precisa do Ray, e o Ray e a principal fonte de
+# problemas de instalacao no Windows. O backend Flower continua disponivel via
+# --backend flower depois de instalar o extra [simulation].
+flwr>=1.7
