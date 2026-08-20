@@ -100,7 +100,7 @@ python run_experiments.py --scenarios A C
 
 Principais flags (`python run_experiments.py --help` lista todas):
 
-- **federação:** `--clients`, `--rounds`, `--local-epochs`, `--batch-size`, `--lr`, `--fraction-fit`
+- **federação:** `--clients`, `--rounds`, `--local-steps`, `--local-epochs`, `--batch-size`, `--lr`, `--fraction-fit`
 - **dados:** `--dataset {mnist,fashion_mnist}`, `--partition {iid,non_iid}`, `--alpha` (Dirichlet), `--train-subset`, `--test-subset`
 - **ataque:** `--attack {label_flipping,gradient_poisoning,backdoor,free_rider}`, `--malicious-fraction`, `--malicious-ids 2 5`, `--attack-start-round`
 - **reputação:** `--threshold` (limiar de banimento), `--rep-alpha`, `--rep-initial`, `--grace-rounds`, `--no-weighted-aggregation`
@@ -165,6 +165,20 @@ disso é o *cold start*, tratado pelo período de graça.
 > proteção ao recém-chegado, não latência de detecção. Reproduza a comparação
 > com `--rep-initial 1.0`.
 
+### Treino local nivelado por cima (`local_steps: auto`)
+
+Todos os participantes dão o **mesmo número de passos de SGD** por rodada, e esse
+número é o de uma época do **maior** participante. Com épocas fixas, quem tem 586
+amostras dá 18 passos e quem tem 1.928 dá 60 — o update do primeiro chega ~1,8×
+mais ruidoso, e o detector lê esse ruído como divergência. Na prática isso bania
+participantes honestos por serem pequenos (veja `analise_tamanho.py`).
+
+> **Cuidado com o valor.** Nivelar pela *média* fecha o viés e quebra o
+> experimento junto: com 40 passos, a queda A→B despencou de 14,7 pp para
+> **0,95 pp**, porque os atacantes — que estavam entre os participantes grandes —
+> perderam um terço dos passos de envenenamento. Nivelando por cima ninguém
+> treina menos do que treinaria, e só os pequenos ganham.
+
 **Score de consistência S(t) ∈ [0, 1]** mede o quanto a contribuição combina
 com o consenso dos participantes ainda confiáveis, combinando dois sinais:
 
@@ -202,6 +216,21 @@ R(t) = α · R(t-1) + (1 - α) · S(t)        com α = 0.5  (config: reputation.
 Média móvel exponencial: com α = 0,5 o peso de cada rodada cai pela metade a
 cada rodada seguinte. O sistema perdoa um azar pontual (um batch ruim), mas um
 comportamento anômalo sustentado derruba R geometricamente.
+
+**Duas médias móveis, com papéis diferentes.** Antes de pontuar, o update de
+cada participante também passa por uma média móvel (`reputation.smooth_updates`,
+padrão ligado). Não é redundância:
+
+```
+média( cos(direção + ruído) )   <   cos( média(direção + ruído) )
+        ↑ suavizar o SCORE            ↑ suavizar o UPDATE
+```
+
+O ruído de amostragem tem média zero e se cancela ao somar updates de várias
+rodadas; um viés malicioso, por ser sistemático, atravessa a média intacto.
+Suavizar só o score não recupera nada — a informação já foi descartada na
+conversão para nota. A do update cancela ruído; a de R(t) dá memória à
+reputação.
 
 **Banimento:** quando `R(t) < ban_threshold` (padrão 0,4), a reputação é
 **dividida por 10** e o participante é banido **permanentemente, sem reversão** —
@@ -367,8 +396,8 @@ divergir.
    no banimento; os honestos ficam em um patamar alto e estável.
 
 Resultado de referência (configuração padrão, `label_flipping`, seed 42):
-A = 98,65% · B = 83,95% · C = 98,20%, com precisão e recall de detecção = 1,00
-e banimentos nas rodadas 6, 6 e 7.
+A = 98,25% · B = 86,60% · C = 98,25%, com precisão e recall de detecção = 1,00
+e banimentos nas rodadas 6, 7 e 7. A defesa recupera **exatamente** o baseline.
 
 ---
 
