@@ -126,7 +126,10 @@ class AwakeFLClient(_FlowerNumPyClient):
             )
             logger.debug("Cliente %d (free-rider) devolveu o modelo global sem treinar.", self.client_id)
             return poisoned, self.num_examples, {
-                "train_loss": 0.0,  # metrica declarada (falsa por construcao)
+                # Metricas declaradas, falsas por construcao: o free-rider nao
+                # treinou nada e mesmo assim reporta numeros plausiveis.
+                "train_loss": 0.0,
+                "train_accuracy": 1.0,
                 "client_id": float(self.client_id),
                 "attacked": 1.0,
             }
@@ -151,8 +154,18 @@ class AwakeFLClient(_FlowerNumPyClient):
             )
             attacked = 1.0
 
+        # Acuracia DECLARADA: medida pelo participante nos dados em que ele
+        # acabou de treinar - envenenados, se ele for malicioso. Nao e um
+        # descuido, e o ponto: o atacante mede alto porque acerta os proprios
+        # rotulos trocados, e declara isso de boa-fe aparente. E a evidencia
+        # viva de que metrica auto-declarada nao serve para julgar ninguem, e de
+        # que a reputacao precisa sair do update.
+        loader_avaliacao = make_loader(x, y, self.batch_size, shuffle=False, seed=self.seed)
+        _, acuracia = test(self.model, loader_avaliacao, device=self.device)
+
         return weights, self.num_examples, {
             "train_loss": float(loss),
+            "train_accuracy": float(acuracia),
             "client_id": float(self.client_id),
             "attacked": attacked,
         }

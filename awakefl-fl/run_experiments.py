@@ -126,10 +126,12 @@ def parse_args(argv=None) -> argparse.Namespace:
     g.add_argument("--authority-keypair", type=Path,
                    help="keypair da autoridade para --chain devnet (ex.: ~/.config/solana/id.json)")
     g.add_argument("--results-dir", type=Path)
-    g.add_argument("--export-weights", action="store_true",
-                   help="grava os pesos da ultima rodada no formato canonico (.awfl) em "
-                        "results/pesos/<cenario>/ - e o arquivo que a instituicao sobe "
-                        "em /painel/contribuir para gerar o mesmo hash do livro-razao")
+    g.add_argument("--export-weights", nargs="?", const="ultima", default=None,
+                   metavar="RODADAS",
+                   help="grava os pesos no formato canonico (.awfl) em "
+                        "results/pesos/<cenario>/ - e o arquivo que a instituicao sobe em "
+                        "/painel/contribuir para gerar o mesmo hash do livro-razao. "
+                        "Sem valor = so a ultima rodada; 'todas'; ou uma lista como '3,7'")
     g.add_argument("--log-level", choices=["DEBUG", "INFO", "WARNING"], default=None)
     g.add_argument("--device", choices=["cpu", "cuda"], default=None)
     return p.parse_args(argv)
@@ -180,6 +182,30 @@ def merge_config(cfg: dict, args: argparse.Namespace) -> dict:
 # ---------------------------------------------------------------------------
 # Execucao de um cenario
 # ---------------------------------------------------------------------------
+
+
+def resolve_export_rounds(valor: Optional[str], total_rodadas: int) -> Optional[List[int]]:
+    """Traduz `--export-weights` na lista de rodadas a exportar.
+
+    Cada artefato tem o tamanho do modelo (~841 KB aqui), entao exportar tudo em
+    12 rodadas x 10 participantes daria ~100 MB. O padrao e so a ultima rodada;
+    'todas' quando se quer o historico completo; e uma lista explicita quando se
+    sabe exatamente qual rodada interessa - o caso da demonstracao, em que o
+    arquivo a subir no painel e o da rodada do banimento, nao o da ultima.
+    """
+    if valor is None:
+        return None
+    valor = str(valor).strip().lower()
+    if valor in ("ultima", "última", "last"):
+        return [total_rodadas]
+    if valor in ("todas", "all"):
+        return list(range(1, total_rodadas + 1))
+    try:
+        return sorted({int(v) for v in valor.replace(" ", "").split(",") if v})
+    except ValueError:
+        raise SystemExit(
+            f"--export-weights nao entende {valor!r}. Use 'todas', 'ultima' ou '3,7'."
+        )
 
 
 def resolve_local_steps(valor, partitions, batch_size: int) -> Optional[int]:
@@ -255,6 +281,7 @@ def run_scenario(
     backend: str,
     device: str,
     export_dir: Optional[Path] = None,
+    export_rounds: Optional[List[int]] = None,
     chain: Optional[object] = None,
 ) -> History:
     """Monta clientes e roda a federacao para um cenario."""
@@ -304,7 +331,7 @@ def run_scenario(
         export_dir=str(export_dir) if export_dir else None,
         # So a ultima rodada: um artefato por participante ja basta para a
         # auditoria, e exportar as 12 rodadas encheria ~100 MB sem ganho.
-        export_rounds=[int(fed["rounds"])] if export_dir else None,
+        export_rounds=export_rounds,
         chain=chain,
     )
 
@@ -361,6 +388,7 @@ def main(argv=None) -> int:
         histories[key] = run_scenario(
             key, cfg, data_bundle, backend=args.backend, device=device,
             export_dir=(results_dir / "pesos" / key) if args.export_weights else None,
+            export_rounds=resolve_export_rounds(args.export_weights, int(cfg["federation"]["rounds"])),
             # Um livro-razao por cenario: A, B e C sao federacoes distintas e
             # misturar as contribuicoes num so registro tornaria o extrato
             # impossivel de ler.
