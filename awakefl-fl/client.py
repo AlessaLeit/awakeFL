@@ -54,6 +54,7 @@ class AwakeFLClient(_FlowerNumPyClient):
         attack: Optional[AttackConfig] = None,
         malicious: bool = False,
         local_epochs: int = 1,
+        local_steps: Optional[int] = None,
         batch_size: int = 32,
         learning_rate: float = 0.05,
         momentum: float = 0.9,
@@ -66,6 +67,10 @@ class AwakeFLClient(_FlowerNumPyClient):
         self.attack = attack or AttackConfig()
         self.malicious = bool(malicious and self.attack.is_active)
         self.local_epochs = local_epochs
+        # Numero fixo de passos de SGD por rodada. Quando definido, substitui as
+        # epocas: iguala o trabalho local entre participantes grandes e pequenos
+        # e evita que o pequeno seja punido pelo ruido do proprio tamanho.
+        self.local_steps = local_steps
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.momentum = momentum
@@ -132,6 +137,7 @@ class AwakeFLClient(_FlowerNumPyClient):
             self.model,
             loader,
             epochs=self.local_epochs,
+            steps=self.local_steps,
             lr=self.learning_rate,
             momentum=self.momentum,
             device=self.device,
@@ -173,6 +179,7 @@ def build_clients(
     attack: AttackConfig,
     *,
     local_epochs: int = 1,
+    local_steps: Optional[int] = None,
     batch_size: int = 32,
     learning_rate: float = 0.05,
     momentum: float = 0.9,
@@ -190,6 +197,7 @@ def build_clients(
             attack=attack,
             malicious=part.client_id in malicious_ids,
             local_epochs=local_epochs,
+            local_steps=local_steps,
             batch_size=batch_size,
             learning_rate=learning_rate,
             momentum=momentum,

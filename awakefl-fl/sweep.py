@@ -301,6 +301,9 @@ def parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("--train-subset", type=int, help="repassado ao run_experiments")
     p.add_argument("--log-level", default="WARNING",
                    help="nivel das execucoes individuais (WARNING deixa a saida limpa)")
+    p.add_argument("--extra", nargs=argparse.REMAINDER, default=[],
+                   help="tudo depois disto vai direto para o run_experiments, ex.: "
+                        "--extra --smooth-updates --local-steps 40")
     return p.parse_args(argv)
 
 
@@ -318,6 +321,7 @@ def main(argv=None) -> int:
                         ("--train-subset", args.train_subset)):
         if valor is not None:
             extra += [flag, str(valor)]
+    extra += list(args.extra)
 
     total = len(seeds) * len(args.attacks)
     logger.info("=" * 78)

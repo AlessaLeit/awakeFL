@@ -78,6 +78,9 @@ def parse_args(argv=None) -> argparse.Namespace:
     g.add_argument("--clients", type=int, dest="num_clients", help="numero de participantes")
     g.add_argument("--rounds", type=int, help="numero de rodadas")
     g.add_argument("--local-epochs", type=int, help="epocas de treino local por rodada")
+    g.add_argument("--local-steps", type=int,
+                   help="passos de SGD fixos por rodada (substitui as epocas). Iguala o "
+                        "trabalho local entre participantes grandes e pequenos")
     g.add_argument("--batch-size", type=int)
     g.add_argument("--lr", type=float, dest="learning_rate")
     g.add_argument("--fraction-fit", type=float, help="fracao de clientes por rodada")
@@ -103,6 +106,9 @@ def parse_args(argv=None) -> argparse.Namespace:
                    help="reputacao inicial de todos (0.5 = neutro, espelha o Anchor)")
     g.add_argument("--grace-rounds", type=int,
                    help="contribuicoes iniciais de cada participante imunes ao banimento")
+    g.add_argument("--smooth-updates", action="store_true",
+                   help="pontuar a media movel dos updates em vez de suavizar o score "
+                        "(cancela o ruido de amostragem de participantes pequenos)")
     g.add_argument("--no-weighted-aggregation", action="store_true",
                    help="no cenario C, banir mas NAO ponderar o FedAvg pela reputacao")
 
@@ -134,6 +140,7 @@ def merge_config(cfg: dict, args: argparse.Namespace) -> dict:
             "num_clients": args.num_clients,
             "rounds": args.rounds,
             "local_epochs": args.local_epochs,
+            "local_steps": args.local_steps,
             "batch_size": args.batch_size,
             "learning_rate": args.learning_rate,
             "fraction_fit": args.fraction_fit,
@@ -155,6 +162,7 @@ def merge_config(cfg: dict, args: argparse.Namespace) -> dict:
             "ban_threshold": args.ban_threshold,
             "alpha": args.rep_alpha,
             "initial": args.rep_initial,
+            "smooth_updates": True if args.smooth_updates else None,
             "grace_rounds": args.grace_rounds,
             "weighted_aggregation": False if args.no_weighted_aggregation else None,
         },
@@ -234,6 +242,7 @@ def run_scenario(
         malicious_ids,
         attack,
         local_epochs=int(fed["local_epochs"]),
+        local_steps=int(fed["local_steps"]) if fed.get("local_steps") else None,
         batch_size=int(fed["batch_size"]),
         learning_rate=float(fed["learning_rate"]),
         momentum=float(fed.get("momentum", 0.9)),

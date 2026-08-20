@@ -11,7 +11,7 @@ visivel no cenario B.
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 
 import numpy as np
 import torch
@@ -82,28 +82,61 @@ def train(
     lr: float,
     momentum: float = 0.9,
     device: str = "cpu",
+    steps: Optional[int] = None,
 ) -> float:
-    """Treino local de um participante. Retorna a perda media da ultima epoca.
+    """Treino local de um participante. Retorna a perda media da ultima passagem.
 
     SGD com momentum e o otimizador padrao do FedAvg (McMahan et al., 2017):
     otimizadores adaptativos como o Adam guardam estado que nao e compartilhado
     entre rodadas, o que introduz ruido extra na comparacao entre participantes.
+
+    Dois regimes de trabalho local:
+
+    * `steps=None` (padrao classico) - `epochs` passagens completas pelos dados
+      locais. Quem tem mais dados da mais passos de SGD.
+    * `steps=K` - exatamente K passos, ciclando o loader quantas vezes precisar.
+
+    Por que o segundo existe: com epocas fixas, um participante de 436 amostras
+    e batch 32 da ~14 passos enquanto um de 2.149 da ~67. O update do primeiro
+    carrega ~2,2x mais ruido angular (o ruido cai com a raiz do numero de
+    passos), e o detector de consistencia le esse ruido como divergencia - ou
+    seja, pune o participante por ser pequeno. Fixar os passos iguala a
+    condicao. A troca e ruido por vies: quem tem poucos dados repassa mais
+    vezes por eles e sobreajusta um pouco mais.
     """
     model.train()
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum)
 
+    def um_passo(images, labels) -> Tuple[float, int]:
+        images, labels = images.to(device), labels.to(device)
+        optimizer.zero_grad()
+        loss = criterion(model(images), labels)
+        loss.backward()
+        optimizer.step()
+        return loss.item() * labels.size(0), labels.size(0)
+
+    if steps:
+        iterador = iter(loader)
+        running, seen = 0.0, 0
+        for _ in range(int(steps)):
+            try:
+                lote = next(iterador)
+            except StopIteration:  # dados acabaram: recomeca a passagem
+                iterador = iter(loader)
+                lote = next(iterador)
+            soma, n = um_passo(*lote)
+            running += soma
+            seen += n
+        return running / max(seen, 1)
+
     last_loss = 0.0
     for _ in range(max(1, epochs)):
         running, seen = 0.0, 0
         for images, labels in loader:
-            images, labels = images.to(device), labels.to(device)
-            optimizer.zero_grad()
-            loss = criterion(model(images), labels)
-            loss.backward()
-            optimizer.step()
-            running += loss.item() * labels.size(0)
-            seen += labels.size(0)
+            soma, n = um_passo(images, labels)
+            running += soma
+            seen += n
         last_loss = running / max(seen, 1)
     return last_loss
 

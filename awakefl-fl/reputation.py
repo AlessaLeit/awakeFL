@@ -272,6 +272,10 @@ class ParticipantState:
     # Numero de contribuicoes pontuadas. Espelha `Participant.contrib_count` da
     # conta on-chain e serve de "tempo de casa" para o periodo de graca.
     contrib_count: int = 0
+    # Media movel dos updates deste participante, usada quando
+    # `smooth_updates` esta ligado. Fica fora de `as_dict()` de proposito: e um
+    # vetor com ~200 mil floats, nao um dado de relatorio.
+    update_ema: Optional[np.ndarray] = None
 
     def as_dict(self) -> dict:
         return {
@@ -318,6 +322,8 @@ class ReputationLedger:
         weight_direction: float = 0.7,
         weight_magnitude: float = 0.3,
         norm_veto_ratio: float = 2.5,
+        smooth_updates: bool = False,
+        update_alpha: float = 0.5,
         enabled: bool = True,
     ) -> None:
         self.num_participants = num_participants
@@ -328,6 +334,10 @@ class ReputationLedger:
         self.weight_direction = weight_direction
         self.weight_magnitude = weight_magnitude
         self.norm_veto_ratio = norm_veto_ratio
+        # Suavizar os UPDATES antes de pontuar (ver `_suaviza`). Desligado por
+        # padrao para nao mudar o comportamento historico sem medicao.
+        self.smooth_updates = smooth_updates
+        self.update_alpha = update_alpha
         # `enabled=False` = cenario B: ainda *medimos* score e reputacao (para o
         # relatorio poder mostrar que o sinal existia), mas nunca banimos ninguem.
         self.enabled = enabled
@@ -357,6 +367,40 @@ class ReputationLedger:
 
     # -- nucleo ------------------------------------------------------------
 
+    def _suaviza(self, active: Dict[int, np.ndarray]) -> Dict[int, np.ndarray]:
+        """Substitui cada update pela media movel dos updates daquele participante.
+
+        Por que isto existe - e por que a ordem importa
+        -----------------------------------------------
+        O update de um participante e "direcao verdadeira + ruido de amostragem".
+        O ruido tem media zero e encolhe com a raiz do numero de passos de SGD,
+        entao quem tem poucos dados carrega mais ruido. O cosseno de um vetor
+        ruidoso contra o consenso e sistematicamente MENOR que o cosseno da
+        direcao verdadeira - o ruido "gira" o vetor para longe.
+
+        A media movel de R(t) sobre os SCORES nao desfaz isso: ela tira a media
+        de valores que ja vieram atenuados, e continua atenuada. Em simbolos:
+
+            media( cos(direcao + ruido) )  <  cos( media(direcao + ruido) )
+
+        Suavizando os UPDATES antes de pontuar, o ruido de media zero se cancela
+        entre rodadas e o que sobra e a direcao real. Um vies malicioso, por ser
+        sistematico, sobrevive intacto a media - e continua sendo detectado.
+
+        A referencia (mediana) e calculada depois, ja sobre os updates
+        suavizados, para a comparacao ser suavizado-contra-suavizado.
+        """
+        saida: Dict[int, np.ndarray] = {}
+        for cid, u in active.items():
+            estado = self.states[cid]
+            anterior = estado.update_ema
+            atual = u if anterior is None or anterior.shape != u.shape else (
+                self.update_alpha * anterior + (1.0 - self.update_alpha) * u
+            )
+            estado.update_ema = atual
+            saida[cid] = atual
+        return saida
+
     def compute_scores(self, updates: Dict[int, np.ndarray]) -> Tuple[Dict[int, float], float]:
         """Calcula S(t) de cada update submetido nesta rodada.
 
@@ -367,6 +411,9 @@ class ReputationLedger:
         active = {cid: u for cid, u in updates.items() if not self.states[cid].banned}
         if not active:
             return {}, 0.0
+
+        if self.smooth_updates:
+            active = self._suaviza(active)
 
         # Updates com NaN/inf sao separados ANTES de qualquer estatistica: um
         # unico NaN contamina mediana, normas e cossenos de todo mundo. Eles
