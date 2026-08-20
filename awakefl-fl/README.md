@@ -103,7 +103,7 @@ Principais flags (`python run_experiments.py --help` lista todas):
 - **federação:** `--clients`, `--rounds`, `--local-steps`, `--local-epochs`, `--batch-size`, `--lr`, `--fraction-fit`
 - **dados:** `--dataset {mnist,fashion_mnist}`, `--partition {iid,non_iid}`, `--alpha` (Dirichlet), `--train-subset`, `--test-subset`
 - **ataque:** `--attack {label_flipping,gradient_poisoning,backdoor,free_rider}`, `--malicious-fraction`, `--malicious-ids 2 5`, `--attack-start-round`
-- **reputação:** `--threshold` (limiar de banimento), `--rep-alpha`, `--rep-initial`, `--grace-rounds`, `--no-weighted-aggregation`
+- **reputação:** `--threshold` (limiar de banimento), `--rep-alpha`, `--rep-initial`, `--grace-rounds`, `--no-smooth-updates`, `--no-weighted-aggregation`
 - **execução:** `--scenarios A B C`, `--backend {local,flower}`, `--results-dir`, `--seed`, `--device`, `--log-level`
 
 **Backends.** O padrão é `local`: as rodadas são executadas sequencialmente no
@@ -123,8 +123,16 @@ pip install "flwr[simulation]>=1.7"
 pytest
 ```
 
-42 testes cobrindo a fórmula de reputação, o score de consistência, o
-banimento irreversível, cada tipo de ataque e o determinismo do hash.
+66 testes cobrindo a fórmula de reputação, o score de consistência, o
+banimento irreversível, cada tipo de ataque, o determinismo do hash e a
+derivação de PDA do cliente Anchor.
+
+Um teste de rede, desligado por padrão, confere que a derivação de PDA aponta
+para a conta real na Devnet:
+
+```bash
+AWAKEFL_DEVNET=1 pytest tests/test_anchor_client.py
+```
 
 ---
 
@@ -133,11 +141,16 @@ banimento irreversível, cada tipo de ataque e o determinismo do hash.
 ### Ordem das operações em uma rodada
 
 ```
-treino local  ->  deltas (w_local - w_global)  ->  S(t)  ->  R(t)  ->  banimento  ->  agregação
+treino local (passos fixos)  ->  delta (w_local - w_global)
+     ->  delta suavizado  ->  S(t)  ->  R(t)  ->  banimento  ->  agregação
 ```
 
-O banimento acontece **antes** da agregação: o update que derrubou a reputação
-abaixo do limiar já não entra no modelo global daquela rodada.
+Duas decisões de ordem que importam:
+
+- o **banimento acontece antes da agregação** — o update que derrubou a
+  reputação abaixo do limiar já não entra no modelo global daquela rodada;
+- o **delta é suavizado antes de virar nota**, e não depois. Suavizar a nota não
+  desfaz o ruído; suavizar o vetor, sim.
 
 ### Reputação — escala e fórmula
 
@@ -401,7 +414,56 @@ e banimentos nas rodadas 6, 7 e 7. A defesa recupera **exatamente** o baseline.
 
 ---
 
-## 5. Estrutura dos arquivos
+## 5. Resultado com desvio padrão
+
+Uma execução é anedota. `sweep.py` roda o experimento inteiro em N sementes
+independentes e agrega:
+
+```bash
+python sweep.py --seeds 10
+```
+
+Saída em `results_sweep/sumario.md`, com tabelas prontas para o texto e a curva
+de convergência média com faixa de ±1 desvio padrão. Também varre ataques:
+`--attacks label_flipping gradient_poisoning backdoor free_rider`.
+
+Referência com os padrões atuais (10 sementes, `label_flipping`, 3 atacantes):
+
+| Cenário | Acurácia final |
+| --- | --- |
+| A — baseline | 98,23% ± 0,33 |
+| B — ataque | 69,13% ± 26,78 |
+| C — defesa | **98,02% ± 0,35** |
+
+Precisão **1,00 ± 0,00** · recall **1,00 ± 0,00** · 30 de 30 atacantes banidos,
+em 5,40 ± 0,68 rodadas.
+
+O resultado central não é o ganho médio de +28,9 pp — é que **o desvio de C
+(±0,35) é tão apertado quanto o do baseline (±0,33), contra ±26,8 do cenário
+atacado**. A defesa não recupera acurácia "em média": ela devolve
+previsibilidade.
+
+### Viés de tamanho
+
+`analise_tamanho.py` mede se o detector está punindo participantes por terem
+poucos dados — a falha que motivou `local_steps: auto` e `smooth_updates`:
+
+```bash
+python analise_tamanho.py results_sweep --por-rodada
+```
+
+| 10 sementes | S pequenos | S grandes | lacuna | precisão | falsos+ |
+| --- | --- | --- | --- | --- | --- |
+| antes das correções | 0,592 | 0,927 | 0,336 | 0,97 | 1 |
+| **com os padrões atuais** | **0,945** | **0,945** | **−0,001** | **1,00** | **0** |
+
+A lacuna precisa cair **sem** que precisão ou recall caiam junto — senão a
+"correção" virou uma brecha de segurança. É por isso que o script reporta as
+três coisas na mesma tabela.
+
+---
+
+## 6. Estrutura dos arquivos
 
 | Arquivo | Papel |
 | --- | --- |
@@ -416,6 +478,9 @@ e banimentos nas rodadas 6, 7 e 7. A defesa recupera **exatamente** o baseline.
 | [`report.py`](report.py) | gráficos (PNG) e o relatório comparativo em Markdown |
 | [`run_experiments.py`](run_experiments.py) | orquestra os cenários A, B e C |
 | [`utils.py`](utils.py) | seed, logging e álgebra sobre listas de pesos |
+| [`anchor_client.py`](anchor_client.py) | cliente Anchor real (`--chain devnet`), mesmo contrato do ledger simulado |
+| [`sweep.py`](sweep.py) | varredura de sementes e ataques, com média ± desvio padrão |
+| [`analise_tamanho.py`](analise_tamanho.py) | mede o viés do detector contra participantes pequenos |
 | [`tests/`](tests) | testes unitários de reputação e ataques |
 
 `reputation.py` é deliberadamente **puro**: opera sobre vetores NumPy, não
