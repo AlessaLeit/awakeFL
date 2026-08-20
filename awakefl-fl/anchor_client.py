@@ -288,6 +288,11 @@ class AnchorLedger:
         self.bans: List[BanRecord] = []
         self.artifacts: List[Dict[str, Any]] = []
         self.signatures: List[Dict[str, str]] = []
+        # Em dry-run o contador vive so na memoria, comecando em 0. Sem isso o
+        # ensaio derivaria o MESMO PDA em todas as rodadas - exatamente o bug
+        # que o advance_round existe para evitar - e daria a impressao errada
+        # de que a integracao esta quebrada.
+        self._rodada_cache: Optional[int] = 0 if dry_run else None
 
     # -- helpers -----------------------------------------------------------
 
@@ -305,6 +310,36 @@ class AnchorLedger:
             "owner": owner,
             "system_program": SYSTEM_PROGRAM_ID,
         }
+
+    def current_round(self) -> int:
+        """Le `config.current_round` da chain.
+
+        A CHAIN e a autoridade sobre o numero da rodada, nao o servidor de FL.
+        O programa deriva o PDA da contribuicao a partir de
+        `config.current_round`; se o servidor derivar a partir do proprio
+        contador, os dois enderecos divergem e a instrucao e rejeitada com
+        ConstraintSeeds - um erro que so aparece na primeira transacao real,
+        porque o dry-run nao confere nada contra o programa.
+
+        O valor fica em cache e so e relido quando `advance_round()` o
+        invalida: sao 10 contribuicoes por rodada, e reler o Config em cada uma
+        seria uma ida ao RPC por participante sem nenhuma informacao nova.
+
+        Em dry-run devolve 0: nao ha chain para consultar.
+        """
+        if self._rodada_cache is not None:
+            return self._rodada_cache
+
+        async def _ler():
+            program, conexao = await self._com_programa(self.authority)
+            try:
+                conta = await program.account["Config"].fetch(pda_config(self._pid))
+                return int(conta.current_round)
+            finally:
+                await conexao.close()
+
+        self._rodada_cache = asyncio.run(_ler())
+        return self._rodada_cache
 
     async def _com_programa(self, keypair: "Keypair"):
         """Abre um Program assinando com a keypair dada."""
@@ -351,7 +386,13 @@ class AnchorLedger:
             raise ValueError(f"hash com {len(digest)} chars excede MAX_HASH_LEN")
 
         metricas = {k: float(v) for k, v in (metrics or {}).items()}
-        contas = self.contas_da_contribuicao(participant_id, round_number)
+
+        # O PDA vem da rodada DA CHAIN, nao da rodada do FL. As duas contagens
+        # so coincidem se a federacao comecar com o Config zerado, o que nao da
+        # para assumir: o programa e um deploy compartilhado e ja pode ter
+        # avancado. `round_number` continua no registro local, para o relatorio.
+        rodada_chain = self.current_round()
+        contas = self.contas_da_contribuicao(participant_id, rodada_chain)
 
         sig_envio = asyncio.run(
             self._envia(
@@ -433,9 +474,10 @@ class AnchorLedger:
         """`advance_round` - uma vez por rodada, DEPOIS de validar todas as contribuicoes.
 
         Avancar antes invalida os PDAs de contribuicao ja derivados para a
-        rodada corrente.
+        rodada corrente: eles apontariam para a rodada seguinte e o programa
+        rejeitaria com ConstraintSeeds.
         """
-        return asyncio.run(
+        sig = asyncio.run(
             self._envia(
                 self.authority,
                 IX_ADVANCE,
@@ -443,6 +485,11 @@ class AnchorLedger:
                 {"config": pda_config(self._pid), "authority": self.authority.pubkey()},
             )
         )
+        # O cache tem que acompanhar, senao a proxima rodada deriva o PDA da
+        # rodada que acabou de fechar.
+        if self._rodada_cache is not None:
+            self._rodada_cache += 1
+        return sig
 
     @property
     def banned_ids(self) -> List[int]:

@@ -367,6 +367,41 @@ pip install -r requirements-chain.txt
 python run_experiments.py --scenarios C --chain dry-run --rounds 2 --clients 3
 ```
 
+### Execução real na Devnet, do começo ao fim
+
+`bootstrap_devnet.py` monta o mundo antes da corrida: carteiras, saldo e
+registro. Todos os passos são idempotentes — rodar duas vezes não duplica nada.
+
+```bash
+python bootstrap_devnet.py plano     --participants 3 --rounds 3   # custo estimado
+python bootstrap_devnet.py checar    --participants 3              # só leitura
+python bootstrap_devnet.py financiar --participants 3              # airdrop
+python bootstrap_devnet.py registrar --participants 3              # register_participant
+```
+
+Com tudo pronto:
+
+```bash
+python run_experiments.py --chain devnet --scenarios C \
+    --clients 3 --rounds 3 --malicious-ids 2 \
+    --authority-keypair ~/.config/solana/id.json
+```
+
+E o resultado aparece em `/painel/extrato` e `/devnet` do site, lidos direto da
+chain — nenhum arquivo intermediário no caminho.
+
+**Comece pequeno.** 3 participantes × 3 rodadas são 24 transações e ~0,021 SOL.
+A configuração padrão (10 × 12) seriam 262 transações e ~0,23 SOL, vários
+minutos de execução, e provavelmente limite de taxa no RPC público. O rent das
+contas `Contribution` **não volta** — o programa não tem instrução de `close`.
+
+> **A rodada é da chain, não do servidor.** O programa deriva o PDA da
+> contribuição a partir de `config.current_round`, então o cliente lê esse
+> valor da chain e chama `advance_round` ao fim de cada rodada. Derivar o PDA
+> do contador local do FL parece funcionar até a primeira transação real, que
+> falha com `ConstraintSeeds` — e o dry-run não pega, porque não confere nada
+> contra o programa.
+
 Três coisas que valem saber antes de ir para a Devnet:
 
 1. **Cada participante precisa da própria wallet.** `submit_contribution` é
@@ -481,6 +516,7 @@ três coisas na mesma tabela.
 | [`anchor_client.py`](anchor_client.py) | cliente Anchor real (`--chain devnet`), mesmo contrato do ledger simulado |
 | [`sweep.py`](sweep.py) | varredura de sementes e ataques, com média ± desvio padrão |
 | [`analise_tamanho.py`](analise_tamanho.py) | mede o viés do detector contra participantes pequenos |
+| [`bootstrap_devnet.py`](bootstrap_devnet.py) | prepara carteiras, saldo e registro para rodar na Devnet |
 | [`tests/`](tests) | testes unitários de reputação e ataques |
 
 `reputation.py` é deliberadamente **puro**: opera sobre vetores NumPy, não

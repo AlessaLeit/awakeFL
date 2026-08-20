@@ -283,6 +283,18 @@ class SimulatedOnChainLedger:
         )
         return record
 
+    def advance_round(self) -> str:
+        """Fecha a rodada. Aqui nao faz nada - existe para a interface bater.
+
+        No `AnchorLedger` esta chamada e obrigatoria: o programa deriva o PDA da
+        contribuicao a partir de `config.current_round`, entao a rodada precisa
+        ser avancada on-chain ao fim de cada rodada de FL. O livro-razao
+        simulado carrega o numero da rodada em cada registro e nao precisa de
+        contador global — mas o servidor chama os dois do mesmo jeito, e e essa
+        simetria que permite trocar um pelo outro sem tocar no loop federado.
+        """
+        return ""
+
     def _export_artifact(
         self, record: ContributionRecord, weights: Sequence[np.ndarray]
     ) -> Optional[Path]:

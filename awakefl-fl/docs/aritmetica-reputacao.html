@@ -1,0 +1,1360 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Cada regra e cada conta do AwakeFL, na ordem em que o sistema as executa, com um exemplo numerico completo.">
+<title>Aritmética da Reputação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+/* ---------------------------------------------------------------------------
+   Herda o design system do AwakeFL (web/src/app/globals.css).
+   Mono-tema por decisao do projeto: o grafite existe para o verde neon
+   funcionar como fonte de luz. Uma versao clara seria outro design.
+--------------------------------------------------------------------------- */
+:root {
+  color-scheme: dark;
+
+  --plano: #131313;
+  --superficie-baixa: #0e0e0e;
+  --superficie: #1c1b1b;
+  --superficie-2: #201f1f;
+  --superficie-3: #2a2a2a;
+
+  --tinta: #e5e2e1;
+  --tinta-2: #a8a5a4;
+  --tinta-muda: #7a7877;
+
+  --grade: rgba(255, 255, 255, 0.05);
+  --borda: rgba(255, 255, 255, 0.1);
+  --borda-luz: rgba(255, 255, 255, 0.16);
+
+  --acento: #4af403;
+  --acento-forte: #7bff51;
+  --acento-lavado: rgba(74, 244, 3, 0.1);
+  --sobre-acento: #042100;
+
+  --critico: #ff5449;
+  --critico-lavado: rgba(255, 84, 73, 0.12);
+  --aviso: #fab219;
+  --aviso-lavado: rgba(250, 178, 25, 0.12);
+
+  --tipo-ui: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --tipo-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --medida: 68ch;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--plano);
+  color: var(--tinta);
+  font-family: var(--tipo-ui);
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.casca {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 28px 120px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+@media (min-width: 1060px) {
+  .casca { grid-template-columns: 216px minmax(0, 1fr); gap: 56px; }
+}
+
+/* ---------------------------------- trilho ------------------------------- */
+
+.trilho { display: none; }
+
+@media (min-width: 1060px) {
+  .trilho {
+    display: block;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 56px 0 40px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
+
+.trilho .marca {
+  font-family: var(--tipo-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--acento);
+  margin-bottom: 22px;
+}
+
+.trilho ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+
+.trilho a {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 6px;
+  color: var(--tinta-muda);
+  text-decoration: none;
+  padding: 5px 8px 5px 0;
+  border-left: 2px solid transparent;
+  padding-left: 10px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.trilho a:hover,
+.trilho a:focus-visible { color: var(--tinta); border-left-color: var(--borda-luz); }
+.trilho a .num { font-family: var(--tipo-mono); font-size: 11px; opacity: 0.65; }
+
+/* ---------------------------------- corpo -------------------------------- */
+
+.corpo { max-width: 780px; min-width: 0; padding-top: 56px; }
+
+section { padding-top: 60px; scroll-margin-top: 24px; }
+section + section { border-top: 1px solid var(--grade); }
+
+p, ul, ol { max-width: var(--medida); }
+
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+
+.capa { padding-top: 40px; }
+
+.capa .arquivo {
+  font-family: var(--tipo-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--acento);
+}
+
+.capa h1 {
+  font-size: clamp(34px, 6vw, 54px);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  margin: 16px 0 20px;
+}
+
+.capa .linha-fina {
+  font-size: 20px;
+  line-height: 1.55;
+  color: var(--tinta-2);
+  font-weight: 300;
+  max-width: 60ch;
+}
+
+.eyebrow {
+  font-family: var(--tipo-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tinta-muda);
+  margin: 0 0 10px;
+}
+
+.eyebrow .passo { color: var(--acento); }
+
+h2 {
+  font-size: clamp(24px, 3.4vw, 31px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.18;
+  margin-bottom: 18px;
+}
+
+h3 {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  margin: 34px 0 10px;
+}
+
+p { margin: 0 0 18px; }
+strong { font-weight: 600; color: #fff; }
+em { color: var(--tinta); font-style: italic; }
+
+ul, ol { margin: 0 0 18px; padding-left: 20px; }
+li { margin-bottom: 8px; }
+li::marker { color: var(--tinta-muda); }
+
+code {
+  font-family: var(--tipo-mono);
+  font-size: 0.88em;
+  background: var(--superficie-2);
+  border: 1px solid var(--borda);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--acento-forte);
+}
+
+a { color: var(--acento); }
+
+/* --------------------------- blocos didaticos ---------------------------- */
+
+/* A regra em si: a formula, isolada e monoespacada. */
+.regra {
+  font-family: var(--tipo-mono);
+  font-size: 15px;
+  line-height: 1.75;
+  background: var(--superficie-baixa);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 20px 22px;
+  margin: 0 0 4px;
+  overflow-x: auto;
+  color: var(--acento-forte);
+  white-space: pre;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A mesma regra dita em portugues, colada logo abaixo da formula. */
+.traducao {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+  background: var(--acento-lavado);
+  border: 1px solid rgba(74, 244, 3, 0.22);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 14px 22px 15px;
+  margin: -4px 0 24px;
+  font-size: 16px;
+  line-height: 1.6;
+  max-width: none;
+}
+
+.traducao .rot {
+  font-family: var(--tipo-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--acento);
+  padding-top: 5px;
+  white-space: nowrap;
+}
+
+.traducao p { margin: 0; max-width: none; }
+
+/* A conta feita com numeros de verdade. */
+.calculo {
+  font-family: var(--tipo-mono);
+  font-size: 13.5px;
+  line-height: 1.85;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 18px 22px;
+  margin: 0 0 24px;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--tinta-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.calculo .tit {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tinta-muda);
+  margin-bottom: 10px;
+}
+
+.calculo b { color: var(--tinta); font-weight: 500; }
+.calculo .ok { color: var(--acento-forte); }
+.calculo .mau { color: var(--critico); }
+.calculo .obs { color: var(--tinta-muda); }
+
+/* Aviso / armadilha. */
+.nota {
+  border-left: 2px solid var(--aviso);
+  background: var(--aviso-lavado);
+  border-radius: 0 8px 8px 0;
+  padding: 16px 20px;
+  margin: 0 0 24px;
+  font-size: 16px;
+  max-width: none;
+}
+
+.nota p:last-child { margin-bottom: 0; }
+.nota .rot {
+  font-family: var(--tipo-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--aviso);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.perigo { border-left-color: var(--critico); background: var(--critico-lavado); }
+.perigo .rot { color: var(--critico); }
+
+/* ---------------------------------- tabelas ------------------------------ */
+
+.rolagem { overflow-x: auto; margin: 0 0 24px; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+th, td {
+  text-align: left;
+  padding: 9px 14px 9px 0;
+  border-bottom: 1px solid var(--grade);
+  white-space: nowrap;
+}
+
+th {
+  font-family: var(--tipo-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tinta-muda);
+  font-weight: 400;
+  border-bottom-color: var(--borda);
+}
+
+td { color: var(--tinta-2); }
+td:first-child { color: var(--tinta); }
+td.num, th.num { text-align: right; font-family: var(--tipo-mono); }
+.destaque td { color: var(--acento-forte); }
+.ruim td { color: var(--critico); }
+
+/* ---------------------------------- figura ------------------------------- */
+
+figure { margin: 0 0 28px; }
+
+figure svg { display: block; width: 100%; height: auto; }
+
+figcaption {
+  font-size: 14px;
+  color: var(--tinta-muda);
+  line-height: 1.6;
+  margin-top: 12px;
+  max-width: var(--medida);
+}
+
+.moldura {
+  background: var(--superficie-baixa);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  padding: 20px;
+  overflow-x: auto;
+}
+
+/* ------------------------------ cartao final ----------------------------- */
+
+.cartao {
+  background: var(--superficie);
+  border: 1px solid var(--borda-luz);
+  border-radius: 10px;
+  padding: 26px 28px;
+  margin: 0 0 20px;
+}
+
+.cartao h3 { margin-top: 0; }
+.cartao .regra { margin-bottom: 16px; border-radius: 8px; }
+.cartao .regra:last-child { margin-bottom: 0; }
+
+.fim {
+  margin-top: 68px;
+  padding-top: 26px;
+  border-top: 1px solid var(--grade);
+  font-size: 14px;
+  color: var(--tinta-muda);
+  max-width: var(--medida);
+}
+
+:focus-visible { outline: 2px solid var(--acento); outline-offset: 3px; border-radius: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+</style>
+<style>
+/* Impressao: inverte para fundo claro e evita quebrar figuras e blocos de
+   calculo entre paginas. */
+@media print {
+  @page { margin: 18mm 16mm; }
+  body { background: #fff; color: #14140f; font-size: 10.5pt; }
+  .trilho { display: none !important; }
+  .casca { display: block; max-width: none; padding: 0; }
+  .corpo { max-width: none; padding-top: 0; }
+  section { padding-top: 26px; }
+  h1, h2, h3 { break-after: avoid; color: #14140f; }
+  figure, .nota, .regra, .traducao, .calculo, .cartao, table { break-inside: avoid; }
+  .regra, .calculo { background: #f4f4f0; border-color: #d8d8d2; color: #14140f; }
+  .calculo b, .calculo .ok { color: #2f7d0a; }
+  .calculo .mau { color: #b3261e; }
+  .calculo, .calculo .obs { color: #47473f; }
+  .traducao { background: #eef7e8; border-color: #cfe3c2; }
+  .nota { background: #fdf6e3; }
+  .moldura, .cartao { background: #fafaf7; border-color: #d8d8d2; }
+  .capa .arquivo, .eyebrow .passo, .traducao .rot { color: #2f7d0a; }
+  .eyebrow, td, p, li, figcaption { color: #3a3a34; }
+  td:first-child, strong, em, .capa .linha-fina { color: #14140f; }
+  .destaque td { color: #2f7d0a; }
+  .ruim td { color: #b3261e; }
+  code { background: #f2f2ee; border-color: #d8d8d2; color: #14140f; }
+  a { color: #2f7d0a; }
+}
+</style>
+</head>
+<body>
+<div class="casca">
+
+  <nav class="trilho" aria-label="Sumário">
+    <div class="marca">AwakeFL</div>
+    <ol>
+      <li><a href="#objeto"><span class="num">0</span><span>O objeto</span></a></li>
+      <li><a href="#pergunta"><span class="num">1</span><span>A pergunta</span></a></li>
+      <li><a href="#cosseno"><span class="num">2</span><span>Direção</span></a></li>
+      <li><a href="#mediana"><span class="num">3</span><span>Consenso</span></a></li>
+      <li><a href="#norma"><span class="num">4</span><span>Tamanho</span></a></li>
+      <li><a href="#score"><span class="num">5</span><span>O score S(t)</span></a></li>
+      <li><a href="#calibracao"><span class="num">6</span><span>Calibração</span></a></li>
+      <li><a href="#veto"><span class="num">7</span><span>Veto de norma</span></a></li>
+      <li><a href="#reputacao"><span class="num">8</span><span>Reputação R(t)</span></a></li>
+      <li><a href="#banimento"><span class="num">9</span><span>Banimento</span></a></li>
+      <li><a href="#falha"><span class="num">10</span><span>Onde falha</span></a></li>
+      <li><a href="#correcoes"><span class="num">11</span><span>As correções</span></a></li>
+      <li><a href="#cartao"><span class="num">12</span><span>Cartão de bolso</span></a></li>
+    </ol>
+  </nav>
+
+  <main class="corpo">
+
+    <header class="capa">
+      <div class="arquivo">AwakeFL · documento de estudo</div>
+      <h1>Aritmética da Reputação</h1>
+      <p class="linha-fina">
+        Cada regra e cada conta do AwakeFL, na ordem em que o sistema as executa.
+        Um exemplo com cinco participantes atravessa o documento inteiro — os
+        mesmos números, do primeiro cosseno até o banimento.
+      </p>
+    </header>
+
+    <section id="como">
+      <p class="eyebrow">Antes de começar</p>
+      <h2>Como este documento funciona</h2>
+      <p>
+        Cada passo aparece três vezes, sempre na mesma ordem: <strong>a regra</strong>
+        (a fórmula), <strong>em português</strong> (a mesma coisa sem símbolos) e
+        <strong>com números</strong> (a conta feita, que você pode conferir na
+        calculadora).
+      </p>
+      <p>
+        Não é preciso saber álgebra linear. As duas únicas ideias emprestadas da
+        matemática — cosseno e mediana — estão explicadas do zero, nos passos 2 e 3.
+      </p>
+      <div class="nota">
+        <span class="rot">O exemplo</span>
+        <p>
+          Cinco instituições, quatro honestas e uma atacante. Para caber num
+          desenho, os números têm <strong>duas dimensões</strong> em vez das
+          215.370 do modelo real. A conta é exatamente a mesma — só o tamanho da
+          lista muda.
+        </p>
+      </div>
+    </section>
+
+    <section id="objeto">
+      <p class="eyebrow"><span class="passo">Passo 0</span> · o objeto</p>
+      <h2>O que o sistema mede não é o modelo, é o empurrão</h2>
+      <p>
+        Toda rodada começa igual: o servidor manda o <strong>modelo global</strong>
+        para todos. Cada instituição treina nos próprios dados e devolve o modelo
+        já modificado. O sistema não olha o modelo devolvido — olha a
+        <strong>diferença</strong>:
+      </p>
+
+      <div class="regra">update do participante  =  pesos que ele devolveu  −  pesos que ele recebeu</div>
+      <div class="traducao">
+        <span class="rot">Em português</span>
+        <p>
+          O update é <em>para onde</em> aquele participante quis puxar o modelo,
+          e <em>com quanta força</em>. É o único objeto que o resto do documento
+          manipula.
+        </p>
+      </div>
+
+      <p>
+        No modelo real esse update é uma lista de 215.370 números. Isso assusta,
+        mas não muda nada: uma lista de números é um <strong>vetor</strong>, e um
+        vetor tem só dois atributos que interessam aqui — a <strong>direção</strong>
+        para onde aponta e o <strong>tamanho</strong> dele.
+      </p>
+      <p>
+        No nosso exemplo cada update tem dois números, então dá para desenhar
+        como uma seta num plano. Este é o ponto de partida:
+      </p>
+
+      <div class="calculo"><span class="tit">Os updates da rodada 1</span><b>P0</b>  honesto    [ <b> 1,00</b> ,  <b>0,20</b> ]
+<b>P1</b>  honesto    [ <b> 0,90</b> ,  <b>0,35</b> ]
+<b>P2</b>  honesto    [ <b> 1,10</b> ,  <b>0,10</b> ]
+<b>P3</b>  honesto    [ <b> 0,95</b> ,  <b>0,30</b> ]
+<b class="mau">P4</b>  <span class="mau">ATACANTE</span>   [ <b class="mau">−0,80</b> ,  <b class="mau">0,60</b> ]   <span class="obs">← puxa para o outro lado</span></div>
+    </section>
+
+    <section id="pergunta">
+      <p class="eyebrow"><span class="passo">Passo 1</span> · a pergunta</p>
+      <h2>Uma pergunta só, feita toda rodada</h2>
+      <p>
+        O sistema inteiro existe para responder uma pergunta, repetida a cada
+        rodada para cada participante:
+      </p>
+
+      <div class="regra">"Este empurrão combina com o que o resto do grupo está fazendo?"</div>
+      <div class="traducao">
+        <span class="rot">Em português</span>
+        <p>
+          Ninguém verifica os dados de ninguém — esse é o ponto do Federated
+          Learning. O que dá para verificar é se a contribuição de alguém
+          <em>destoa</em> das outras.
+        </p>
+      </div>
+
+      <p>
+        Repare no que isso <strong>não</strong> é: não é um teste de honestidade.
+        É um teste de consistência com o consenso. Guarde essa distinção — ela
+        volta no passo 10, e é dela que nasce o único defeito sério do desenho.
+      </p>
+      <p>
+        "Combinar com o grupo" se quebra em duas perguntas menores, que o sistema
+        mede separadamente:
+      </p>
+      <ul>
+        <li><strong>Direção</strong> — você está puxando para o mesmo lado? (passo 2)</li>
+        <li><strong>Tamanho</strong> — você está puxando com força parecida? (passo 4)</li>
+      </ul>
+    </section>
+
+    <section id="cosseno">
+      <p class="eyebrow"><span class="passo">Passo 2</span> · direção</p>
+      <h2>Cosseno: um número para "mesmo lado"</h2>
+      <p>
+        Para comparar duas direções usamos a <strong>similaridade de cosseno</strong>.
+        Apesar do nome, a ideia é simples: é um número entre −1 e 1 que responde
+        "essas duas setas apontam para o mesmo lugar?".
+      </p>
+
+      <div class="regra">cos(a, b)  =  (a · b) / (|a| × |b|)
+
+onde   a · b  =  a₁×b₁ + a₂×b₂ + …     (soma dos produtos, item a item)
+       |a|    =  √(a₁² + a₂² + …)       (o "tamanho" do vetor)</div>
+      <div class="traducao">
+        <span class="rot">Em português</span>
+        <p>
+          <strong>1,0</strong> = mesma direção exata. <strong>0,0</strong> =
+          direções sem relação, perpendiculares. <strong>−1,0</strong> = direções
+          opostas. Dividir pelos tamanhos é o que faz o resultado depender
+          <em>só</em> do ângulo.
+        </p>
+      </div>
+
+      <h3>Por que cosseno, e não distância</h3>
+      <p>
+        Essa divisão pelos tamanhos é a razão da escolha. Um hospital com muitos
+        dados produz naturalmente um update maior — ele deu mais passos de
+        treino. Se medíssemos <strong>distância</strong> entre os updates, esse
+        hospital pareceria divergente só por ser grande, e seria punido por isso.
+        O cosseno ignora o tamanho e pergunta apenas pelo ângulo.
+      </p>
+      <p>
+        O tamanho não é jogado fora — ele vira uma medida própria, no passo 4.
+        Separar as duas coisas é o que permite tratá-las com pesos diferentes.
+      </p>
+
+      <div class="calculo"><span class="tit">Conferindo com P0 = [1,00 · 0,20] e P1 = [0,90 · 0,35]</span>produto:   1,00×0,90 + 0,20×0,35  =  0,900 + 0,070  =  <b>0,970</b>
+|P0|:      √(1,00² + 0,20²)       =  √1,0400        =  <b>1,020</b>
+|P1|:      √(0,90² + 0,35²)       =  √0,9325        =  <b>0,966</b>
+
+cos    =   0,970 / (1,020 × 0,966)  =  <b class="ok">0,985</b>   <span class="obs">← quase o mesmo lado</span></div>
+    </section>
+
+    <section id="mediana">
+      <p class="eyebrow"><span class="passo">Passo 3</span> · consenso</p>
+      <h2>Comparado com quem? A mediana</h2>
+      <p>
+        Cosseno compara dois vetores. Mas queremos comparar um participante com
+        <em>o grupo</em> — e para isso é preciso construir um vetor que represente
+        o grupo. A escolha desse vetor é a decisão de segurança mais importante
+        do sistema.
+      </p>
+
+      <div class="regra">referência  =  mediana coordenada a coordenada dos updates confiáveis</div>
+      <div class="traducao">
+        <span class="rot">Em português</span>
+        <p>
+          Para cada posição da lista, pegue o valor daquela posição em todos os
+          participantes, coloque em ordem e fique com o do meio. Faça isso em
+          cada posição. O resultado é o "empurrão típico" da rodada.
+        </p>
+      </div>
+
+      <div class="calculo"><span class="tit">Construindo a referência</span><b>1ª coordenada</b>   valores: −0,80  0,90  <b>0,95</b>  1,00  1,10   → mediana  <b class="ok">0,95</b>
+<b>2ª coordenada</b>   valores:  0,10  0,20  <b>0,30</b>  0,35  0,60   → mediana  <b class="ok">0,30</b>
+
+referência  =  [ <b class="ok">0,95</b> , <b class="ok">0,30</b> ]
+
+<span class="obs">A média daria [0,63 · 0,31] — arrastada 34% para a esquerda por um
+único atacante, que nem precisou exagerar para conseguir isso.</span></div>
+
+      <h3>Por que mediana e não média</h3>
+      <p>
+        A média é <strong>frágil</strong>: qualquer valor extremo a puxa, e a
+        puxa proporcionalmente ao exagero. Um atacante que amplificasse o próprio
+        update em 100× moveria a média para perto de si — e passaria a ser ele
+        <em>o consenso</em>. Todos os honestos ficariam divergentes em relação a
+        ele. A defesa se viraria do avesso.
+      </p>
+      <p>
+        A mediana só olha <em>posição na fila</em>, não valor. Multiplicar o
+        próprio update por 100 não muda em nada onde ele cai na ordenação: ele
+        continua sendo o último. É por isso que se diz que a mediana tem
+        <strong>ponto de ruptura de 50%</strong> — só é possível corrompê-la
+        controlando mais da metade dos participantes.
+      </p>
+
+      <figure>
+        <div class="moldura">
+          <svg viewBox="0 0 720 330" role="img" aria-labelledby="tit-fig desc-fig">
+            <title id="tit-fig">Os cinco updates da rodada, a mediana e a média</title>
+            <desc id="desc-fig">Quatro setas honestas apontam para a direita e ligeiramente para cima, agrupadas. A seta do atacante aponta para a esquerda e para cima. A mediana fica no meio do grupo honesto; a média é visivelmente arrastada em direção ao atacante.</desc>
+
+            <!-- eixos -->
+            <line x1="40" y1="270" x2="690" y2="270" stroke="rgba(255,255,255,0.10)" stroke-width="1"/>
+            <line x1="300" y1="30" x2="300" y2="290" stroke="rgba(255,255,255,0.10)" stroke-width="1"/>
+            <text x="300" y="305" fill="#7a7877" font-family="JetBrains Mono, monospace" font-size="10" text-anchor="middle">origem</text>
+
+            <!-- setas honestas -->
+            <g stroke="#a8a5a4" stroke-width="2" fill="none" stroke-linecap="round">
+              <line x1="300" y1="270" x2="480" y2="234"/>
+              <line x1="300" y1="270" x2="462" y2="207"/>
+              <line x1="300" y1="270" x2="498" y2="252"/>
+            </g>
+            <g fill="#a8a5a4" font-family="JetBrains Mono, monospace" font-size="11">
+              <text x="490" y="242">P0</text>
+              <text x="454" y="192" text-anchor="end">P1</text>
+              <text x="508" y="258">P2</text>
+            </g>
+
+            <!-- mediana: por baixo, grossa -->
+            <line x1="300" y1="270" x2="471" y2="216" stroke="#4af403" stroke-width="7" stroke-linecap="round" opacity="0.30"/>
+            <!-- P3 coincide exatamente com a mediana -->
+            <line x1="300" y1="270" x2="471" y2="216" stroke="#e5e2e1" stroke-width="2" stroke-linecap="round"/>
+            <text x="479" y="208" fill="#e5e2e1" font-family="JetBrains Mono, monospace" font-size="11">P3</text>
+            <text x="479" y="221" fill="#4af403" font-family="JetBrains Mono, monospace" font-size="11">= mediana</text>
+
+            <!-- media: arrastada -->
+            <line x1="300" y1="270" x2="413" y2="214" stroke="#fab219" stroke-width="2" stroke-dasharray="5 4" stroke-linecap="round"/>
+            <text x="352" y="200" fill="#fab219" font-family="JetBrains Mono, monospace" font-size="11">média</text>
+
+            <!-- atacante -->
+            <line x1="300" y1="270" x2="156" y2="162" stroke="#ff5449" stroke-width="2.5" stroke-linecap="round"/>
+            <text x="120" y="152" fill="#ff5449" font-family="JetBrains Mono, monospace" font-size="11">P4 atacante</text>
+
+            <!-- arco do angulo ENTRE a referencia e o atacante: 125,6 graus -->
+            <path d="M 357.2 252.0 A 60 60 0 0 0 252.0 234.0" fill="none" stroke="rgba(255,84,73,0.4)" stroke-width="1" stroke-dasharray="3 3"/>
+            <text x="312" y="196" fill="#ff5449" font-family="JetBrains Mono, monospace" font-size="10" text-anchor="middle">126°</text>
+          </svg>
+        </div>
+        <figcaption>
+          Os quatro honestos formam um feixe estreito; o atacante abre 126° em
+          relação ao consenso. A mediana (verde) cai dentro do feixe — neste exemplo ela
+          coincide exatamente com P3, o que é comum: a mediana tende a pousar
+          sobre um membro típico. A média (tracejado âmbar) já saiu do feixe,
+          puxada pelo atacante.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section id="norma">
+      <p class="eyebrow"><span class="passo">Passo 4</span> · tamanho</p>
+      <h2>A norma, e por que ela é medida dos dois lados</h2>
+      <p>
+        A segunda metade da pergunta: você está puxando com <em>força</em>
+        parecida com a do grupo? A força de um update é a norma dele — o
+        comprimento da seta.
+      </p>
+
+      <div class="regra">r  =  |update do participante| / |norma mediana do grupo|
+
+magnitude  =  min( r , 1/r )        →  sempre entre 0 e 1</div>
+      <div class="traducao">
+        <span class="rot">Em português</span>
+        <p>
+          Divida seu tamanho pelo tamanho típico. Se der mais que 1, inverta.
+          Assim o resultado vale 1,0 quando você está no tamanho certo e cai
+          para 0 conforme você se afasta — <strong>para qualquer um dos lados</strong>.
+        </p>
+      </div>
+
+      <h3>Por que punir também quem é pequeno demais</h3>
+      <p>
+        Punir updates gigantes é intuitivo: é o envenenamento por amplificação.
+        Punir updates minúsculos parece estranho até você pensar no
+        <strong>free-rider</strong> — o participante que não treina nada e
+        devolve o modelo quase intocado, colhendo o benefício do trabalho alheio.
+      </p>
+      <p>
+        O cosseno sozinho não pega esse tipo: quem quase não se move tem uma
+        direção essencialmente aleatória, que às vezes calha de apontar para o
+        lado certo. O termo simétrico de magnitude pega — porque um update
+        praticamente nulo tem <code>r</code> perto de zero.
+      </p>
+
+      <div class="calculo"><span class="tit">As normas da rodada</span>|P0| = 1,020     |P1| = 0,966     |P2| = 1,105
+|P3| = 0,996     |P4| = 1,000
+
+norma mediana do grupo  =  <b class="ok">1,000</b>
+
+P2:  r = 1,105 / 1,000 = 1,105  →  min(1,105 ; 0,905) = <b>0,905</b>
+P4:  r = 1,000 / 1,000 = 1,000  →  min(1,000 ; 1,000) = <b class="mau">1,000</b>  <span class="obs">← nota máxima!</span></div>
+
+      <div class="nota">
+        <span class="rot">Repare nisto</span>
+        <p>
+          O atacante tira <strong>1,000</strong> em magnitude — o tamanho do
+          update dele é exatamente o típico. Um sistema que olhasse só o tamanho
+          o consideraria irrepreensível. É o cosseno que o denuncia, e é por isso
+          que a direção pesa mais que a magnitude na conta final.
+        </p>
+      </div>
+    </section>
+
+    <section id="score">
+      <p class="eyebrow"><span class="passo">Passo 5</span> · o score</p>
+      <h2>S(t): as duas medidas viram uma nota</h2>
+
+      <div class="regra">S(t)  =  0,7 × direção  +  0,3 × magnitude</div>
+      <div class="traducao">
+        <span class="rot">Em português</span>
+        <p>
+          A nota daquele participante <em>naquela rodada</em>, entre 0 e 1. A
+          direção vale mais que o dobro do tamanho porque é ela que pega os
+          ataques que importam — e porque tamanho é fácil de imitar.
+        </p>
+      </div>
+
+      <p>
+        O termo de direção não é o cosseno cru: ele é dividido pelo cosseno
+        mediano da rodada. Esse detalhe tem um passo só para ele, o próximo. Por
+        ora, veja a conta completa dos cinco:
+      </p>
+
+      <div class="rolagem">
+        <table>
+          <thead>
+            <tr>
+              <th>Participante</th>
+              <th class="num">cos</th>
+              <th class="num">direção</th>
+              <th class="num">magnitude</th>
+              <th>conta</th>
+              <th class="num">S(t)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>P0 honesto</td><td class="num">0,994</td><td class="num">1,000</td><td class="num">0,981</td><td>0,7×1,000 + 0,3×0,981</td><td class="num">0,994</td></tr>
+            <tr><td>P1 honesto</td><td class="num">0,998</td><td class="num">1,000</td><td class="num">0,966</td><td>0,7×1,000 + 0,3×0,966</td><td class="num">0,990</td></tr>
+            <tr><td>P2 honesto</td><td class="num">0,977</td><td class="num">0,983</td><td class="num">0,905</td><td>0,7×0,983 + 0,3×0,905</td><td class="num">0,960</td></tr>
+            <tr><td>P3 honesto</td><td class="num">1,000</td><td class="num">1,000</td><td class="num">0,996</td><td>0,7×1,000 + 0,3×0,996</td><td class="num">0,999</td></tr>
+            <tr class="ruim"><td>P4 atacante</td><td class="num">0,000</td><td class="num">0,000</td><td class="num">1,000</td><td>0,7×0,000 + 0,3×1,000</td><td class="num">0,300</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        A separação é limpa: honestos entre 0,96 e 1,00, atacante em 0,30. E
+        repare de onde vem o 0,30 do atacante — é <em>exatamente</em> o peso da
+        magnitude. Ele zerou a direção e ficou só com a nota de tamanho.
+      </p>
+      <p>
+        O cosseno dele é 0,000 e não negativo porque cossenos negativos são
+        cortados em zero antes da conta. Apontar 143° para fora e apontar 180°
+        para fora são a mesma coisa do ponto de vista da defesa: ambos são
+        "nenhum crédito de direção".
+      </p>
+    </section>
+
+    <section id="calibracao">
+      <p class="eyebrow"><span class="passo">Passo 6</span> · calibração</p>
+      <h2>Por que dividir pelo cosseno mediano</h2>
+      <p>
+        Este é o passo mais sutil do sistema, e o que faz ele funcionar fora do
+        laboratório.
+      </p>
+      <p>
+        Quanto os honestos concordam entre si <em>não é uma constante</em>. Com
+        dados parecidos entre as instituições, os updates honestos têm cosseno
+        ~0,9 entre si. Com dados heterogêneos — cada hospital atendendo uma
+        população diferente, que é o caso realista — esse número cai para ~0,4
+        <strong>sem ninguém ser malicioso</strong>. E ele também muda ao longo do
+        treino, conforme o modelo converge.
+      </p>
+
+      <div class="nota perigo">
+        <span class="rot">O que aconteceria com um limiar fixo</span>
+        <p>
+          Um corte fixo em, digamos, 0,7 teria dois comportamentos, ambos
+          inúteis: com dados heterogêneos <strong>bane a federação inteira</strong>
+          (todo mundo está abaixo de 0,7); com dados parecidos
+          <strong>não pega ninguém</strong> (todo mundo está acima).
+        </p>
+      </div>
+
+      <div class="regra">direção  =  min( 1 , cos do participante / cos mediano da rodada )</div>
+      <div class="traducao">
+        <span class="rot">Em português</span>
+        <p>
+          Em vez de perguntar "seu cosseno é alto?", pergunta
+          <strong>"seu cosseno é pior que o do participante do meio, hoje?"</strong>
+          A régua é remedida a cada rodada, com os participantes daquela rodada.
+        </p>
+      </div>
+
+      <div class="calculo"><span class="tit">A régua desta rodada</span>cossenos:  0,000   0,977   <b>0,994</b>   0,998   1,000
+                            └── mediano = <b class="ok">0,994</b>
+
+P2:  0,977 / 0,994  =  <b>0,983</b>   <span class="obs">← um pouquinho pior que o mediano</span>
+P0:  0,994 / 0,994  =  1,000
+P3:  1,000 / 0,994  =  1,006  →  cortado em <b>1,000</b>   <span class="obs">← ninguém tira mais que a nota máxima</span></div>
+
+      <p>
+        Quem está acima do mediano recebe 1,0 e pronto — não há prêmio por ser
+        mais alinhado que o grupo. A escala mede uma coisa só: <em>o quanto você
+        está pior que o participante típico de hoje</em>. É essa pergunta que
+        continua fazendo sentido tanto com dados parecidos quanto com dados
+        heterogêneos.
+      </p>
+    </section>
+
+    <section id="veto">
+      <p class="eyebrow"><span class="passo">Passo 7</span> · veto de norma</p>
+      <h2>A brecha do atacante esperto, e a trava</h2>
+      <p>
+        Um atacante que leia tudo até aqui percebe uma saída. A direção vale 0,7
+        da nota. E se ele apontar <em>exatamente para o mesmo lado que o grupo</em>,
+        mas com uma seta enorme?
+      </p>
+      <p>
+        Ele tiraria 1,0 em direção. Perderia pontos só na magnitude — 0,3 no
+        máximo. E como a agregação soma os updates, uma seta muito maior que as
+        outras <strong>domina o resultado</strong>: é o ataque de
+        <em>substituição de modelo</em>, que injeta um backdoor sem nunca
+        divergir em ângulo.
+      </p>
+
+      <div class="regra">se  |update| > 2,5 × mediana   ou   |update| &lt; mediana / 2,5
+então  crédito de direção = 0  →  S(t) = 0,3 × magnitude</div>
+      <div class="traducao">
+        <span class="rot">Em português</span>
+        <p>
+          Fora da faixa de tamanho razoável, apontar para o lado certo
+          <strong>não vale mais nada</strong>. A nota passa a depender só da
+          magnitude — que, por definição, já está péssima.
+        </p>
+      </div>
+
+      <p>
+        A trava é um <em>veto</em>, não um desconto: não reduz o crédito de
+        direção proporcionalmente, zera. É deliberado. Um desconto proporcional
+        deixaria o atacante otimizar a amplificação até o ponto exato em que o
+        ganho de influência compensasse a perda de nota. Zerar remove o cálculo:
+        não existe amplificação que valha a pena.
+      </p>
+    </section>
+
+    <section id="reputacao">
+      <p class="eyebrow"><span class="passo">Passo 8</span> · memória</p>
+      <h2>R(t): de nota da rodada para reputação</h2>
+      <p>
+        S(t) é a nota de <em>uma</em> rodada, e uma rodada ruim acontece com
+        gente honesta — uma partição infeliz de dados, um lote azarado. Banir
+        alguém por um único S baixo seria injusto e frágil.
+      </p>
+      <p>
+        A reputação R(t) é a memória disso ao longo do tempo:
+      </p>
+
+      <div class="regra">R(t)  =  0,5 × R(t−1)  +  0,5 × S(t)
+
+R(0) = 0,5 para todos    (neutro — todo participante começa no meio)</div>
+      <div class="traducao">
+        <span class="rot">Em português</span>
+        <p>
+          A reputação nova é metade da antiga mais metade da nota de hoje. Uma
+          rodada ruim derruba pela metade; duas seguidas derrubam a três
+          quartos. O passado nunca some de vez, só encolhe.
+        </p>
+      </div>
+
+      <div class="calculo"><span class="tit">Os mesmos S(t) repetidos por seis rodadas</span>            R(0)    R(1)    R(2)    R(3)    R(4)    R(5)    R(6)
+
+<b>P0</b> S=0,994  0,500   0,747   0,871   0,932   0,963   0,979   <b class="ok">0,986</b>
+<b class="mau">P4</b> S=0,300  0,500   0,400   0,350   0,325   0,312   0,306   <b class="mau">0,303</b></div>
+
+      <h3>Duas propriedades que valem entender</h3>
+      <p>
+        <strong>R esquece de onde partiu.</strong> Os dois começam em 0,5 e cada
+        um converge para o próprio S — 0,986 ≈ 0,994 e 0,303 ≈ 0,300. O peso do
+        valor inicial cai pela metade a cada rodada: 50%, 25%, 12%, 6%, 3%. Em
+        cinco rodadas ele praticamente não existe mais.
+      </p>
+      <p>
+        <strong>Por isso o valor inicial não é um parâmetro de detecção.</strong>
+        Isso foi medido no projeto: reaplicando a fórmula sobre os mesmos S(t)
+        observados, começar em 1,0 em vez de 0,5 antecipou o banimento em uma
+        rodada em apenas um de três atacantes. R(0) = 0,5 existe por outro
+        motivo — se o recém-chegado nascesse com nota máxima, um atacante banido
+        criaria outra carteira e voltaria com a ficha limpa.
+      </p>
+      <p>
+        O fator 0,5 é o botão de sensibilidade. Maior (0,8) = mais memória,
+        perdoa mais, demora mais para detectar. Menor (0,2) = reage rápido,
+        e pune ruído como se fosse ataque.
+      </p>
+    </section>
+
+    <section id="banimento">
+      <p class="eyebrow"><span class="passo">Passo 9</span> · banimento</p>
+      <h2>A decisão irreversível</h2>
+
+      <div class="regra">se  R(t) &lt; 0,4  e  o participante já tem mais de 2 contribuições:
+
+    R  ←  R / 10          (a penalidade)
+    banido  ←  verdadeiro  (permanente, sem reversão)</div>
+      <div class="traducao">
+        <span class="rot">Em português</span>
+        <p>
+          Cruzou o limiar, a reputação é dividida por dez e o participante sai da
+          federação para sempre. Não entra mais na agregação, não é mais
+          pontuado, e não conta mais para a mediana.
+        </p>
+      </div>
+
+      <p>
+        Na tabela do passo 8, P4 cruza 0,4 já na rodada 2 (R = 0,350). Com a
+        penalidade, a reputação final dele é 0,035.
+      </p>
+
+      <h3>Por que dividir por 10, se ele já está abaixo do limiar</h3>
+      <p>
+        A divisão não serve para a decisão de agora — serve contra o
+        <strong>adversário paciente</strong>: aquele que contribui honestamente
+        por vinte rodadas, acumula reputação alta, e ataca na vigésima primeira
+        contando com a memória da fórmula para amortecer a queda. A divisão por
+        10 torna a reputação acumulada sem valor no instante do flagrante. Não
+        existe crédito guardado que compre um ataque.
+      </p>
+
+      <h3>Por que permanente</h3>
+      <p>
+        Se banir fosse temporário, a estratégia ótima do atacante seria atacar de
+        forma intermitente: envenena, cumpre a suspensão, volta, envenena de
+        novo. A irreversibilidade elimina esse ciclo. O custo dessa escolha é
+        real e aparece no próximo passo.
+      </p>
+
+      <h3>A carência</h3>
+      <p>
+        As duas primeiras contribuições <em>de cada participante</em> são imunes.
+        E são contadas por <strong>tempo de casa</strong>, não por número da
+        rodada — quem se registra na rodada 50 tem a mesma proteção de quem
+        estava lá desde o começo. É quando ele mais precisa: está sozinho
+        carregando uma distribuição de dados que ninguém mais tem.
+      </p>
+    </section>
+
+    <section id="falha">
+      <p class="eyebrow"><span class="passo">Passo 10</span> · onde falhava</p>
+      <h2>A clínica pequena era banida por ser pequena</h2>
+      <p>
+        Rodando o experimento com dez sementes diferentes, a detecção pegou
+        <strong>30 de 30 atacantes</strong>. Mas a precisão não foi perfeita:
+        houve um falso positivo. Um participante <em>honesto</em>, banido
+        permanentemente.
+      </p>
+      <p>
+        Este passo descreve o sistema <strong>antes</strong> da correção — que
+        vem no passo 11 e hoje está ativa por padrão. A falha é apresentada
+        primeiro de propósito: sem entender o defeito, a correção vira só mais
+        um parâmetro.
+      </p>
+      <p>
+        A investigação foi contraintuitiva. O suspeito óbvio seria uma
+        distribuição de dados esquisita — mas ele tinha a distribuição
+        <em>mais equilibrada</em> da federação. O que ele tinha de diferente era
+        tamanho: <strong>436 amostras</strong>, contra 2.149 do maior.
+      </p>
+
+      <div class="calculo"><span class="tit">Os 70 participantes honestos das 10 execuções</span>com <b>menos</b> de 600 amostras   (3 participantes)   S médio = <b class="mau">0,621</b>
+com <b>600 ou mais</b>           (67 participantes)  S médio = <b class="ok">0,931</b></div>
+
+      <p>
+        Existe um <strong>penhasco</strong>. E a causa não tem nada a ver com
+        honestidade:
+      </p>
+
+      <div class="regra">436 amostras ÷ lote de 32  =  ~14 passos de treino
+2.149 amostras ÷ lote de 32  =  ~67 passos de treino
+
+ruído da direção  ∝  1 / √(passos)      →   √(67/14) ≈ 2,2× mais ruído</div>
+      <div class="traducao">
+        <span class="rot">Em português</span>
+        <p>
+          Quem tem menos dados dá menos passos de treino, e um update feito de
+          poucos passos é <strong>chacoalhado</strong> pelo acaso da amostragem.
+          A seta dele treme. O cosseno contra o consenso cai — mesmo que a
+          direção verdadeira dele esteja perfeitamente certa.
+        </p>
+      </div>
+
+      <div class="nota perigo">
+        <span class="rot">A conclusão desconfortável</span>
+        <p>
+          O score não está errado. Ele mede exatamente o que promete: distância
+          do consenso. O problema é que <strong>estar longe do consenso tem duas
+          causas</strong> — ser malicioso e ser pequeno demais para produzir um
+          update estável — e a fórmula não as distingue.
+        </p>
+        <p>
+          Traduzido para o mundo real: a clínica pequena é banida, de forma
+          permanente, por ser pequena.
+        </p>
+      </div>
+    </section>
+
+    <section id="correcoes">
+      <p class="eyebrow"><span class="passo">Passo 11</span> · as correções</p>
+      <h2>Duas formas de consertar, atacando pontos diferentes</h2>
+
+      <div class="nota">
+        <span class="rot">Situação atual</span>
+        <p>
+          As duas correções desta seção estão <strong>ligadas por padrão</strong>
+          desde a medição descrita aqui. O passo 10 descreve o sistema como ele
+          era antes delas — a falha é apresentada primeiro porque entender o
+          defeito é o que faz a correção fazer sentido.
+        </p>
+      </div>
+
+      <h3>Correção A — igualar os passos, não as épocas</h3>
+      <p>
+        Hoje cada participante faz <em>uma passagem completa</em> pelos próprios
+        dados. Quem tem mais dados dá mais passos. Trocando por
+        <strong>um número fixo de passos para todos</strong>, o participante
+        pequeno simplesmente repassa mais vezes pelo que tem, e o ruído se
+        iguala.
+      </p>
+      <p>
+        Isso ataca a <em>causa</em>. O preço é trocar ruído por viés: quem repassa
+        muitas vezes os mesmos poucos dados se especializa mais neles.
+      </p>
+
+      <h3>Correção B — suavizar o update, não o score</h3>
+      <p>
+        Esta aponta um erro sutil no desenho atual. A reputação já faz uma média
+        ao longo do tempo — mas <strong>média de quê</strong>? Hoje ela tira a
+        média dos <em>scores</em>, e cada score já veio achatado pelo ruído. A
+        média de valores achatados continua achatada.
+      </p>
+
+      <div class="regra">média( cos(direção + ruído) )   &lt;   cos( média(direção + ruído) )
+       ↑ o que R(t) faz hoje          ↑ o que a correção B faz</div>
+      <div class="traducao">
+        <span class="rot">Em português</span>
+        <p>
+          O ruído tem média zero: somando os updates de várias rodadas, ele se
+          cancela sozinho e sobra a direção verdadeira. Mas se você
+          <em>primeiro</em> transforma cada update numa nota e só <em>depois</em>
+          tira a média, o cancelamento nunca acontece — a informação já foi
+          jogada fora na conversão.
+        </p>
+      </div>
+
+      <p>
+        Um viés malicioso, por ser sistemático e não aleatório, atravessa a média
+        intacto. Então a correção devolve pontos a quem é ruidoso sem devolver
+        nada a quem é malicioso.
+      </p>
+
+      <h3>O que aconteceu quando medimos</h3>
+      <p>
+        As duas correções foram rodadas nas mesmas cinco sementes, com os mesmos
+        atacantes. A coluna que importa é a <strong>lacuna</strong>: o quanto os
+        participantes pequenos ficam abaixo dos grandes.
+      </p>
+
+      <div class="rolagem">
+        <table>
+          <thead>
+            <tr>
+              <th>Configuração</th>
+              <th class="num">S pequenos</th>
+              <th class="num">S grandes</th>
+              <th class="num">lacuna</th>
+              <th class="num">recall</th>
+              <th class="num">falsos+</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="ruim"><td>sem correção</td><td class="num">0,568</td><td class="num">0,930</td><td class="num">0,362</td><td class="num">1,00</td><td class="num">1</td></tr>
+            <tr><td>A — passos fixos</td><td class="num">0,918</td><td class="num">0,941</td><td class="num">0,023</td><td class="num">1,00</td><td class="num">0</td></tr>
+            <tr><td>B — update suavizado</td><td class="num">0,764</td><td class="num">0,935</td><td class="num">0,171</td><td class="num">1,00</td><td class="num">0</td></tr>
+            <tr class="destaque"><td>A + B</td><td class="num">0,972</td><td class="num">0,944</td><td class="num">−0,028</td><td class="num">1,00</td><td class="num">0</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        As três eliminaram o falso positivo sem perder um único atacante. Mas o
+        <em>quando</em> separa as duas, e é o que decide qual adotar:
+      </p>
+
+      <div class="calculo"><span class="tit">S dos participantes pequenos, rodada a rodada</span>rodada        1      2      3      4      5      6      7      8
+
+sem correção  <span class="mau">0,583  0,760  0,353  0,590  0,343  0,369</span>  0,833  0,757
+A: passos     <b class="ok">0,964  0,962  0,959  0,945</b>  0,852  0,946  0,870  0,911
+B: suave      <span class="mau">0,583  0,744  0,377  0,581</span>  <b class="ok">0,784  0,823</b>  0,795  0,867
+
+<span class="obs">A já está alta na rodada 1. B é idêntica à base até a rodada 4 —
+a média precisa de rodadas para acumular antes de cancelar o ruído.</span></div>
+
+      <p>
+        <strong>A remove a causa; B compensa o efeito, e compensa tarde.</strong>
+        No caso real que investigamos, o participante honesto foi banido na
+        rodada 5 — a correção B chegou a tempo por uma rodada. Se o azar tivesse
+        vindo na rodada 3, ela não teria salvado ninguém. A carência dura duas
+        contribuições; B só começa a agir na quinta.
+      </p>
+      <p>
+        Por isso as duas juntas são melhores que qualquer uma sozinha, e não por
+        somarem efeito: elas cobrem <em>momentos diferentes</em>. A protege desde
+        a primeira rodada, B continua melhorando a medida conforme a federação
+        acumula histórico.
+      </p>
+
+      <h3>O resultado com as duas ligadas</h3>
+      <p>
+        Com as correções no padrão, o experimento inteiro foi refeito em dez
+        sementes independentes. Este é o número que vale para o texto:
+      </p>
+
+      <div class="rolagem">
+        <table>
+          <thead>
+            <tr>
+              <th>10 sementes</th>
+              <th class="num">S pequenos</th>
+              <th class="num">S grandes</th>
+              <th class="num">lacuna</th>
+              <th class="num">precisão</th>
+              <th class="num">falsos+</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="ruim"><td>antes</td><td class="num">0,592</td><td class="num">0,927</td><td class="num">0,336</td><td class="num">0,97</td><td class="num">1</td></tr>
+            <tr class="destaque"><td>depois</td><td class="num">0,945</td><td class="num">0,945</td><td class="num">−0,001</td><td class="num">1,00</td><td class="num">0</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        <strong>0,945 contra 0,945.</strong> O detector deixou de enxergar
+        tamanho: um participante pequeno agora pontua exatamente como um grande.
+        E a detecção não pagou nada por isso — precisão e recall 1,00 nas dez
+        sementes, com os 30 atacantes banidos.
+      </p>
+
+      <div class="rolagem">
+        <table>
+          <thead>
+            <tr><th>10 sementes</th><th class="num">antes</th><th class="num">depois</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>A — baseline</td><td class="num">98,25% ± 0,26</td><td class="num">98,23% ± 0,33</td></tr>
+            <tr><td>B — ataque</td><td class="num">63,14% ± 24,03</td><td class="num">69,13% ± 26,78</td></tr>
+            <tr><td>C — defesa</td><td class="num">97,85% ± 0,29</td><td class="num">98,02% ± 0,35</td></tr>
+            <tr><td>rodadas até banir</td><td class="num">5,80 ± 0,76</td><td class="num">5,40 ± 0,68</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        O ataque continua forte (queda de 29,1 pp) e a distância entre a defesa e
+        o baseline caiu de 0,40 pp para 0,21 pp. A detecção ficou até um pouco
+        mais rápida.
+      </p>
+
+      <div class="nota">
+        <span class="rot">Honestidade sobre a amostra</span>
+        <p>
+          Apenas <strong>três</strong> dos 70 participantes honestos ficaram
+          abaixo de 600 amostras nessas dez sementes. A direção do efeito é
+          inequívoca, o mecanismo é entendido e o falso positivo desapareceu —
+          mas com três casos, a magnitude exata do 0,945 ainda carrega incerteza.
+          Mais sementes só melhoram esse número.
+        </p>
+      </div>
+
+      <div class="nota">
+        <span class="rot">A armadilha de incentivo</span>
+        <p>
+          Qualquer correção que dê tolerância a quem tem poucos dados esbarra
+          num problema: o número de amostras é <strong>auto-declarado</strong>.
+          Um atacante pode dizer que é pequeno para comprar indulgência.
+        </p>
+        <p>
+          O que segura o desenho é que o mesmo número também pondera a agregação.
+          Declarar-se pequeno compra tolerância <em>e paga com influência</em> — e
+          influência é justamente o que o atacante quer. A regra a nunca violar:
+          a tolerância não pode crescer mais rápido que a perda de influência.
+        </p>
+      </div>
+
+      <p>
+        O critério de aceite era duplo de propósito, senão a "correção" viraria
+        um buraco de segurança: o S dos pequenos precisava subir <strong>e</strong>
+        a detecção precisava continuar pegando todos os atacantes. As duas
+        passaram nos dois.
+      </p>
+
+      <h3>A armadilha de escolher o número de passos</h3>
+      <p>
+        A correção A tem um parâmetro — <em>quantos</em> passos — e a primeira
+        escolha foi errada de um jeito instrutivo. Fixamos 40, perto da
+        <strong>média</strong> dos participantes. O viés sumiu, mas o experimento
+        inteiro desmoronou junto:
+      </p>
+
+      <div class="calculo"><span class="tit">Queda de acurácia causada pelo ataque (semente 42)</span>épocas locais (antes)        <b>14,7 pp</b>
+40 passos (perto da média)    <b class="mau">0,95 pp</b>   <span class="obs">← o ataque praticamente sumiu</span>
+'auto' (época do maior)      <b class="ok">11,7 pp</b></div>
+
+      <p>
+        O motivo: passos fixos mexem no treino de <strong>todo mundo</strong>,
+        inclusive dos atacantes. Nessa federação o maior participante dava 60
+        passos por época e o menor, 18. Fixar em 40 dava 22 passos a mais ao
+        pequeno — <em>e tirava 20 do grande</em>. Como os atacantes estavam entre
+        os grandes, o ataque perdeu um terço da força de envenenamento, e o
+        cenário B deixou de demonstrar qualquer coisa.
+      </p>
+
+      <div class="regra">local_steps = "auto"  →  passos de UMA época do MAIOR participante</div>
+      <div class="traducao">
+        <span class="rot">Em português</span>
+        <p>
+          Nivele <strong>por cima</strong>, não pela média. Assim ninguém treina
+          menos do que treinaria antes — só os pequenos treinam mais. O viés
+          some sem que o experimento mude de assunto.
+        </p>
+      </div>
+
+      <p>
+        O preço de nivelar por cima é o participante pequeno repassar várias
+        vezes pelos próprios dados — quatro vezes, no caso extremo medido — e
+        sobreajustar um pouco mais. Entre um participante pequeno que sobreajusta
+        e um participante pequeno banido por engano, o projeto escolhe o
+        primeiro.
+      </p>
+    </section>
+
+    <section id="cartao">
+      <p class="eyebrow"><span class="passo">Passo 12</span> · referência</p>
+      <h2>Cartão de bolso</h2>
+      <p>Tudo o que o sistema calcula, em ordem de execução, numa página.</p>
+
+      <div class="cartao">
+        <h3>Por rodada, para cada participante</h3>
+        <div class="regra">0.  treino local =  N passos de SGD, IGUAIS para todos
+                   (N = uma época do maior participante)
+
+1.  update      =  pesos devolvidos − pesos recebidos
+
+2.  suavizado   =  0,5 × suavizado anterior  +  0,5 × update
+                   (tudo daqui para baixo usa o suavizado)
+
+3.  referência  =  mediana coordenada a coordenada dos confiáveis
+
+4.  cos         =  (update · referência) / (|update| × |referência|)
+    direção     =  min( 1 , max(0, cos) / cos mediano da rodada )
+
+5.  r           =  |update| / norma mediana
+    magnitude   =  min( r , 1/r )
+
+6.  veto        =  se r > 2,5 ou r < 1/2,5  →  direção = 0
+
+7.  S(t)        =  0,7 × direção  +  0,3 × magnitude
+
+8.  R(t)        =  0,5 × R(t−1)  +  0,5 × S(t)
+
+9.  se R(t) < 0,4 e contribuições > 2:
+        R ← R / 10 ,  banido para sempre
+
+10. agregação   =  média dos não-banidos, ponderada por
+                   nº de amostras × reputação</div>
+      </div>
+
+      <p>
+        Os passos <strong>0</strong> e <strong>2</strong> são as correções do
+        passo 11. Repare que há duas médias móveis e elas fazem coisas
+        diferentes: a do passo 2 cancela o <em>ruído do update</em>; a do passo 8
+        dá <em>memória à reputação</em>. Suavizar nos dois lugares não é
+        redundância — é o que separa "esta rodada foi ruidosa" de "este
+        participante vem sendo inconsistente".
+      </p>
+
+      <div class="rolagem">
+        <table>
+          <thead>
+            <tr><th>Parâmetro</th><th class="num">Padrão</th><th>O que muda se você mexer</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>passos locais</td><td class="num">auto</td><td>nivelar pela média quebra o experimento</td></tr>
+            <tr><td>suavização do update</td><td class="num">0,5</td><td>maior = cancela mais ruído, reage mais devagar</td></tr>
+            <tr><td>peso da direção</td><td class="num">0,7</td><td>maior = mais sensível a ataques de rótulo</td></tr>
+            <tr><td>peso da magnitude</td><td class="num">0,3</td><td>maior = mais sensível a free-rider</td></tr>
+            <tr><td>fator da média móvel</td><td class="num">0,5</td><td>maior = mais memória, detecta mais devagar</td></tr>
+            <tr><td>reputação inicial</td><td class="num">0,5</td><td>não afeta detecção; afeta whitewashing</td></tr>
+            <tr><td>limiar de banimento</td><td class="num">0,4</td><td>maior = mais falso positivo</td></tr>
+            <tr><td>divisor da penalidade</td><td class="num">10</td><td>maior = pior para o adversário paciente</td></tr>
+            <tr><td>carência</td><td class="num">2</td><td>contribuições, não rodadas</td></tr>
+            <tr><td>veto de norma</td><td class="num">2,5×</td><td>menor = mais rígido com amplificação</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="fim">
+        Os números do exemplo saíram do próprio código — <code>reputation.py</code>,
+        as mesmas funções que rodam no experimento. Os resultados de 10 sementes
+        vêm de <code>sweep.py</code>, e a análise do viés de tamanho de
+        <code>analise_tamanho.py</code>, ambos reproduzíveis com um comando. Este
+        documento acompanha a <em>Anatomia do AwakeFL</em>, que cobre a
+        arquitetura; aqui só as contas.
+      </p>
+    </section>
+
+  </main>
+</div>
+</body>
+</html>

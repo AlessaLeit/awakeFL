@@ -242,6 +242,13 @@ def run_federated(
         for cid in outcome.newly_banned:
             chain.register_ban(round_number, cid, ledger.reputation_of(cid))
 
+        # 5b) Fecha a rodada no livro-razao. No ledger simulado e um no-op; no
+        # AnchorLedger e obrigatorio, porque o programa deriva o PDA da
+        # contribuicao a partir de `config.current_round`. Tem que vir DEPOIS de
+        # todas as submissoes e validacoes da rodada: avancar antes invalidaria
+        # os PDAs ja derivados.
+        chain.advance_round()
+
         # 6) Agregacao (FedAvg, ponderado por reputacao quando a defesa esta ativa).
         agg_weights = ledger.aggregation_weights(
             num_examples, use_reputation=reputation_cfg.get("weighted_aggregation", True)
@@ -397,6 +404,10 @@ if FLOWER_AVAILABLE:
                 )
             for cid in outcome.newly_banned:
                 self.chain.register_ban(server_round, cid, self.ledger.reputation_of(cid))
+
+            # Fecha a rodada on-chain (no-op no ledger simulado). Ver a nota
+            # equivalente em `run_federated`.
+            self.chain.advance_round()
 
             weights = self.ledger.aggregation_weights(
                 num_examples, use_reputation=self.use_reputation_weights
