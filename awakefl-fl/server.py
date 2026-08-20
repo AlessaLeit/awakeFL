@@ -139,6 +139,7 @@ def run_federated(
     seed: int = 42,
     export_dir: Optional[str] = None,
     export_rounds: Optional[Sequence[int]] = None,
+    chain: Optional[object] = None,
 ) -> History:
     """Executa o loop federado completo e devolve o historico do cenario.
 
@@ -164,7 +165,9 @@ def run_federated(
         norm_veto_ratio=reputation_cfg.get("norm_veto_ratio", 2.5),
         enabled=defense_enabled,
     )
-    chain = SimulatedOnChainLedger(export_dir=export_dir, export_rounds=export_rounds)
+    # `chain` injetavel: o AnchorLedger tem a mesma interface e entra aqui
+    # sem o loop federado saber a diferenca.
+    chain = chain or SimulatedOnChainLedger(export_dir=export_dir, export_rounds=export_rounds)
     history = History(
         scenario=scenario,
         malicious_ids=malicious_ids,
@@ -433,6 +436,7 @@ def run_flower_simulation(
     seed: int = 42,
     export_dir: Optional[str] = None,
     export_rounds: Optional[Sequence[int]] = None,
+    chain: Optional[object] = None,
 ) -> History:
     """Mesmo experimento, executado por `flwr.simulation.start_simulation`.
 
@@ -472,6 +476,7 @@ def run_flower_simulation(
 
     strategy = AwakeFLStrategy(
         reputation_ledger=ledger,
+        chain=chain,  # None => a estrategia cria o ledger simulado
         use_reputation_weights=reputation_cfg.get("weighted_aggregation", True),
         fraction_fit=fraction_fit,
         fraction_evaluate=0.0,

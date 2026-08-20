@@ -1,0 +1,21 @@
+# ---------------------------------------------------------------------------
+# Extra opcional: integracao real com o programa Anchor na Solana.
+# ---------------------------------------------------------------------------
+#     pip install -r requirements.txt -r requirements-chain.txt
+#
+# Sem isto o projeto roda normalmente com o SimulatedOnChainLedger, que e o
+# padrao. So instale se for enviar transacoes de verdade (ou usar --chain
+# dry-run para conferir a montagem das instrucoes).
+#
+# Nota sobre versoes: o anchorpy 0.21 le o IDL no formato anterior ao Anchor
+# 0.30. O `anchor_client.para_idl_legado()` converte em memoria, entao o
+# projeto continua com um unico IDL (o de web/src/lib/idl/awakefl.json).
+#
+# Nota sobre pytest: o anchorpy registra um plugin que importa pytest_asyncio.
+# O pytest.ini deste projeto desliga o plugin (`-p no:anchorpy`), entao nao e
+# preciso instalar o pytest-asyncio so para rodar a suite.
+# ---------------------------------------------------------------------------
+
+anchorpy>=0.21,<0.22
+solana>=0.36
+solders>=0.26

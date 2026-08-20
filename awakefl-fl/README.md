@@ -304,6 +304,47 @@ contribuição no livro-razão. O formato é auto-descritivo (carrega os *shapes
 então `load_weights()` reconstrói os tensores sem precisar do código do modelo —
 é o que permite a um terceiro auditar sem confiar em ninguém.
 
+### Enviando de verdade para a Solana
+
+[`anchor_client.py`](anchor_client.py) implementa o `AnchorLedger`, que tem a
+**mesma interface** do `SimulatedOnChainLedger` — o loop federado não sabe com
+qual dos dois está falando. Instale o extra e escolha o modo:
+
+```bash
+pip install -r requirements-chain.txt
+```
+
+| `--chain` | O que faz |
+| --- | --- |
+| `simulado` | padrão: JSON local, instantâneo, sem custo |
+| `dry-run` | monta as instruções e deriva os PDAs reais, **sem enviar nada** |
+| `devnet` | transações de verdade (exige `--authority-keypair`) |
+
+```bash
+# confere a integração inteira sem gastar SOL nem depender da rede
+python run_experiments.py --scenarios C --chain dry-run --rounds 2 --clients 3
+```
+
+Três coisas que valem saber antes de ir para a Devnet:
+
+1. **Cada participante precisa da própria wallet.** `submit_contribution` é
+   assinada pela *instituição*, não pela autoridade — é ela que se compromete
+   com o próprio hash. `derive_simulation_keypairs()` gera as N keypairs de
+   forma determinística (para o experimento ser reproduzível), mas **financiar
+   cada uma é um passo manual** (`solana airdrop`): há rent de conta (~0,0016
+   SOL por `Contribution`) e taxa por transação.
+2. **São duas transações por contribuição**, nesta ordem: a instituição submete,
+   a autoridade valida. Inverter faz a validação referenciar uma conta que
+   ainda não existe.
+3. **O servidor envia só o score**, nunca a reputação calculada. A fórmula
+   `R(t) = (R(t-1) + S(t)) / 2` roda dentro do programa — é isso que torna o
+   resultado auditável por terceiros em vez de "confie no meu servidor".
+
+O IDL é o **mesmo arquivo que o site usa** (`web/src/lib/idl/awakefl.json`).
+Como o anchorpy ainda lê o formato anterior ao Anchor 0.30, a conversão acontece
+em memória (`para_idl_legado()`) em vez de existir uma segunda cópia do IDL para
+divergir.
+
 ---
 
 ## 4. Como interpretar o relatório

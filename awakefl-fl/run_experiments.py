@@ -110,6 +110,12 @@ def parse_args(argv=None) -> argparse.Namespace:
     g.add_argument("--scenarios", nargs="+", default=["A", "B", "C"], choices=["A", "B", "C"])
     g.add_argument("--backend", choices=["local", "flower"], default="local",
                    help="'flower' exige pip install 'flwr[simulation]' (Ray)")
+    g.add_argument("--chain", choices=["simulado", "dry-run", "devnet"], default="simulado",
+                   help="livro-razao: 'simulado' (JSON local, padrao), 'dry-run' (monta as "
+                        "instrucoes Anchor sem enviar) ou 'devnet' (transacoes reais; exige "
+                        "requirements-chain.txt e --authority-keypair)")
+    g.add_argument("--authority-keypair", type=Path,
+                   help="keypair da autoridade para --chain devnet (ex.: ~/.config/solana/id.json)")
     g.add_argument("--results-dir", type=Path)
     g.add_argument("--export-weights", action="store_true",
                    help="grava os pesos da ultima rodada no formato canonico (.awfl) em "
@@ -165,6 +171,34 @@ def merge_config(cfg: dict, args: argparse.Namespace) -> dict:
 # ---------------------------------------------------------------------------
 
 
+def build_chain(modo: str, num_clients: int, seed: int, keypair_path: Optional[Path]):
+    """Monta o livro-razao pedido. `None` = o servidor usa o simulado.
+
+    O `AnchorLedger` so e importado aqui dentro: o extra `[chain]` e opcional e
+    o projeto inteiro precisa continuar rodando sem ele.
+    """
+    if modo == "simulado":
+        return None
+
+    from anchor_client import AnchorLedger, derive_simulation_keypairs
+
+    participantes = derive_simulation_keypairs(num_clients, seed=seed)
+
+    if modo == "dry-run":
+        # Autoridade descartavel: em dry-run nada e assinado de fato.
+        autoridade = derive_simulation_keypairs(1, seed=seed + 10_000)[0]
+        return AnchorLedger(autoridade, participantes, dry_run=True)
+
+    if not keypair_path:
+        raise SystemExit("--chain devnet exige --authority-keypair (ex.: ~/.config/solana/id.json)")
+
+    from solders.keypair import Keypair
+
+    bytes_chave = json.loads(Path(keypair_path).expanduser().read_text(encoding="utf-8"))
+    autoridade = Keypair.from_bytes(bytes(bytes_chave))
+    return AnchorLedger(autoridade, participantes, dry_run=False)
+
+
 def run_scenario(
     key: str,
     cfg: dict,
@@ -176,6 +210,7 @@ def run_scenario(
     backend: str,
     device: str,
     export_dir: Optional[Path] = None,
+    chain: Optional[object] = None,
 ) -> History:
     """Monta clientes e roda a federacao para um cenario."""
     xtr, ytr, xte, yte = data_bundle
@@ -224,6 +259,7 @@ def run_scenario(
         # So a ultima rodada: um artefato por participante ja basta para a
         # auditoria, e exportar as 12 rodadas encheria ~100 MB sem ganho.
         export_rounds=[int(fed["rounds"])] if export_dir else None,
+        chain=chain,
     )
 
 
@@ -279,6 +315,11 @@ def main(argv=None) -> int:
         histories[key] = run_scenario(
             key, cfg, data_bundle, backend=args.backend, device=device,
             export_dir=(results_dir / "pesos" / key) if args.export_weights else None,
+            # Um livro-razao por cenario: A, B e C sao federacoes distintas e
+            # misturar as contribuicoes num so registro tornaria o extrato
+            # impossivel de ler.
+            chain=build_chain(args.chain, int(cfg["federation"]["num_clients"]),
+                              seed, args.authority_keypair),
             **spec,
         )
         logger.info("Cenario %s concluido em %.1fs\n", key, time.time() - t0)
