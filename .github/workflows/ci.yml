@@ -1,0 +1,116 @@
+# CI do AwakeFL.
+#
+# Cobre as duas camadas que dao para verificar sem infraestrutura:
+#
+#   fl-python  -> os testes da camada off-chain (reputacao, ataques, hash)
+#   web-build  -> o site compila e passa no lint
+#
+# O que NAO esta aqui, e por que: os testes do programa Anchor (tests/awakefl.ts)
+# precisam do toolchain Rust + Solana CLI + Anchor e de um validator local, o que
+# leva varios minutos de instalacao a cada execucao. Enquanto o programa estiver
+# estavel, roda-se localmente com `anchor test`. Se o programa voltar a mudar com
+# frequencia, vale adicionar um job com cache do ~/.cargo e do ~/.avm.
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  # Um push novo na mesma branch cancela a execucao anterior: o resultado dela
+  # ja nao interessa e a fila fica livre.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fl-python:
+    name: FL off-chain (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: awakefl-fl
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: awakefl-fl/requirements.txt
+
+      - name: Instalar dependencias
+        # O PyTorch vem do indice de CPU: a roda default arrasta ~2 GB de CUDA
+        # que o runner nao usa e que faz o job estourar o tempo de instalacao.
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+
+      - name: Testes
+        run: pytest -q
+
+      - name: Fumaca de ponta a ponta
+        # Config minima: prova que os tres cenarios, o relatorio e a exportacao
+        # canonica funcionam juntos. Nao tenta reproduzir a acuracia do
+        # experimento real — para isso existe o sweep.py, que e longo demais
+        # para CI.
+        run: |
+          python run_experiments.py \
+            --rounds 3 --clients 4 --train-subset 1500 --test-subset 500 \
+            --export-weights --results-dir results_ci
+          python - <<'EOF'
+          import hashlib, json, pathlib
+          led = json.load(open("results_ci/ledger_C.json"))
+          artefatos = led["artifacts"]
+          assert artefatos, "nenhum artefato canonico exportado"
+          for a in artefatos:
+              caminho = pathlib.Path("results_ci/pesos/C") / a["file"]
+              # exatamente o que /painel/contribuir faz no navegador
+              digest = hashlib.sha256(caminho.read_bytes()).hexdigest()
+              assert digest == a["weights_hash"], f"hash divergiu em {a['file']}"
+          assert led["num_blocks"] > 0
+          print(f"OK: {len(artefatos)} artefatos conferem com o livro-razao")
+          EOF
+
+  programa-sincronizado:
+    name: Playground em dia com o programa
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: playground/lib.rs reflete programs/awakefl/src
+        # Barato e pega a classe de bug mais chata do projeto: alguem edita o
+        # programa real, esquece a copia do Playground, e as duas versoes
+        # divergem em silencio ate a demo se comportar diferente do deploy.
+        run: python scripts/gerar-playground.py --check
+
+  web-build:
+    name: Web (lint + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - name: Build
+        # O build le NEXT_PUBLIC_PROGRAM_ID. No CI usamos o Program ID real da
+        # Devnet: nao ha segredo nenhum nele — e um endereco publico.
+        env:
+          NEXT_PUBLIC_PROGRAM_ID: GhMhTkv7jeHMejEyypQaEFPqduHgXDSzE5g7jE3rXGRA
+        run: npm run build

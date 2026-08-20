@@ -1,56 +1,37 @@
 // ============================================================================
-// VERSAO SOLANA PLAYGROUND — arquivo unico
+// ARQUIVO GERADO — nao edite a mao.
 //
-// Cole este conteudo inteiro em `src/lib.rs` no Playground.
-// state.rs foi fundido aqui porque no Playground criar modulos extras exige
-// adicionar arquivos pela UI; um arquivo so e paste-and-go.
+// Fonte: programs/awakefl/src/lib.rs + programs/awakefl/src/state.rs
+// Gerar : python scripts/gerar-playground.py
 //
-// NAO copie o declare_id! daqui: o Playground gera e sincroniza o Program ID
-// sozinho no primeiro build. Se ele reclamar do ID, use "Build" e deixe-o
-// reescrever a linha.
-//
-// A fonte da verdade continua sendo programs/awakefl/src/{lib,state}.rs.
-// Ao mudar algo la, regenere este arquivo.
+// Esta e a versao achatada para o Solana Playground, que espera um unico
+// src/lib.rs. A logica e identica a do programa real; muda so o declare_id!,
+// que o Playground sincroniza sozinho no build.
 // ============================================================================
 
 use anchor_lang::prelude::*;
 
+// Program ID do deploy na Devnet (Solana Playground, 2026-08-12).
+// Se um dia rodar `anchor build` local, `anchor keys sync` mantém este valor e
+// o do Anchor.toml em sincronia.
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
-
-// ---------------------------------------------------------------------------
-// Constantes do modelo de reputacao
-// ---------------------------------------------------------------------------
-
-/// Reputacao atribuida a todo participante recem-registrado.
-pub const INITIAL_REPUTATION: u64 = 500;
-/// Teto da escala de reputacao (0..=1000).
-pub const MAX_REPUTATION: u64 = 1000;
-/// Divisor aplicado a reputacao ao penalizar um malicioso.
-pub const PENALTY_DIVISOR: u64 = 10;
-/// Comprimento maximo de `update_hash`. 64 = SHA-256 em hexadecimal.
-pub const MAX_HASH_LEN: usize = 64;
-
-// ---------------------------------------------------------------------------
-// Instrucoes
-// ---------------------------------------------------------------------------
 
 #[program]
 pub mod awakefl {
     use super::*;
 
-    /// Cria o Config global do sistema. Chamado uma unica vez.
+    /// Cria o Config global do sistema. Chamado uma única vez.
     /// O signer vira a autoridade (o agregador da rodada de FL).
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
         let config = &mut ctx.accounts.config;
         config.authority = ctx.accounts.authority.key();
         config.current_round = 0;
         config.total_participants = 0;
-        // Anchor < 0.30 usa: *ctx.bumps.get("config").unwrap()
         config.bump = ctx.bumps.config;
         Ok(())
     }
 
-    /// Registra o signer como participante, com reputacao inicial 500.
+    /// Registra o signer como participante, com reputação inicial 500.
     pub fn register_participant(ctx: Context<RegisterParticipant>) -> Result<()> {
         let config = &mut ctx.accounts.config;
         let participant = &mut ctx.accounts.participant;
@@ -77,7 +58,7 @@ pub mod awakefl {
     }
 
     /// Submete o hash do update de pesos da rodada corrente, junto das
-    /// metricas auto-declaradas. Um participante banido nao consegue submeter.
+    /// métricas auto-declaradas. Um participante banido não consegue submeter.
     pub fn submit_contribution(
         ctx: Context<SubmitContribution>,
         update_hash: String,
@@ -85,9 +66,9 @@ pub mod awakefl {
         loss: f64,
         accuracy: f64,
     ) -> Result<()> {
-        // Sem esta checagem, uma String maior que MAX_HASH_LEN estoura o buffer
-        // alocado e a instrucao falha com AccountDidNotSerialize, um erro bem
-        // menos legivel do que este.
+        // Sem esta checagem, uma String maior que MAX_HASH_LEN estoura o
+        // buffer alocado e a instrução falha com AccountDidNotSerialize,
+        // um erro bem menos legível do que este.
         require!(update_hash.len() <= MAX_HASH_LEN, FlError::HashTooLong);
 
         let config = &ctx.accounts.config;
@@ -116,8 +97,8 @@ pub mod awakefl {
         Ok(())
     }
 
-    /// A autoridade avalia a contribuicao com um score 0..=1000.
-    /// A reputacao e atualizada pela media movel exponencial:
+    /// A autoridade avalia a contribuição com um score 0..=1000.
+    /// A reputação é atualizada pela média móvel exponencial:
     ///   R(t) = 0.5 * R(t-1) + 0.5 * S(t)  ->  (R(t-1) + S(t)) / 2
     pub fn validate_contribution(ctx: Context<ValidateContribution>, score: u64) -> Result<()> {
         require!(score <= MAX_REPUTATION, FlError::InvalidScore);
@@ -133,7 +114,7 @@ pub mod awakefl {
         let previous = participant.reputation;
         participant.apply_ema(score);
 
-        // Metade da escala e o limiar entre contribuicao aceita e rejeitada.
+        // Metade da escala é o limiar entre contribuição aceita e rejeitada.
         contribution.status = if score >= MAX_REPUTATION / 2 {
             ContributionStatus::Aprovado
         } else {
@@ -150,9 +131,9 @@ pub mod awakefl {
         Ok(())
     }
 
-    /// Penaliza um malicioso: reputacao / 10 e banimento PERMANENTE.
-    /// E o contra-ataque ao "sleepy adversary" — toda a reputacao acumulada
-    /// em rodadas honestas e destruida de uma vez.
+    /// Penaliza um malicioso: reputação / 10 e banimento PERMANENTE.
+    /// É o contra-ataque ao "sleepy adversary" — toda a reputação
+    /// acumulada em rodadas honestas é destruída de uma vez.
     pub fn penalize_participant(ctx: Context<PenalizeParticipant>, reason_code: u8) -> Result<()> {
         let participant = &mut ctx.accounts.participant;
         require!(!participant.is_banned, FlError::AlreadyBanned);
@@ -171,7 +152,7 @@ pub mod awakefl {
         Ok(())
     }
 
-    /// Avanca a rodada global de FL. So a autoridade pode.
+    /// Avança a rodada global de FL. Só a autoridade pode.
     pub fn advance_round(ctx: Context<AdvanceRound>) -> Result<()> {
         let config = &mut ctx.accounts.config;
         config.current_round = config
@@ -296,84 +277,7 @@ pub struct AdvanceRound<'info> {
 }
 
 // ---------------------------------------------------------------------------
-// Estado (era o state.rs)
-// ---------------------------------------------------------------------------
-
-#[account]
-#[derive(InitSpace)]
-pub struct Config {
-    pub authority: Pubkey,       // 32
-    pub current_round: u64,      // 8
-    pub total_participants: u64, // 8
-    pub bump: u8,                // 1
-}
-// INIT_SPACE = 49 | space = 8 + 49 = 57
-
-#[account]
-#[derive(InitSpace)]
-pub struct Participant {
-    /// Dono do no de treinamento.
-    pub owner: Pubkey, // 32
-    /// Score de reputacao, escala 0..=1000, inicia em 500.
-    pub reputation: u64, // 8
-    /// Numero de contribuicoes submetidas (validadas ou nao).
-    pub contrib_count: u64, // 8
-    /// Banimento permanente: nao ha instrucao que reverta.
-    pub is_banned: bool, // 1
-    /// Reservado para o mecanismo de stake/slashing (fora do escopo do MVP).
-    pub stake_amount: u64, // 8
-    /// Bump do PDA, guardado para nao recalcular find_program_address.
-    pub bump: u8, // 1
-}
-// INIT_SPACE = 32 + 8 + 8 + 1 + 8 + 1 = 58 | space = 8 + 58 = 66
-
-#[account]
-#[derive(InitSpace)]
-pub struct Contribution {
-    /// PDA do Participant que submeteu (nao a wallet dona).
-    pub participant: Pubkey, // 32
-    /// Rodada de treinamento a que esta contribuicao pertence.
-    pub round: u64, // 8
-    /// Hash da atualizacao de pesos. O tensor em si fica off-chain.
-    /// O #[max_len] e OBRIGATORIO para String: a conta precisa ter tamanho fixo.
-    #[max_len(MAX_HASH_LEN)]
-    pub update_hash: String, // 4 (prefixo) + 64 = 68
-    /// Numero de amostras usadas no treino local (peso do FedAvg).
-    pub n_samples: u64, // 8
-    /// Loss reportado pelo participante. Auto-declarado: nao e prova.
-    pub loss: f64, // 8
-    /// Acuracia reportada pelo participante. Idem.
-    pub accuracy: f64, // 8
-    pub status: ContributionStatus, // 1
-    pub bump: u8,                   // 1
-}
-// INIT_SPACE = 32 + 8 + 68 + 8 + 8 + 8 + 1 + 1 = 134 | space = 8 + 134 = 142
-
-/// Enum de variantes unitarias => 1 byte (tag) + maior variante (0).
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, InitSpace)]
-pub enum ContributionStatus {
-    Pendente,
-    Aprovado,
-    Rejeitado,
-}
-
-impl Default for ContributionStatus {
-    fn default() -> Self {
-        Self::Pendente
-    }
-}
-
-impl Participant {
-    /// Media movel exponencial: R(t) = 0.5*R(t-1) + 0.5*S(t)
-    /// Em aritmetica inteira vira (R(t-1) + S(t)) / 2 — a divisao trunca,
-    /// perdendo no maximo 1 ponto por rodada.
-    pub fn apply_ema(&mut self, score: u64) {
-        self.reputation = (self.reputation + score) / 2;
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Eventos (a trilha de auditoria imutavel)
+// Eventos (a trilha de auditoria imutável)
 // ---------------------------------------------------------------------------
 
 #[event]
@@ -434,4 +338,127 @@ pub enum FlError {
     HashTooLong,
     #[msg("Overflow aritmetico")]
     MathOverflow,
+}
+
+// ---------------------------------------------------------------------------
+// Constantes do modelo de reputacao
+// ---------------------------------------------------------------------------
+
+/// Reputacao atribuida a todo participante recem-registrado: NEUTRA, metade
+/// da escala. Espelhada off-chain em `reputation.initial = 0.5`.
+///
+/// Nao e o topo da escala de proposito. `register_participant` e aberto: uma
+/// wallet nova custa o rent de uma conta de 66 bytes. Se o recem-chegado
+/// nascesse com 1000, o banimento permanente valeria zero — bastaria registrar
+/// outra wallet e voltar com a ficha limpa (whitewashing). Comecar no meio faz
+/// a reputacao acumulada valer alguma coisa.
+///
+/// A contrapartida e o cold start: quem entra fica a apenas 100 pontos do
+/// limiar de banimento praticado pelo agregador (400). Por isso a autoridade
+/// deve conceder um periodo de graca contado por `contrib_count` — tempo de
+/// casa do participante, nao numero da rodada global.
+pub const INITIAL_REPUTATION: u64 = 500;
+/// Teto da escala de reputacao (0..=1000).
+pub const MAX_REPUTATION: u64 = 1000;
+/// Divisor aplicado a reputacao ao penalizar um malicioso.
+pub const PENALTY_DIVISOR: u64 = 10;
+/// Comprimento maximo de `update_hash`. 64 = SHA-256 em hexadecimal.
+/// Este numero entra DIRETO no calculo de espaco da conta Contribution.
+pub const MAX_HASH_LEN: usize = 64;
+
+// ---------------------------------------------------------------------------
+// Config global
+// ---------------------------------------------------------------------------
+
+#[account]
+#[derive(InitSpace)]
+pub struct Config {
+    /// Agregador da rodada: valida contribuicoes e penaliza.
+    pub authority: Pubkey, // 32
+    pub current_round: u64, // 8
+    pub total_participants: u64, // 8
+    pub bump: u8, // 1
+}
+// INIT_SPACE = 49 | space = 8 + 49 = 57
+
+// ---------------------------------------------------------------------------
+// Participant
+// ---------------------------------------------------------------------------
+
+#[account]
+#[derive(InitSpace)]
+pub struct Participant {
+    /// Dono do no de treinamento.
+    pub owner: Pubkey, // 32
+    /// Score de reputacao, escala 0..=1000, inicia em 500.
+    pub reputation: u64, // 8
+    /// Numero de contribuicoes submetidas (validadas ou nao). Alem da
+    /// estatistica, e o "tempo de casa" do participante: o agregador usa este
+    /// contador para decidir o periodo de graca antes de poder penalizar,
+    /// de modo que quem se registra na rodada 50 tenha a mesma protecao de
+    /// quem estava la desde a primeira.
+    pub contrib_count: u64, // 8
+    /// Banimento permanente: nao ha instrucao que reverta.
+    pub is_banned: bool, // 1
+    /// Reservado para o mecanismo de stake/slashing (fora do escopo do MVP).
+    pub stake_amount: u64, // 8
+    /// Bump do PDA. NAO estava na sua spec: guardar o bump evita
+    /// recalcular o PDA (~1.500 CU por chamada a find_program_address)
+    /// em toda instrucao que valide esta conta.
+    pub bump: u8, // 1
+}
+// INIT_SPACE = 32 + 8 + 8 + 1 + 8 + 1 = 58
+// space      = 8 (discriminator) + 58 = 66 bytes
+
+// ---------------------------------------------------------------------------
+// Contribution
+// ---------------------------------------------------------------------------
+
+#[account]
+#[derive(InitSpace)]
+pub struct Contribution {
+    /// PDA do Participant que submeteu (nao a wallet dona).
+    pub participant: Pubkey, // 32
+    /// Rodada de treinamento a que esta contribuicao pertence.
+    pub round: u64, // 8
+    /// Hash da atualizacao de pesos. O tensor em si fica off-chain.
+    /// O #[max_len] e OBRIGATORIO: sem ele, InitSpace nao compila para String,
+    /// porque uma String tem tamanho variavel e a conta precisa ser fixa.
+    #[max_len(MAX_HASH_LEN)]
+    pub update_hash: String, // 4 (prefixo de tamanho) + 64 = 68
+    /// Numero de amostras usadas no treino local (peso do FedAvg).
+    pub n_samples: u64, // 8
+    /// Loss reportado pelo participante. Valor auto-declarado: nao e prova.
+    pub loss: f64, // 8
+    /// Acuracia reportada pelo participante. Idem.
+    pub accuracy: f64, // 8
+    /// Estado da avaliacao pela autoridade.
+    pub status: ContributionStatus, // 1
+    pub bump: u8, // 1
+}
+// INIT_SPACE = 32 + 8 + 68 + 8 + 8 + 8 + 1 + 1 = 134
+// space      = 8 (discriminator) + 134 = 142 bytes
+
+/// Enum de dados puros (todas as variantes sem payload) => 1 byte.
+/// `InitSpace` calcula 1 (tag) + tamanho da MAIOR variante (aqui, 0).
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, InitSpace)]
+pub enum ContributionStatus {
+    Pendente,
+    Aprovado,
+    Rejeitado,
+}
+
+impl Default for ContributionStatus {
+    fn default() -> Self {
+        Self::Pendente
+    }
+}
+
+impl Participant {
+    /// Media movel exponencial: R(t) = 0.5*R(t-1) + 0.5*S(t)
+    /// Em aritmetica inteira vira (R(t-1) + S(t)) / 2 — a divisao trunca,
+    /// perdendo no maximo 1 ponto por rodada.
+    pub fn apply_ema(&mut self, score: u64) {
+        self.reputation = (self.reputation + score) / 2;
+    }
 }
