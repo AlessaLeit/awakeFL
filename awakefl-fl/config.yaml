@@ -13,7 +13,18 @@ seed: 42                  # semente unica para numpy / torch / random
 federation:
   num_clients: 10         # N instituicoes participantes
   rounds: 12              # rodadas de comunicacao (global epochs)
-  local_epochs: 1         # epocas de treino local por rodada
+  local_epochs: 1         # epocas de treino local (ignorado se local_steps estiver definido)
+  local_steps: auto       # CORRECAO A: passos de SGD fixos por rodada, iguais para todos.
+                          # Com epocas fixas, quem tem 586 amostras da 18 passos e quem tem
+                          # 1.928 da 60; o update do pequeno chega ~1,8x mais ruidoso e o
+                          # detector le esse ruido como divergencia. Ver analise_tamanho.py.
+                          #
+                          # 'auto' = os passos de UMA epoca do MAIOR participante. Nivelar por
+                          # cima, e nao pela media, importa: com um valor menor que o maximo,
+                          # os participantes grandes treinam MENOS do que treinariam, o ataque
+                          # perde forca junto e o contraste entre os cenarios B e C some
+                          # (medido: com 40 passos a queda A->B caiu de 14,7 pp para 0,95 pp).
+                          # Aceita tambem um inteiro, ou null para voltar ao regime de epocas.
   batch_size: 32
   learning_rate: 0.05     # SGD com momentum
   momentum: 0.9
@@ -59,6 +70,10 @@ reputation:
   norm_veto_ratio: 2.5    # update >2.5x (ou <1/2.5x) a mediana perde o credito de direcao
                           # (fecha a brecha do model replacement / backdoor amplificado)
   weighted_aggregation: true  # ponderar o FedAvg pela reputacao quando a defesa esta ativa
+  smooth_updates: true    # CORRECAO B: pontuar a media movel dos UPDATES em vez de suavizar
+                          # o score depois. O ruido tem media zero e se cancela entre rodadas;
+                          # um vies malicioso, por ser sistematico, atravessa a media intacto.
+  update_alpha: 0.5       # memoria dessa media movel (mesma escala do alpha de R)
 
 # --- Saidas ----------------------------------------------------------------
 output:

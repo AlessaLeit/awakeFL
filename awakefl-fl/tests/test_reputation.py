@@ -5,8 +5,11 @@ irreversibilidade do banimento mudarem sem querer, o programa Anchor e a
 simulacao deixam de concordar e o livro-razao perde valor probatorio.
 """
 
+import pathlib
+
 import numpy as np
 import pytest
+import yaml
 
 from reputation import (
     ReputationLedger,
@@ -104,6 +107,23 @@ def test_escala_do_programa_e_robusta_a_lixo():
 # ---------------------------------------------------------------------------
 # Ledger
 # ---------------------------------------------------------------------------
+
+
+def test_correcoes_do_vies_de_tamanho_vem_ligadas():
+    """Guarda de regressao: A e B sao padrao desde a medicao do vies de tamanho.
+
+    Sem elas o detector pune participantes pequenos pelo ruido do proprio
+    tamanho amostral e chega a bani-los permanentemente (ver analise_tamanho.py).
+    Se alguem desligar por engano, este teste avisa.
+    """
+    ledger = ReputationLedger(num_participants=3)
+    assert ledger.smooth_updates is True, "correcao B (suavizacao do update) saiu do padrao"
+
+    cfg = yaml.safe_load(
+        (pathlib.Path(__file__).resolve().parent.parent / "config.yaml").read_text(encoding="utf-8")
+    )
+    assert cfg["reputation"]["smooth_updates"] is True
+    assert cfg["federation"]["local_steps"], "correcao A (passos fixos) saiu do config"
 
 
 def test_reputacao_inicial_e_neutra():

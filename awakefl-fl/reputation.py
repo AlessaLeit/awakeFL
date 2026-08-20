@@ -322,7 +322,7 @@ class ReputationLedger:
         weight_direction: float = 0.7,
         weight_magnitude: float = 0.3,
         norm_veto_ratio: float = 2.5,
-        smooth_updates: bool = False,
+        smooth_updates: bool = True,
         update_alpha: float = 0.5,
         enabled: bool = True,
     ) -> None:
@@ -334,8 +334,9 @@ class ReputationLedger:
         self.weight_direction = weight_direction
         self.weight_magnitude = weight_magnitude
         self.norm_veto_ratio = norm_veto_ratio
-        # Suavizar os UPDATES antes de pontuar (ver `_suaviza`). Desligado por
-        # padrao para nao mudar o comportamento historico sem medicao.
+        # Suavizar os UPDATES antes de pontuar (ver `_suaviza`). LIGADO por
+        # padrao desde que a medicao mostrou que fecha o vies contra
+        # participantes pequenos sem custar deteccao (ver analise_tamanho.py).
         self.smooth_updates = smooth_updates
         self.update_alpha = update_alpha
         # `enabled=False` = cenario B: ainda *medimos* score e reputacao (para o

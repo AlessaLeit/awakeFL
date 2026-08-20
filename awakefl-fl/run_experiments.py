@@ -54,12 +54,14 @@ def load_config(path: Path) -> dict:
         "seed": 42,
         "federation": {"num_clients": 10, "rounds": 10, "local_epochs": 1,
                        "batch_size": 32, "learning_rate": 0.05, "momentum": 0.9,
+                       "local_steps": "auto",
                        "fraction_fit": 1.0},
         "data": {"dataset": "mnist", "data_dir": "./data", "partition": "non_iid",
                  "dirichlet_alpha": 0.7, "train_subset": 12000, "test_subset": 2000},
         "attack": {"type": "label_flipping", "malicious_fraction": 0.3},
         "reputation": {"initial": 0.5, "alpha": 0.5, "ban_threshold": 0.4,
                        "ban_penalty_divisor": 10, "grace_rounds": 2,
+                       "smooth_updates": True, "update_alpha": 0.5,
                        "weight_direction": 0.7, "weight_magnitude": 0.3,
                        "weighted_aggregation": True},
         "output": {"results_dir": "./results", "log_level": "INFO"},
@@ -79,8 +81,9 @@ def parse_args(argv=None) -> argparse.Namespace:
     g.add_argument("--rounds", type=int, help="numero de rodadas")
     g.add_argument("--local-epochs", type=int, help="epocas de treino local por rodada")
     g.add_argument("--local-steps", type=int,
-                   help="passos de SGD fixos por rodada (substitui as epocas). Iguala o "
-                        "trabalho local entre participantes grandes e pequenos")
+                   help="passos de SGD fixos por rodada, iguais para todos. O padrao "
+                        "('auto' no config) usa uma epoca do MAIOR participante. "
+                        "Use 0 para voltar ao regime de epocas locais")
     g.add_argument("--batch-size", type=int)
     g.add_argument("--lr", type=float, dest="learning_rate")
     g.add_argument("--fraction-fit", type=float, help="fracao de clientes por rodada")
@@ -106,9 +109,9 @@ def parse_args(argv=None) -> argparse.Namespace:
                    help="reputacao inicial de todos (0.5 = neutro, espelha o Anchor)")
     g.add_argument("--grace-rounds", type=int,
                    help="contribuicoes iniciais de cada participante imunes ao banimento")
-    g.add_argument("--smooth-updates", action="store_true",
-                   help="pontuar a media movel dos updates em vez de suavizar o score "
-                        "(cancela o ruido de amostragem de participantes pequenos)")
+    g.add_argument("--no-smooth-updates", action="store_true",
+                   help="pontuar o update cru da rodada em vez da media movel dele "
+                        "(volta ao comportamento anterior a correcao do vies de tamanho)")
     g.add_argument("--no-weighted-aggregation", action="store_true",
                    help="no cenario C, banir mas NAO ponderar o FedAvg pela reputacao")
 
@@ -162,7 +165,7 @@ def merge_config(cfg: dict, args: argparse.Namespace) -> dict:
             "ban_threshold": args.ban_threshold,
             "alpha": args.rep_alpha,
             "initial": args.rep_initial,
-            "smooth_updates": True if args.smooth_updates else None,
+            "smooth_updates": False if args.no_smooth_updates else None,
             "grace_rounds": args.grace_rounds,
             "weighted_aggregation": False if args.no_weighted_aggregation else None,
         },
@@ -177,6 +180,40 @@ def merge_config(cfg: dict, args: argparse.Namespace) -> dict:
 # ---------------------------------------------------------------------------
 # Execucao de um cenario
 # ---------------------------------------------------------------------------
+
+
+def resolve_local_steps(valor, partitions, batch_size: int) -> Optional[int]:
+    """Resolve `federation.local_steps`, incluindo o modo 'auto'.
+
+    'auto' = quantos passos de SGD o MAIOR participante daria em uma epoca.
+
+    Nivelar por cima, e nao pela media, e o ponto. Um valor abaixo do maximo faz
+    os participantes grandes treinarem menos do que treinariam com epocas — e
+    como os atacantes tambem sao participantes, o ataque perde forca junto. Foi
+    medido: com 40 passos (a media) a queda A->B despencou de 14,7 pp para
+    0,95 pp e o cenario B deixou de demonstrar qualquer coisa. Com 'auto'
+    (60 passos naquela seed) a queda foi a 24,9 pp, porque ninguem perde treino
+    e os pequenos deixam de ser penalizados pelo ruido de amostras escassas.
+
+    O preco de nivelar por cima e o participante pequeno repassar varias vezes
+    pelos proprios dados (4x, no caso extremo medido) e sobreajustar um pouco
+    mais. Entre um pequeno que sobreajusta e um pequeno banido por engano, o
+    projeto escolhe o primeiro.
+    """
+    if valor is None or valor == 0 or valor is False:
+        return None  # regime classico de epocas locais
+
+    if isinstance(valor, str):
+        if valor.strip().lower() != "auto":
+            raise ValueError(f"local_steps invalido: {valor!r}. Use um inteiro, 'auto' ou null.")
+        maior = max(len(p) for p in partitions)
+        passos = max(1, -(-maior // max(1, batch_size)))  # divisao para cima
+        logging.getLogger("awakefl").debug(
+            "local_steps=auto -> %d passos (maior particao: %d amostras)", passos, maior
+        )
+        return passos
+
+    return int(valor)
 
 
 def build_chain(modo: str, num_clients: int, seed: int, keypair_path: Optional[Path]):
@@ -242,7 +279,7 @@ def run_scenario(
         malicious_ids,
         attack,
         local_epochs=int(fed["local_epochs"]),
-        local_steps=int(fed["local_steps"]) if fed.get("local_steps") else None,
+        local_steps=resolve_local_steps(fed.get("local_steps"), partitions, int(fed["batch_size"])),
         batch_size=int(fed["batch_size"]),
         learning_rate=float(fed["learning_rate"]),
         momentum=float(fed.get("momentum", 0.9)),

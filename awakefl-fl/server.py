@@ -163,7 +163,7 @@ def run_federated(
         weight_direction=reputation_cfg.get("weight_direction", 0.7),
         weight_magnitude=reputation_cfg.get("weight_magnitude", 0.3),
         norm_veto_ratio=reputation_cfg.get("norm_veto_ratio", 2.5),
-        smooth_updates=reputation_cfg.get("smooth_updates", False),
+        smooth_updates=reputation_cfg.get("smooth_updates", True),
         update_alpha=reputation_cfg.get("update_alpha", 0.5),
         enabled=defense_enabled,
     )
@@ -461,7 +461,7 @@ def run_flower_simulation(
         weight_direction=reputation_cfg.get("weight_direction", 0.7),
         weight_magnitude=reputation_cfg.get("weight_magnitude", 0.3),
         norm_veto_ratio=reputation_cfg.get("norm_veto_ratio", 2.5),
-        smooth_updates=reputation_cfg.get("smooth_updates", False),
+        smooth_updates=reputation_cfg.get("smooth_updates", True),
         update_alpha=reputation_cfg.get("update_alpha", 0.5),
         enabled=defense_enabled,
     )
