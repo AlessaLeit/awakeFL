@@ -283,6 +283,27 @@ como **String hexadecimal** de 64 chars (não bytes), e o PDA da contribuição 
 como seed o **PDA do Participant**, não a wallet dona — derivar da wallet gera um
 endereço válido que o programa rejeita com `ConstraintSeeds`.
 
+### Artefato canônico e auditoria de ponta a ponta
+
+A tela `/painel/contribuir` da web calcula SHA-256 dos **bytes crus** do arquivo
+que a instituição sobe. Para que esse número seja o mesmo que o servidor
+registra, o Python grava os pesos exatamente no byte stream que ele hasheia:
+
+```bash
+python run_experiments.py --export-weights
+```
+
+Isso produz `results/pesos/<cenário>/rodadaNN_participanteNN.awfl` e um índice
+`artifacts` dentro do `ledger_*.json` associando cada arquivo ao hash esperado.
+Qualquer outro formato (`torch.save`, `.npz`, pickle) carrega metadados, ordem
+de chaves ou compressão que mudam os bytes e, portanto, o hash.
+
+O roteiro da auditoria manual: pegue um `.awfl`, suba em `/painel/contribuir`,
+e o hash que aparece na tela tem que ser idêntico ao `weights_hash` daquela
+contribuição no livro-razão. O formato é auto-descritivo (carrega os *shapes*),
+então `load_weights()` reconstrói os tensores sem precisar do código do modelo —
+é o que permite a um terceiro auditar sem confiar em ninguém.
+
 ---
 
 ## 4. Como interpretar o relatório

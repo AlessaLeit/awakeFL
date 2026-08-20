@@ -31,7 +31,7 @@ import logging
 import struct
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, Iterator, List, Optional, Sequence
 
 import numpy as np
 
@@ -66,29 +66,90 @@ REASON_CODES: Dict[str, int] = {
 # ---------------------------------------------------------------------------
 
 
-def hash_weights(weights: Sequence[np.ndarray]) -> str:
-    """SHA-256 canonico de um conjunto de pesos. Retorna hex de 64 caracteres.
+# Extensao do artefato canonico. E este arquivo que a instituicao sobe no
+# painel web para gerar o compromisso da rodada.
+CANONICAL_EXT = ".awfl"
 
-    Regras de serializacao (precisam ser identicas do lado Rust para a
-    verificacao on-chain funcionar):
+
+def canonical_chunks(weights: Sequence[np.ndarray]) -> Iterator[bytes]:
+    """Gera o byte stream canonico de um conjunto de pesos, em pedacos.
+
+    UNICA definicao do formato em todo o projeto - `hash_weights` e
+    `export_weights` consomem daqui. Ter o formato escrito em dois lugares e
+    exatamente como o hash do arquivo deixa de bater com o hash calculado em
+    memoria, sem ninguem perceber ate a auditoria falhar.
+
+    Formato (precisa ser identico do lado Rust para a verificacao on-chain):
 
     1. tensores na ordem do `state_dict` do modelo;
-    2. para cada tensor: ndim (u32 LE) + cada dimensao (u32 LE) + bytes dos
-       dados em float32 little-endian, em ordem C;
-    3. hash acumulado sobre a concatenacao.
+    2. para cada tensor: ndim (u32 LE) + cada dimensao (u32 LE) + os dados em
+       float32 little-endian, em ordem C;
+    3. concatenacao, sem cabecalho global e sem padding.
 
-    Fixamos float32 mesmo internamente usando float64 porque e a precisao em que
-    os pesos realmente trafegam - e evita que uma diferenca de ULP em float64
-    (ordem de soma diferente entre maquinas) mude o hash.
+    Fixamos float32 mesmo quando internamente se usa float64 porque e a precisao
+    em que os pesos realmente trafegam - e evita que uma diferenca de ULP em
+    float64 (ordem de soma diferente entre maquinas) mude o hash.
+
+    O formato e auto-descritivo: da para ler de volta so com os bytes, sem
+    conhecer o modelo (ver `load_weights`).
     """
-    digest = hashlib.sha256()
     for tensor in weights:
         arr = np.ascontiguousarray(np.asarray(tensor, dtype=np.float32))
-        digest.update(struct.pack("<I", arr.ndim))
-        for dim in arr.shape:
-            digest.update(struct.pack("<I", int(dim)))
-        digest.update(arr.tobytes(order="C"))
+        cabecalho = struct.pack("<I", arr.ndim)
+        cabecalho += b"".join(struct.pack("<I", int(d)) for d in arr.shape)
+        yield cabecalho
+        yield arr.tobytes(order="C")
+
+
+def hash_weights(weights: Sequence[np.ndarray]) -> str:
+    """SHA-256 canonico de um conjunto de pesos. Retorna hex de 64 caracteres."""
+    digest = hashlib.sha256()
+    for chunk in canonical_chunks(weights):
+        digest.update(chunk)
     return digest.hexdigest()
+
+
+def export_weights(weights: Sequence[np.ndarray], path: str | Path) -> Path:
+    """Grava os pesos no formato canonico e devolve o caminho.
+
+    O ponto deste arquivo: `sha256(bytes_do_arquivo) == hash_weights(weights)`.
+    A tela `/painel/contribuir` da web calcula SHA-256 do conteudo bruto do
+    arquivo que a instituicao sobe (`sha256DeArquivo`); gravando o mesmo byte
+    stream que hasheamos em memoria, os dois lados chegam ao mesmo compromisso
+    sem precisar combinar mais nada.
+
+    Sem isto a integracao nao fecha: qualquer outro formato (`torch.save`,
+    `.npz`, pickle) carrega metadados, ordem de chaves ou compressao que mudam
+    os bytes e, portanto, o hash.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("wb") as fh:
+        for chunk in canonical_chunks(weights):
+            fh.write(chunk)
+    return path
+
+
+def load_weights(path: str | Path) -> List[np.ndarray]:
+    """Le de volta um artefato canonico. E o lado auditor da historia.
+
+    Qualquer terceiro que tenha o arquivo consegue reconstruir os tensores,
+    recalcular o hash e conferir contra o que esta registrado on-chain - sem
+    precisar do codigo do modelo, porque o formato carrega os shapes.
+    """
+    dados = Path(path).read_bytes()
+    saida: List[np.ndarray] = []
+    i = 0
+    while i < len(dados):
+        (ndim,) = struct.unpack_from("<I", dados, i)
+        i += 4
+        shape = struct.unpack_from(f"<{ndim}I", dados, i)
+        i += 4 * ndim
+        n = int(np.prod(shape)) if ndim else 1
+        arr = np.frombuffer(dados, dtype="<f4", count=n, offset=i).reshape(shape)
+        i += 4 * n
+        saida.append(np.array(arr))  # copia: o buffer original e imutavel
+    return saida
 
 
 def hash_record(payload: Dict[str, Any]) -> str:
@@ -141,11 +202,31 @@ class SimulatedOnChainLedger:
 
     GENESIS = "0" * 64
 
-    def __init__(self, program_id: str = DEVNET_PROGRAM_ID) -> None:
+    def __init__(
+        self,
+        program_id: str = DEVNET_PROGRAM_ID,
+        export_dir: Optional[str | Path] = None,
+        export_rounds: Optional[Sequence[int]] = None,
+    ) -> None:
+        """
+        Args:
+            export_dir: se informado, grava o artefato canonico dos pesos de cada
+                contribuicao ali - o arquivo que a instituicao sobe no painel web.
+            export_rounds: de quais rodadas exportar. `None` = todas. Restringir
+                importa: cada artefato tem o tamanho do modelo (~860 KB aqui), e
+                12 rodadas x 10 participantes encheriam 100 MB sem necessidade.
+        """
         self.program_id = program_id
         self.contributions: List[ContributionRecord] = []
         self.bans: List[BanRecord] = []
         self._chain: List[str] = []  # hash de cada bloco, em ordem
+        self.export_dir = Path(export_dir) if export_dir else None
+        self.export_rounds = set(export_rounds) if export_rounds is not None else None
+        # Indice dos artefatos gravados. Fica FORA da cadeia de blocos de
+        # proposito: o caminho do arquivo e um detalhe da maquina que rodou o
+        # experimento, e incluir isso no hash faria a mesma federacao produzir
+        # cadeias diferentes so por ter exportado ou nao os pesos.
+        self.artifacts: List[Dict[str, Any]] = []
 
     # -- escrita -----------------------------------------------------------
 
@@ -176,6 +257,7 @@ class SimulatedOnChainLedger:
         )
         self.contributions.append(record)
         self._append_block(asdict(record))
+        self._export_artifact(record, weights)
         logger.debug(
             "on-chain <- rodada %d, participante %d, hash %s...",
             round_number,
@@ -200,6 +282,32 @@ class SimulatedOnChainLedger:
             "on-chain <- BANIMENTO do participante %d na rodada %d", participant_id, round_number
         )
         return record
+
+    def _export_artifact(
+        self, record: ContributionRecord, weights: Sequence[np.ndarray]
+    ) -> Optional[Path]:
+        """Grava o artefato canonico da contribuicao, se a exportacao estiver ligada.
+
+        E o que fecha a auditoria de ponta a ponta: o arquivo daqui, subido em
+        /painel/contribuir, produz no navegador o mesmo hash que esta no registro.
+        """
+        if self.export_dir is None:
+            return None
+        if self.export_rounds is not None and record.round_number not in self.export_rounds:
+            return None
+
+        nome = f"rodada{record.round_number:02d}_participante{record.participant_id:02d}{CANONICAL_EXT}"
+        caminho = export_weights(weights, self.export_dir / nome)
+        self.artifacts.append(
+            {
+                "round_number": record.round_number,
+                "participant_id": record.participant_id,
+                "file": nome,
+                "weights_hash": record.weights_hash,
+                "bytes": caminho.stat().st_size,
+            }
+        )
+        return caminho
 
     def _append_block(self, payload: Dict[str, Any]) -> str:
         previous = self._chain[-1] if self._chain else self.GENESIS
@@ -249,6 +357,9 @@ class SimulatedOnChainLedger:
             "chain_head": self._chain[-1] if self._chain else self.GENESIS,
             "contributions": [asdict(c) for c in self.contributions],
             "bans": [asdict(b) for b in self.bans],
+            # Indice dos artefatos: para cada arquivo exportado, o hash que ele
+            # deve produzir. E o roteiro da auditoria manual pelo painel web.
+            "artifacts": self.artifacts,
         }
         path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         logger.info("Livro-razao simulado exportado para %s", path)

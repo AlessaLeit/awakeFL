@@ -25,7 +25,7 @@ import logging
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import torch
 import yaml
@@ -111,6 +111,10 @@ def parse_args(argv=None) -> argparse.Namespace:
     g.add_argument("--backend", choices=["local", "flower"], default="local",
                    help="'flower' exige pip install 'flwr[simulation]' (Ray)")
     g.add_argument("--results-dir", type=Path)
+    g.add_argument("--export-weights", action="store_true",
+                   help="grava os pesos da ultima rodada no formato canonico (.awfl) em "
+                        "results/pesos/<cenario>/ - e o arquivo que a instituicao sobe "
+                        "em /painel/contribuir para gerar o mesmo hash do livro-razao")
     g.add_argument("--log-level", choices=["DEBUG", "INFO", "WARNING"], default=None)
     g.add_argument("--device", choices=["cpu", "cuda"], default=None)
     return p.parse_args(argv)
@@ -171,6 +175,7 @@ def run_scenario(
     defense_enabled: bool,
     backend: str,
     device: str,
+    export_dir: Optional[Path] = None,
 ) -> History:
     """Monta clientes e roda a federacao para um cenario."""
     xtr, ytr, xte, yte = data_bundle
@@ -215,6 +220,10 @@ def run_scenario(
         malicious_ids=malicious_ids,
         device=device,
         seed=seed,
+        export_dir=str(export_dir) if export_dir else None,
+        # So a ultima rodada: um artefato por participante ja basta para a
+        # auditoria, e exportar as 12 rodadas encheria ~100 MB sem ganho.
+        export_rounds=[int(fed["rounds"])] if export_dir else None,
     )
 
 
@@ -268,7 +277,9 @@ def main(argv=None) -> int:
         spec = plan[key]
         t0 = time.time()
         histories[key] = run_scenario(
-            key, cfg, data_bundle, backend=args.backend, device=device, **spec
+            key, cfg, data_bundle, backend=args.backend, device=device,
+            export_dir=(results_dir / "pesos" / key) if args.export_weights else None,
+            **spec,
         )
         logger.info("Cenario %s concluido em %.1fs\n", key, time.time() - t0)
 
