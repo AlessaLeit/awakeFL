@@ -25,8 +25,9 @@ se paga por ela). Se não houver alternativa descartada, provavelmente não era
 uma decisão — era só código.
 
 Os documentos irmãos: **Anatomia do AwakeFL** (arquitetura), **Aritmética da
-Reputação** (as contas passo a passo) e **O Que Falta no AwakeFL** (trabalho
-futuro).
+Reputação** (as contas passo a passo), **Trajetória do Desenvolvimento** (a
+história em prosa: em que ordem tudo foi construído e o que ficou de fora) e
+**O Que Falta no AwakeFL** (trabalho futuro).
 
 ---
 
