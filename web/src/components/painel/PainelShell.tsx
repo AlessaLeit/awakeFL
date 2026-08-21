@@ -44,7 +44,13 @@ export default function PainelShell({
   const pathname = usePathname();
   const { programId, conectado, erro, limparErro, saldoSol, publicKey } =
     useAwakeFL();
-  const [menuAberto, setMenuAberto] = useState(false);
+
+  // A lateral nunca some — ela RECOLHE. A diferença importa: uma gaveta que
+  // fecha por completo precisa de um botão fora dela para reabrir, e esse botão
+  // acabava morando na barra superior. Virando trilho, o controle fica sempre
+  // ao lado da marca, onde a pessoa aprendeu que ele está.
+  const [recolhido, setRecolhido] = useState(false);
+  const largura = recolhido ? 76 : 260;
 
   // Sem Program ID não há o que mostrar: toda tela do painel lê contas do
   // programa. É melhor dizer isso uma vez aqui do que cinco vezes vazias.
@@ -56,12 +62,12 @@ export default function PainelShell({
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar — fixa no desktop, gaveta no mobile */}
+      {/* Trilho lateral — sempre presente, recolhe para só os ícones */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col border-r px-4 py-6 transition-transform md:translate-x-0 ${
-          menuAberto ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className="fixed inset-y-0 left-0 z-40 flex flex-col border-r py-6 transition-[width] duration-200"
         style={{
+          width: largura,
+          paddingInline: recolhido ? 12 : 16,
           borderColor: "var(--borda)",
           background: "var(--superficie-baixa)",
         }}
@@ -69,23 +75,38 @@ export default function PainelShell({
         {/* Identidade + contexto de rede, juntos. A rede não é um detalhe de
             barra superior: é o que diz em qual mundo cada transação acontece,
             e por isso fica colada à marca. */}
-        <div className="flex items-start justify-between gap-3 px-3">
-          <div>
-            <Link href="/" onClick={() => setMenuAberto(false)}>
-              <div className="text-2xl font-bold tracking-tight">
-                <span style={{ color: "var(--acento-forte)" }}>Awake</span>
-                <span style={{ color: "var(--tinta)" }}>FL</span>
+        <div
+          className={`flex gap-2 px-1 ${
+            recolhido ? "flex-col items-center" : "items-start justify-between"
+          }`}
+        >
+          {recolhido ? (
+            <Link href="/" title="AwakeFL · Devnet · Solana">
+              <div
+                className="text-2xl font-bold tracking-tight"
+                style={{ color: "var(--acento-forte)" }}
+              >
+                A
               </div>
             </Link>
-            <span className="rotulo mt-1 block">Devnet · Solana</span>
-          </div>
+          ) : (
+            <div className="px-2">
+              <Link href="/">
+                <div className="text-2xl font-bold tracking-tight">
+                  <span style={{ color: "var(--acento-forte)" }}>Awake</span>
+                  <span style={{ color: "var(--tinta)" }}>FL</span>
+                </div>
+              </Link>
+              <span className="rotulo mt-1 block">Devnet · Solana</span>
+            </div>
+          )}
 
-          {/* Só no mobile: aqui dentro da gaveta, a única ação possível é
-              fechá-la — o botão que a abre precisa ficar fora, na barra. */}
           <button
-            className="btn-fantasma -mr-1 px-2 py-1 text-sm md:hidden"
-            onClick={() => setMenuAberto(false)}
-            aria-label="Fechar menu"
+            className="btn-fantasma px-2 py-1 text-sm"
+            onClick={() => setRecolhido((r) => !r)}
+            aria-expanded={!recolhido}
+            aria-label={recolhido ? "Expandir menu" : "Recolher menu"}
+            title={recolhido ? "Expandir menu" : "Recolher menu"}
           >
             ☰
           </button>
@@ -102,9 +123,13 @@ export default function PainelShell({
               <Link
                 key={href}
                 href={href}
-                onClick={() => setMenuAberto(false)}
                 aria-current={ativo ? "page" : undefined}
-                className="flex items-center gap-3 rounded px-3 py-2.5 text-sm transition-colors"
+                // Recolhido, o rótulo vira `title`: sem ele o ícone sozinho
+                // obriga a adivinhar para onde cada item leva.
+                title={recolhido ? rotulo : undefined}
+                className={`flex items-center gap-3 rounded py-2.5 text-sm transition-colors ${
+                  recolhido ? "justify-center px-2" : "px-3"
+                }`}
                 style={{
                   color: ativo ? "var(--acento-forte)" : "var(--tinta-2)",
                   background: ativo ? "var(--acento-lavado)" : "transparent",
@@ -117,7 +142,7 @@ export default function PainelShell({
                 }}
               >
                 <Icone />
-                {rotulo}
+                {!recolhido && rotulo}
               </Link>
             );
           })}
@@ -127,7 +152,10 @@ export default function PainelShell({
           className="mt-auto border-t pt-4"
           style={{ borderColor: "var(--borda)" }}
         >
-          {publicKey && (
+          {/* Recolhido, carteira e saldo saem: truncados a 76px virariam ruído
+              ilegível. Não se perde alerta nenhum — o aviso de saldo baixo tem
+              o próprio bloco no corpo da página. */}
+          {!recolhido && publicKey && (
             <a
               href={explorerConta(publicKey)}
               target="_blank"
@@ -138,7 +166,7 @@ export default function PainelShell({
               {encurta(publicKey, 6)}
             </a>
           )}
-          {saldoSol !== null && (
+          {!recolhido && saldoSol !== null && (
             <div
               className="mono tabular mt-1.5 px-3 text-xs"
               style={{ color: semSaldo ? "var(--aviso)" : "var(--tinta-muda)" }}
@@ -148,26 +176,22 @@ export default function PainelShell({
           )}
           <Link
             href="/"
-            className="mt-3 flex items-center gap-3 rounded px-3 py-2.5 text-sm transition-colors hover:text-[var(--tinta)]"
+            title={recolhido ? "Sair do painel" : undefined}
+            className={`mt-3 flex items-center gap-3 rounded py-2.5 text-sm transition-colors hover:text-[var(--tinta)] ${
+              recolhido ? "justify-center px-2" : "px-3"
+            }`}
             style={{ color: "var(--tinta-2)" }}
           >
             <IconeSair />
-            Sair do painel
+            {!recolhido && "Sair do painel"}
           </Link>
         </div>
       </aside>
 
-      {/* Véu do menu mobile */}
-      {menuAberto && (
-        <button
-          className="fixed inset-0 z-30 md:hidden"
-          style={{ background: "rgba(0,0,0,0.6)" }}
-          onClick={() => setMenuAberto(false)}
-          aria-label="Fechar menu"
-        />
-      )}
-
-      <div className="flex min-w-0 flex-1 flex-col md:pl-[260px]">
+      <div
+        className="flex min-w-0 flex-1 flex-col transition-[padding] duration-200"
+        style={{ paddingLeft: largura }}
+      >
         {/* Barra superior: só o essencial, porque a navegação está na lateral */}
         <header
           className="sticky top-0 z-20 flex items-center gap-3 border-b px-5 py-3"
@@ -178,13 +202,6 @@ export default function PainelShell({
             WebkitBackdropFilter: "blur(var(--vidro-desfoque))",
           }}
         >
-          <button
-            className="btn-fantasma px-3 py-2 text-sm md:hidden"
-            onClick={() => setMenuAberto(true)}
-            aria-label="Abrir menu"
-          >
-            ☰
-          </button>
           <div className="ml-auto">
             <WalletMultiButton />
           </div>
