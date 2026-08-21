@@ -22,6 +22,22 @@ pub const INITIAL_REPUTATION: u64 = 500;
 pub const MAX_REPUTATION: u64 = 1000;
 /// Divisor aplicado a reputacao ao penalizar um malicioso.
 pub const PENALTY_DIVISOR: u64 = 10;
+
+/// Limiar abaixo do qual um participante pode ser penalizado. Espelha o
+/// `reputation.ban_threshold` do off-chain (0,4 na escala [0,1]).
+///
+/// Existe para que o banimento seja uma CONSEQUENCIA VERIFICAVEL e nao uma
+/// decisao da autoridade. Sem esta constante, `penalize_participant` so
+/// checava se a conta ja estava banida — ou seja, a autoridade podia banir
+/// permanentemente um participante com reputacao 1000, sem justificativa
+/// alguma, e o programa aceitava. Com ela, o contrato se recusa a executar um
+/// banimento que os proprios numeros dele nao condenam, e qualquer pessoa
+/// confere a legitimidade lendo a conta.
+///
+/// Nao elimina o abuso: a autoridade ainda pode empurrar alguem para baixo do
+/// limiar com scores injustos ao longo de varias rodadas. Mas forca o abuso a
+/// ser lento e publico, em vez de instantaneo e invisivel.
+pub const BAN_THRESHOLD: u64 = 400;
 /// Comprimento maximo de `update_hash`. 64 = SHA-256 em hexadecimal.
 /// Este numero entra DIRETO no calculo de espaco da conta Contribution.
 pub const MAX_HASH_LEN: usize = 64;

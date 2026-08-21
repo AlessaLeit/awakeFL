@@ -126,9 +126,18 @@ pub mod awakefl {
     /// Penaliza um malicioso: reputação / 10 e banimento PERMANENTE.
     /// É o contra-ataque ao "sleepy adversary" — toda a reputação
     /// acumulada em rodadas honestas é destruída de uma vez.
+    ///
+    /// O banimento é uma **consequência verificável**, não uma decisão da
+    /// autoridade: o programa só executa se a própria reputação registrada
+    /// já estiver abaixo de `BAN_THRESHOLD`. Assim qualquer pessoa confere a
+    /// legitimidade do ban lendo a conta, sem precisar confiar em ninguém.
     pub fn penalize_participant(ctx: Context<PenalizeParticipant>, reason_code: u8) -> Result<()> {
         let participant = &mut ctx.accounts.participant;
         require!(!participant.is_banned, FlError::AlreadyBanned);
+        require!(
+            participant.reputation < BAN_THRESHOLD,
+            FlError::ReputationAboveThreshold
+        );
 
         let previous = participant.reputation;
         participant.reputation = previous / PENALTY_DIVISOR;
@@ -330,4 +339,10 @@ pub enum FlError {
     HashTooLong,
     #[msg("Overflow aritmetico")]
     MathOverflow,
+    // Variante NOVA vai sempre no fim do enum: o Anchor numera os erros pela
+    // ordem de declaracao (6000, 6001, ...), entao inserir no meio renumeraria
+    // todos os seguintes e qualquer cliente com IDL antigo passaria a exibir a
+    // mensagem errada.
+    #[msg("Reputacao ainda acima do limiar: o banimento precisa ser justificado pelo registro")]
+    ReputationAboveThreshold,
 }

@@ -243,33 +243,55 @@ describe("awakefl", () => {
     }
   });
 
-  it("sleepy adversary: acumula reputacao e perde tudo na penalidade", async () => {
+  const penalizar = (who: PublicKey, reasonCode = 1) =>
+    program.methods
+      .penalizeParticipant(reasonCode)
+      .accounts({
+        config: configPda,
+        participant: participantPda(who),
+        authority: authority.publicKey,
+      })
+      .rpc();
+
+  it("nao bane quem o proprio registro nao condena", async () => {
     // esta em 700 apos a rodada 3. Mais duas rodadas honestas:
     assert.equal(await round(sleepy, 4, 900, "sleepy-r4"), 800); // (700 + 900) / 2
     await advance(); // rodada 5
     assert.equal(await round(sleepy, 5, 950, "sleepy-r5"), 875); // (800 + 950) / 2
 
-    // detectado envenenando o modelo
-    await program.methods
-      .penalizeParticipant(1) // reason_code 1 = label flipping
-      .accounts({
-        config: configPda,
-        participant: participantPda(sleepy.publicKey),
-        authority: authority.publicKey,
-      })
-      .rpc();
+    // Com reputacao 875 nao ha o que justifique um banimento, e o programa se
+    // recusa a executa-lo — mesmo vindo da autoridade. Sem esta trava, ela
+    // poderia banir permanentemente um participante impecavel, e o registro
+    // on-chain atestaria isso com a mesma imutabilidade de um ban legitimo.
+    try {
+      await penalizar(sleepy.publicKey);
+      assert.fail("deveria ter recusado: reputacao 875 esta acima do limiar");
+    } catch (e) {
+      assert.include(e.toString(), "ReputationAboveThreshold");
+    }
+  });
+
+  it("sleepy adversary: envenena, a reputacao desaba e ai sim e banido", async () => {
+    // Comeca a envenenar. O agregador pontua a inconsistencia com 0, e a media
+    // movel leva duas rodadas para cruzar o limiar de 400.
+    await advance(); // rodada 6
+    assert.equal(await round(sleepy, 6, 0, "sleepy-r6"), 437); // (875 + 0) / 2
+    await advance(); // rodada 7
+    assert.equal(await round(sleepy, 7, 0, "sleepy-r7"), 218); // (437 + 0) / 2
+
+    await penalizar(sleepy.publicKey); // agora o registro justifica
 
     const acc = await program.account.participant.fetch(
       participantPda(sleepy.publicKey),
     );
-    assert.equal(acc.reputation.toNumber(), 87); // 875 / 10, divisao inteira
+    assert.equal(acc.reputation.toNumber(), 21); // 218 / 10, divisao inteira
     assert.isTrue(acc.isBanned);
   });
 
   it("participante banido nao consegue mais contribuir", async () => {
-    await advance(); // rodada 6
+    await advance(); // rodada 8
     try {
-      await submit(sleepy, 6, "sleepy-after-ban");
+      await submit(sleepy, 8, "sleepy-after-ban");
       assert.fail("banido nao deveria conseguir submeter");
     } catch (e) {
       assert.include(e.toString(), "ParticipantBanned");
@@ -278,14 +300,7 @@ describe("awakefl", () => {
 
   it("nao penaliza duas vezes o mesmo participante", async () => {
     try {
-      await program.methods
-        .penalizeParticipant(1)
-        .accounts({
-          config: configPda,
-          participant: participantPda(sleepy.publicKey),
-          authority: authority.publicKey,
-        })
-        .rpc();
+      await penalizar(sleepy.publicKey);
       assert.fail("deveria ter rejeitado a segunda penalidade");
     } catch (e) {
       assert.include(e.toString(), "AlreadyBanned");

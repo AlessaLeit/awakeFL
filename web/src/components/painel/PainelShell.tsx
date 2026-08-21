@@ -66,18 +66,30 @@ export default function PainelShell({
           background: "var(--superficie-baixa)",
         }}
       >
-        <Link href="/" className="px-3" onClick={() => setMenuAberto(false)}>
-          <div className="text-2xl font-bold tracking-tight">
-            <span style={{ color: "var(--acento-forte)" }}>Awake</span>
-            <span style={{ color: "var(--tinta)" }}>FL</span>
+        {/* Identidade + contexto de rede, juntos. A rede não é um detalhe de
+            barra superior: é o que diz em qual mundo cada transação acontece,
+            e por isso fica colada à marca. */}
+        <div className="flex items-start justify-between gap-3 px-3">
+          <div>
+            <Link href="/" onClick={() => setMenuAberto(false)}>
+              <div className="text-2xl font-bold tracking-tight">
+                <span style={{ color: "var(--acento-forte)" }}>Awake</span>
+                <span style={{ color: "var(--tinta)" }}>FL</span>
+              </div>
+            </Link>
+            <span className="rotulo mt-1 block">Devnet · Solana</span>
           </div>
-          <div
-            className="rotulo mt-1"
-            style={{ fontSize: 10, color: "var(--tinta-muda)" }}
+
+          {/* Só no mobile: aqui dentro da gaveta, a única ação possível é
+              fechá-la — o botão que a abre precisa ficar fora, na barra. */}
+          <button
+            className="btn-fantasma -mr-1 px-2 py-1 text-sm md:hidden"
+            onClick={() => setMenuAberto(false)}
+            aria-label="Fechar menu"
           >
-            Neon Graphite System
-          </div>
-        </Link>
+            ☰
+          </button>
+        </div>
 
         <nav className="mt-8 flex flex-col gap-1">
           {ITENS.map(({ href, rotulo, Icone }) => {
@@ -173,7 +185,6 @@ export default function PainelShell({
           >
             ☰
           </button>
-          <span className="rotulo hidden md:block">Devnet · Solana</span>
           <div className="ml-auto">
             <WalletMultiButton />
           </div>
@@ -238,7 +249,7 @@ export default function PainelShell({
             className="mono flex flex-wrap items-center justify-between gap-3 text-xs"
             style={{ color: "var(--tinta-muda)" }}
           >
-            <span>AwakeFL · Neon Graphite Architecture</span>
+            <span>AwakeFL</span>
             <span>
               Devnet da Solana — o SOL usado aqui não tem valor e as contas são
               públicas.

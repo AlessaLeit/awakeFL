@@ -9,7 +9,16 @@
   "instructions": [
     {
       "name": "initialize",
-      "discriminator": [175, 175, 109, 31, 13, 152, 155, 237],
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
       "accounts": [
         {
           "name": "config",
@@ -29,7 +38,16 @@
     },
     {
       "name": "register_participant",
-      "discriminator": [248, 112, 38, 215, 226, 230, 249, 40],
+      "discriminator": [
+        248,
+        112,
+        38,
+        215,
+        226,
+        230,
+        249,
+        40
+      ],
       "accounts": [
         {
           "name": "config",
@@ -53,7 +71,16 @@
     },
     {
       "name": "submit_contribution",
-      "discriminator": [123, 132, 230, 253, 141, 22, 214, 91],
+      "discriminator": [
+        123,
+        132,
+        230,
+        253,
+        141,
+        22,
+        214,
+        91
+      ],
       "accounts": [
         {
           "name": "config"
@@ -97,7 +124,16 @@
     },
     {
       "name": "validate_contribution",
-      "discriminator": [191, 252, 119, 244, 216, 33, 245, 175],
+      "discriminator": [
+        191,
+        252,
+        119,
+        244,
+        216,
+        33,
+        245,
+        175
+      ],
       "accounts": [
         {
           "name": "config"
@@ -124,7 +160,16 @@
     },
     {
       "name": "penalize_participant",
-      "discriminator": [193, 245, 240, 195, 174, 198, 6, 186],
+      "discriminator": [
+        193,
+        245,
+        240,
+        195,
+        174,
+        198,
+        6,
+        186
+      ],
       "accounts": [
         {
           "name": "config"
@@ -147,7 +192,16 @@
     },
     {
       "name": "advance_round",
-      "discriminator": [230, 88, 119, 80, 54, 4, 212, 250],
+      "discriminator": [
+        230,
+        88,
+        119,
+        80,
+        54,
+        4,
+        212,
+        250
+      ],
       "accounts": [
         {
           "name": "config",
@@ -164,37 +218,109 @@
   "accounts": [
     {
       "name": "Config",
-      "discriminator": [155, 12, 170, 224, 30, 250, 204, 130]
+      "discriminator": [
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
     },
     {
       "name": "Participant",
-      "discriminator": [32, 142, 108, 79, 247, 179, 54, 6]
+      "discriminator": [
+        32,
+        142,
+        108,
+        79,
+        247,
+        179,
+        54,
+        6
+      ]
     },
     {
       "name": "Contribution",
-      "discriminator": [182, 187, 14, 111, 72, 167, 242, 212]
+      "discriminator": [
+        182,
+        187,
+        14,
+        111,
+        72,
+        167,
+        242,
+        212
+      ]
     }
   ],
   "events": [
     {
       "name": "ParticipantRegistered",
-      "discriminator": [47, 115, 159, 109, 135, 121, 70, 193]
+      "discriminator": [
+        47,
+        115,
+        159,
+        109,
+        135,
+        121,
+        70,
+        193
+      ]
     },
     {
       "name": "ContributionSubmitted",
-      "discriminator": [233, 209, 91, 212, 239, 41, 224, 118]
+      "discriminator": [
+        233,
+        209,
+        91,
+        212,
+        239,
+        41,
+        224,
+        118
+      ]
     },
     {
       "name": "ContributionValidated",
-      "discriminator": [185, 201, 226, 178, 1, 119, 113, 253]
+      "discriminator": [
+        185,
+        201,
+        226,
+        178,
+        1,
+        119,
+        113,
+        253
+      ]
     },
     {
       "name": "ParticipantPenalized",
-      "discriminator": [229, 7, 229, 53, 135, 76, 194, 94]
+      "discriminator": [
+        229,
+        7,
+        229,
+        53,
+        135,
+        76,
+        194,
+        94
+      ]
     },
     {
       "name": "RoundAdvanced",
-      "discriminator": [215, 177, 143, 241, 202, 145, 181, 213]
+      "discriminator": [
+        215,
+        177,
+        143,
+        241,
+        202,
+        145,
+        181,
+        213
+      ]
     }
   ],
   "errors": [
@@ -232,6 +358,11 @@
       "code": 6006,
       "name": "MathOverflow",
       "msg": "Overflow aritmetico"
+    },
+    {
+      "code": 6007,
+      "name": "ReputationAboveThreshold",
+      "msg": "Reputacao ainda acima do limiar: o banimento precisa ser justificado pelo registro"
     }
   ],
   "types": [

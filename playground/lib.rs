@@ -134,9 +134,18 @@ pub mod awakefl {
     /// Penaliza um malicioso: reputação / 10 e banimento PERMANENTE.
     /// É o contra-ataque ao "sleepy adversary" — toda a reputação
     /// acumulada em rodadas honestas é destruída de uma vez.
+    ///
+    /// O banimento é uma **consequência verificável**, não uma decisão da
+    /// autoridade: o programa só executa se a própria reputação registrada
+    /// já estiver abaixo de `BAN_THRESHOLD`. Assim qualquer pessoa confere a
+    /// legitimidade do ban lendo a conta, sem precisar confiar em ninguém.
     pub fn penalize_participant(ctx: Context<PenalizeParticipant>, reason_code: u8) -> Result<()> {
         let participant = &mut ctx.accounts.participant;
         require!(!participant.is_banned, FlError::AlreadyBanned);
+        require!(
+            participant.reputation < BAN_THRESHOLD,
+            FlError::ReputationAboveThreshold
+        );
 
         let previous = participant.reputation;
         participant.reputation = previous / PENALTY_DIVISOR;
@@ -338,6 +347,12 @@ pub enum FlError {
     HashTooLong,
     #[msg("Overflow aritmetico")]
     MathOverflow,
+    // Variante NOVA vai sempre no fim do enum: o Anchor numera os erros pela
+    // ordem de declaracao (6000, 6001, ...), entao inserir no meio renumeraria
+    // todos os seguintes e qualquer cliente com IDL antigo passaria a exibir a
+    // mensagem errada.
+    #[msg("Reputacao ainda acima do limiar: o banimento precisa ser justificado pelo registro")]
+    ReputationAboveThreshold,
 }
 
 // ---------------------------------------------------------------------------
@@ -362,6 +377,22 @@ pub const INITIAL_REPUTATION: u64 = 500;
 pub const MAX_REPUTATION: u64 = 1000;
 /// Divisor aplicado a reputacao ao penalizar um malicioso.
 pub const PENALTY_DIVISOR: u64 = 10;
+
+/// Limiar abaixo do qual um participante pode ser penalizado. Espelha o
+/// `reputation.ban_threshold` do off-chain (0,4 na escala [0,1]).
+///
+/// Existe para que o banimento seja uma CONSEQUENCIA VERIFICAVEL e nao uma
+/// decisao da autoridade. Sem esta constante, `penalize_participant` so
+/// checava se a conta ja estava banida — ou seja, a autoridade podia banir
+/// permanentemente um participante com reputacao 1000, sem justificativa
+/// alguma, e o programa aceitava. Com ela, o contrato se recusa a executar um
+/// banimento que os proprios numeros dele nao condenam, e qualquer pessoa
+/// confere a legitimidade lendo a conta.
+///
+/// Nao elimina o abuso: a autoridade ainda pode empurrar alguem para baixo do
+/// limiar com scores injustos ao longo de varias rodadas. Mas forca o abuso a
+/// ser lento e publico, em vez de instantaneo e invisivel.
+pub const BAN_THRESHOLD: u64 = 400;
 /// Comprimento maximo de `update_hash`. 64 = SHA-256 em hexadecimal.
 /// Este numero entra DIRETO no calculo de espaco da conta Contribution.
 pub const MAX_HASH_LEN: usize = 64;
