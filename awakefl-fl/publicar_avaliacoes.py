@@ -37,14 +37,30 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from utils import caminho_no_projeto
-
 PROGRAM_MAX_REPUTATION = 1_000
 # Metade da escala e o limiar entre Aprovado e Rejeitado no programa
 # (`score >= MAX_REPUTATION / 2` em lib.rs).
 LIMIAR_APROVACAO = PROGRAM_MAX_REPUTATION // 2
 
-DESTINO_PADRAO = Path(__file__).resolve().parent.parent / "web" / "public" / "avaliacoes.json"
+# Os dois lugares que este script toca sao FIXOS: le de uma pasta de resultados
+# dentro de awakefl-fl/, escreve em web/public/. O usuario escolhe o *nome* de
+# cada um, nunca o lugar — ver `nome_simples` la embaixo.
+RAIZ_FL = Path(__file__).resolve().parent
+DESTINO_DIR = RAIZ_FL.parent / "web" / "public"
+NOME_PADRAO = "avaliacoes.json"
+
+
+def nome_simples(valor: str) -> str:
+    """Reduz o argumento ao nome final, sem diretorio nenhum.
+
+    E a forma mais curta de nao ter caminho vindo de fora: em vez de validar
+    o que o usuario mandou, descartamos a parte que poderia escapar. O que
+    sobra so pode ser um item direto da pasta fixa correspondente.
+    """
+    nome = Path(str(valor)).name
+    if not nome or nome in {".", ".."}:
+        raise ValueError(f"nome invalido: {valor!r}")
+    return nome
 
 
 def para_escala_do_programa(valor: float) -> int:
@@ -84,15 +100,16 @@ def construir(ledger: dict, cenario: str) -> dict:
 
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("diretorio", type=Path, help="pasta de resultados (ex.: results_demo)")
+    p.add_argument("diretorio", help="pasta de resultados dentro de awakefl-fl/ (ex.: results_demo)")
     p.add_argument("--cenario", default="C", choices=["A", "B", "C"])
-    p.add_argument("--saida", type=Path, default=DESTINO_PADRAO)
+    p.add_argument("--saida", default=NOME_PADRAO, help="nome do arquivo gerado em web/public/")
     args = p.parse_args(argv)
 
-    # Os dois caminhos vem da linha de comando — um vira leitura, o outro vira
-    # escrita dentro de web/public/. Confinar no projeto antes de tocar o disco.
-    origem = caminho_no_projeto(args.diretorio / f"ledger_{args.cenario}.json")
-    destino = caminho_no_projeto(args.saida)
+    # `nome_simples` joga fora qualquer diretorio que venha no argumento, entao
+    # nao existe caminho a validar: o lugar e sempre o mesmo, o usuario so
+    # escolhe o nome. `--saida ../../../etc/passwd` vira `passwd` aqui dentro.
+    origem = RAIZ_FL / nome_simples(args.diretorio) / f"ledger_{args.cenario}.json"
+    destino = DESTINO_DIR / nome_simples(args.saida)
     if not origem.exists():
         print(f"{origem} nao existe. Rode o experimento primeiro.", file=sys.stderr)
         return 1

@@ -11,38 +11,40 @@
  * Rode isto SEMPRE que rebuildar no Playground:
  *
  *   npm run comparar-idl                    # usa playground/idl-gerado.json
- *   npm run comparar-idl -- playground/outro-idl.json
+ *   npm run comparar-idl -- outro-idl.json  # outro arquivo, na mesma pasta
  *
- * Os caminhos precisam ficar DENTRO do repositório: um IDL baixado deve ser
- * copiado para cá antes (`cp ~/Downloads/idl.json playground/`). Argumento de
- * linha de comando vira leitura de arquivo, e confinar na raiz é o que impede
- * um `../../..` de ler qualquer coisa do disco.
+ * Os argumentos são NOMES DE ARQUIVO, não caminhos: o primeiro é lido de
+ * `playground/`, o segundo de `web/src/lib/idl/`. Um IDL baixado precisa ser
+ * copiado para lá antes (`cp ~/Downloads/idl.json playground/`).
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, resolve, sep } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 const RAIZ_WEB = resolve(AQUI, "..");
 const RAIZ_REPO = resolve(RAIZ_WEB, "..");
 
-/** Resolve o caminho e exige que ele esteja sob a raiz do repositório. */
-function caminhoNoRepo(valor) {
-  const alvo = resolve(RAIZ_REPO, valor);
-  if (alvo !== RAIZ_REPO && !alvo.startsWith(RAIZ_REPO + sep)) {
-    console.error(`\n✕ caminho fora do repositório: ${alvo}`);
-    console.error(`  permitido apenas dentro de ${RAIZ_REPO}\n`);
-    process.exit(2);
+/**
+ * Reduz o argumento ao nome do arquivo e o coloca numa pasta fixa.
+ *
+ * Em vez de validar o caminho que veio de fora, jogamos fora a parte que
+ * poderia escapar: `../../../etc/passwd` vira `passwd` dentro da pasta
+ * escolhida aqui. Não sobra caminho controlado por quem chamou.
+ */
+function arquivoEm(pasta, valor) {
+  const nome = basename(String(valor));
+  if (!nome || nome === "." || nome === "..") {
+    throw new Error(`nome de arquivo inválido: ${valor}`);
   }
-  return alvo;
+  return join(pasta, nome);
 }
 
-const caminhoLegado = caminhoNoRepo(
-  process.argv[2] ?? resolve(RAIZ_REPO, "playground", "idl-gerado.json"),
-);
-const caminhoNovo = caminhoNoRepo(
-  process.argv[3] ?? resolve(RAIZ_WEB, "src/lib/idl/awakefl.json"),
-);
+const PASTA_LEGADO = resolve(RAIZ_REPO, "playground");
+const PASTA_NOVO = resolve(RAIZ_WEB, "src/lib/idl");
+
+const caminhoLegado = arquivoEm(PASTA_LEGADO, process.argv[2] ?? "idl-gerado.json");
+const caminhoNovo = arquivoEm(PASTA_NOVO, process.argv[3] ?? "awakefl.json");
 
 console.log(`\n\x1b[1mIDL do build\x1b[0m  ${caminhoLegado}`);
 console.log(`\x1b[1mIDL do site\x1b[0m   ${caminhoNovo}`);
