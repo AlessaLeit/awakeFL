@@ -15,6 +15,7 @@ Os documentos irmãos:
 | **Anatomia do AwakeFL** | como as peças se encaixam |
 | **Aritmética da Reputação** | as contas, passo a passo, com números |
 | **Registro de decisões** | por que cada escolha, e o que se paga por ela |
+| **O Que Falta no AwakeFL** | as perguntas em aberto, e como respondê-las |
 | **Trajetória** (este) | como chegamos aqui, e o que ficou de fora |
 
 ---
@@ -621,17 +622,21 @@ nós nesse quesito — manter a coluna exigiria medir todos, não só o AwakeFL:
 
 Ordenado por custo-benefício para a IC:
 
-1. **Implementar o ataque de *slow poisoning*.** É o que falta para a tabela
-   comparativa deixar de ter uma linha sem evidência, e é a hipótese mais
+1. **Implementar o ataque de *slow poisoning*** (`P01`). É a hipótese mais
    interessante que o desenho de reputação permite testar — a memória entre
-   rodadas deveria, em tese, pegar o que uma defesa por rodada não pega.
-2. **Medir latência e custo na Devnet.** Fecha o objetivo 4 e sustenta a
+   rodadas deveria, em tese, pegar o que uma defesa por rodada não pega. E é o
+   que permitiria a coluna retirada da tabela comparativa voltar, com número.
+2. **Medir latência e custo na Devnet** (`P02`). Fecha o objetivo 4 e sustenta a
    comparação com os trabalhos sobre Ethereum.
-3. **Comparar com um baseline da literatura.** Rodar o mesmo cenário com Krum e
-   com mediana pura, e mostrar onde o AwakeFL fica. Sem isso, os números de
-   acurácia não têm régua externa.
-4. **Ler o BPRFL a fundo.** É o vizinho mais próximo, e o comitê com reputação
-   que ele implementa é exatamente o §7.2 deste projeto.
+3. **Comparar com um baseline da literatura** (`P03`). Rodar o mesmo cenário com
+   Krum e com mediana pura, e mostrar onde o AwakeFL fica. Sem isso, os números
+   de acurácia não têm régua externa.
+4. **Ler o BPRFL a fundo** (`P05`). É o vizinho mais próximo, e o comitê com
+   reputação que ele implementa é exatamente o §7.2 deste projeto.
+
+Cada um destes está desdobrado em **O Que Falta no AwakeFL**, com o desenho
+experimental e o que a resposta muda — junto com outras oito perguntas em aberto
+que não couberam nesta lista.
 
 ### 10.9 Referências desta seção
 
