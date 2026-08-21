@@ -163,10 +163,6 @@ respondê-lo — não como intenção vaga, mas como pergunta de pesquisa formul
 
 > Os documentos acima vivem na branch `documentacao`.
 
-## Licença
-
-ISC.
-
 ---
 
 <div align="center">
