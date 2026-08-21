@@ -5,9 +5,15 @@
  *   - reputação inicial 500, escala 0..1000
  *   - EMA: R(t) = 0.5*R(t-1) + 0.5*S(t)  ->  floor((R + S) / 2)
  *   - penalidade: floor(R / 10) + banimento permanente
+ *   - a penalidade só vale abaixo do limiar de 400
  *
  * Sem aleatoriedade: os scores são tabelados, então o gráfico e os números
  * são sempre os mesmos. Uma demo que muda a cada refresh não serve de demo.
+ *
+ * O que ela NÃO é: resultado experimental. Os scores aqui foram escolhidos para
+ * contar a história do *sleepy adversary* de forma legível, não medidos. Os
+ * números do experimento real — 10 sementes sobre MNIST não-IID — estão no
+ * README do projeto e vêm de `awakefl-fl/`.
  */
 
 export type Perfil = "honesto" | "irregular" | "sleepy";
@@ -25,6 +31,12 @@ export const TOTAL_RODADAS = 12;
 export const REPUTACAO_INICIAL = 500;
 export const RODADA_DO_ATAQUE = 8;
 export const RODADA_DA_PENALIDADE = 10;
+/**
+ * Mesmo limiar do programa (`BAN_THRESHOLD` em state.rs). Aqui ele não decide
+ * nada sozinho — os scores são tabelados —, mas guarda a demo de contar uma
+ * história que a chain recusaria. Ver a checagem em `simular()`.
+ */
+export const LIMIAR_BANIMENTO = 400;
 
 export const INSTITUICOES: Instituicao[] = [
   {
@@ -156,6 +168,18 @@ export function simular(): Rodada[] {
       // Detecção do envenenamento: a autoridade penaliza em vez de validar.
       if (inst.perfil === "sleepy" && r === RODADA_DA_PENALIDADE) {
         const anterior = estado.reputacao;
+        // O programa recusa penalizar quem ainda está acima do limiar
+        // (FlError::ReputationAboveThreshold). Se um ajuste nos scores tabelados
+        // levar a reputação para cima de 400 na hora da penalidade, esta demo
+        // passaria a mostrar algo que a chain rejeitaria — e ninguém perceberia,
+        // porque a tela não fala com a Devnet. Falhar aqui é o aviso.
+        if (anterior >= LIMIAR_BANIMENTO) {
+          throw new Error(
+            `Simulação inconsistente com o programa: penalidade na rodada ${r} ` +
+              `com reputação ${anterior}, acima do limiar ${LIMIAR_BANIMENTO}. ` +
+              `Ajuste os scores para que a reputação caia antes da penalidade.`,
+          );
+        }
         estado.reputacao = aplicarPenalidade(anterior);
         estado.banido = true;
         estado.status = "Banido";

@@ -331,9 +331,22 @@ export default function Dashboard() {
         </div>
 
         <p className="mt-8 text-xs" style={{ color: "var(--tinta-muda)" }}>
-          Simulação determinística das regras do programa Anchor (EMA de fator
-          0,5 e penalidade de divisão por 10). Não há conexão com a Devnet nesta
-          página, e as assinaturas exibidas são decorativas.
+          Simulação determinística das regras do programa Anchor: EMA de fator
+          0,5, penalidade de divisão por 10 e limiar de banimento em 400. Não há
+          conexão com a Devnet nesta página, e as assinaturas exibidas são
+          decorativas. Os scores foram escolhidos para o cenário ficar legível —
+          é uma demonstração da <strong>regra</strong>, não medição de
+          desempenho. Os resultados experimentais estão no{" "}
+          <a
+            href="https://github.com/AlessaLeit/awakeFL#funciona"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+            style={{ color: "var(--acento)" }}
+          >
+            README do projeto
+          </a>
+          .
         </p>
       </main>
       <Footer />
