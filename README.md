@@ -128,7 +128,7 @@ por preferência de ecossistema.
 **Isto é um MVP de pesquisa em desenvolvimento ativo — não é um produto pronto
 para produção.**
 
-O projeto nasceu como exploração técnica e está sendo formalizado como
+O projeto nasceu como exploração técnica durante o curso **Bloco 4** e está sendo formalizado como
 **Iniciação Científica**, com a intenção de crescer até virar **Trabalho de
 Conclusão de Curso**. O que existe hoje é uma prova de conceito completa de ponta
 a ponta: a simulação de Federated Learning, o programa on-chain publicado na
