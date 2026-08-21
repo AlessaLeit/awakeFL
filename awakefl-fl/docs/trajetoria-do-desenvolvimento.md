@@ -370,40 +370,290 @@ decide.
 
 ---
 
-## 10. Pesquisa de trabalhos relacionados
+## 10. Trabalhos relacionados
 
-> **Pendente de incorporação.**
+**Sobre a origem desta seção.** O levantamento inicial veio da seção 12 da
+proposta de IC, produzida fora desta trajetória de desenvolvimento. As sete
+referências que estavam marcadas `[VERIFICAR]` foram conferidas na fonte em **21
+de agosto de 2026**, e a conferência mudou o conteúdo: três descrições estavam
+incorretas e um título estava errado. O que segue é o texto corrigido, com o que
+foi checado marcado como tal.
+
+### 10.1 O que a conferência das referências encontrou
+
+| Referência da proposta | Situação |
+| --- | --- |
+| Xu & Lyu, *A Reputation Mechanism Is All You Need* | **Confirmada.** arXiv 2011.10464; publicada no workshop FL-ICML'21. Atenção: é workshop, não trilha principal — pesa menos numa revisão. |
+| Yin et al., 2018 | **Título errado na proposta.** Não é "Amplitude and Variance"; é *Byzantine-Robust Distributed Learning: Towards Optimal Statistical Rates*, ICML/PMLR v80. |
+| DFL (ACM, 2023) | **Confirmada, descrição errada.** Ver §10.4. |
+| BPRFL (ScienceDirect, 2025) | **Confirmada, descrição errada.** Ver §10.4. |
+| FLChain (2019) | **Confirmada, com ambiguidade de nome.** Ver §10.4. |
+| TFFL / Rashid et al., 2025 | **Confirmada.** IEEE TIFS, *Trustworthy and Fair Federated Learning via Reputation-Based Consensus and Adaptive Incentives*, doi 10.1109/TIFS.2025.3546841. |
+| Survey (PMC) | **Confirmada, conclusão superdimensionada.** Ver §10.5. |
+
+Três correções adicionais de conteúdo:
+
+**A mediana por coordenada não é uma técnica anônima.** A proposta lista
+"Coordinate-wise Median" como entrada separada, sem autoria. Ela vem do **mesmo
+artigo** que o Trimmed Mean — Yin et al. (2018) analisa os dois. Vale citar
+junto, inclusive porque o artigo mostra que a mediana **não** exige estimar a
+fração de atacantes, enquanto o trimmed mean exige o parâmetro β. Isso é
+argumento direto a favor de `D02`.
+
+**Faltam três trabalhos que são mais próximos do AwakeFL do que metade dos
+citados** — FoolsGold, BFLC e FoundationFL. Estão em §10.3 e §10.6.
+
+**A tabela comparativa da proposta contém uma linha que nenhum experimento
+sustenta.** Ver §10.7.
+
+### 10.2 A taxonomia, e onde o AwakeFL cai
+
+A divisão em duas famílias que a proposta faz — agregação robusta *versus*
+reputação/governança — está correta e é útil. Vale explicitar o que separa as
+duas: **o que cada uma tenta impedir**.
+
+A agregação robusta tenta impedir que a contribuição maliciosa **influencie o
+modelo desta rodada**. Ela não guarda nada: na rodada seguinte, o atacante volta
+com o mesmo direito de participação. É defesa por diluição.
+
+A reputação tenta impedir que o participante malicioso **continue participando**.
+Isso exige memória entre rodadas, e memória exige um lugar para guardar —
+que é onde a blockchain entra.
+
+O AwakeFL usa as duas: mediana por coordenada como referência de consenso (a
+parte estatística), e reputação persistente com banimento permanente (a parte de
+governança). O que ele **não** faz é substituir o FedAvg por uma regra robusta na
+agregação em si — a mediana entra como referência de comparação para pontuar,
+não como agregador.
+
+### 10.3 Agregação robusta a bizantinos
+
+**FedAvg** (McMahan et al., 2017) — média ponderada pelo número de amostras. É a
+base, e é o que o AwakeFL usa para agregar. Vulnerabilidade conhecida: breakdown
+point zero, um único participante amplificado arrasta a média (`D02` documenta o
+exemplo numérico).
+
+**Krum** (Blanchard et al., NIPS 2017) — seleciona a atualização com menor soma
+de distâncias euclidianas aos vizinhos mais próximos. Descarta informação útil
+por construção: escolhe *um* update e ignora os demais.
+
+**Trimmed Mean e Coordinate-wise Median** (Yin et al., ICML 2018) — o artigo
+prova taxas estatísticas de erro para ambos. A mediana precisa de hipóteses mais
+brandas (assimetria limitada) e **dispensa** conhecer a fração de bizantinos; o
+trimmed mean precisa de β, e erra o alvo se β for mal estimado.
+
+**FLTrust** (Cao et al., NDSS 2021) — o servidor mantém um *root dataset* limpo,
+de menos de 100 amostras, treina o próprio update e pontua cada cliente pela
+similaridade de cosseno com ele, com clipping ReLU nos cossenos negativos.
+Reportam acurácia comparável ao FedAvg sem ataque, mesmo com 40–60% de clientes
+maliciosos.
+
+> **Relação direta com o AwakeFL.** O score do AwakeFL é estruturalmente o
+> mesmo mecanismo — cosseno contra uma referência — trocando o *root dataset*
+> pela **mediana por coordenada da própria rodada**. Isso preserva a premissa de
+> zero dados no servidor, que o FLTrust quebra. É uma diferença que vale ser dita
+> explicitamente na defesa, porque é a favor do projeto.
+
+**FoolsGold** (Fung et al., RAID 2020) — **ausente da proposta e o mais próximo
+do que o AwakeFL faz.** Reduz o peso de clientes cujos gradientes são
+suspeitosamente *similares* entre si, mirando sybils coordenados. Dois detalhes
+importam aqui:
+
+- Ele compara o **histórico agregado** de updates, não o update da rodada
+  isolado, porque a similaridade instantânea é ruidosa demais. Isso é
+  exatamente o raciocínio por trás de `D13` (suavizar o update antes de pontuar).
+- Ele tem um mecanismo de *pardoning* para não punir honestos que por acaso se
+  parecem com sybils. O AwakeFL chegou ao mesmo problema por outro caminho — o
+  viés contra participantes pequenos (`A02`) — e resolveu nivelando os passos de
+  treino (`D12`) em vez de reponderar a similaridade.
+
+Citar FoolsGold é obrigatório: sem isso, `D13` parece uma invenção quando na
+verdade é convergência independente com uma prática estabelecida.
+
+**Limitação da família inteira.** Fang et al. (USENIX Security 2020) mostram
+ataques de envenenamento local desenhados **contra** essas regras, que passam por
+elas mimetizando estatísticas de clientes honestos. Isso vale para o score do
+AwakeFL também — e é a razão honesta para não prometer detecção de *slow
+poisoning* (§10.7).
+
+### 10.4 Blockchain + FL — os concorrentes diretos, com as descrições corrigidas
+
+**DFL** (Tian et al., arXiv 2110.15457; ACM *Distributed Ledger Technologies:
+Research and Practice*, 2023, doi 10.1145/3600225).
+
+> ⚠️ **A descrição na proposta está invertida.** A proposta diz que o DFL
+> "substitui o servidor central por smart contracts" e por isso "enfrenta alto
+> custo de gás". É o contrário: o DFL **critica** a agregação por smart contract
+> — argumentando que gerar um bloco custa mais de 10 segundos — e propõe uma
+> arquitetura de blockchain que **abre mão do consenso global**, com cada nó
+> gerando blocos de forma assíncrona. O livro-razão vira uma "prova distribuída
+> de contribuição" ao modelo.
 >
-> O levantamento de concorrentes e soluções relacionadas **não foi feito dentro
-> desta trajetória de desenvolvimento**. Ele existe na proposta de Iniciação
-> Científica (seção 12), produzido em outro contexto, e será integrado aqui
-> quando o documento de origem for consolidado.
+> Corrigir isso importa: do jeito que está escrito, a proposta atribui ao
+> concorrente exatamente o problema que ele resolve. Numa banca, isso é o tipo de
+> erro que desqualifica a revisão inteira.
+
+**BPRFL** (*A blockchain-based privacy-preserving reputation consensus federated
+learning*, ScienceDirect, 2025).
+
+> ⚠️ **A proposta o descreve como "predominantemente teórico com validação
+> limitada".** Não procede. O artigo reporta experimentos: sob 50% de clientes
+> maliciosos em *label-flipping*, +5,98% de acurácia sobre o FL tradicional e
+> +2,09% sobre o BFLC, com ganho de 20% em eficiência de consenso.
 >
-> Esta separação é deliberada: o restante deste documento relata o que foi
-> construído e medido neste repositório, com commits e números verificáveis. A
-> revisão bibliográfica tem outra natureza de evidência e não deve ser misturada
-> com ela sem que a origem esteja marcada.
+> E ele é o **vizinho mais próximo do AwakeFL** — tem consenso de reputação com
+> verificação de consistência por intervalo de confiança (contra conluio), comitê
+> de tamanho dinâmico ajustado pela reputação acumulada, e privacidade
+> diferencial com ruído em grupo por VRF. Ou seja: implementa justamente o comitê
+> de validadores que o AwakeFL deixou como trabalho futuro (§7.2).
+
+**FLChain** — atenção, **dois artigos diferentes de 2019 com esse nome**:
+
+- Bao, Su, Xiong, Huang & Hu, *FLChain: A Blockchain for Auditable Federated
+  Learning with Trust and Incentive* (BIGCOM 2019) — este é o que a proposta quer
+  citar, foco em auditoria e incentivo.
+- Majeed & Hong, *FLchain: Federated Learning via MEC-enabled Blockchain Network*
+  (APNOMS 2019) — outro trabalho, outro escopo.
+
+A citação precisa dizer qual.
+
+**BFLC** (Li et al., IEEE Network 35(1):234-241, 2021; arXiv 2004.00773) —
+**ausente da proposta**, e é o ancestral direto da linha de reputação em
+blockchain: consenso por comitê, blocos separados para updates locais e globais,
+sem servidor central. É o baseline contra o qual o BPRFL se compara. Uma
+limitação reconhecida na literatura: nós maliciosos podem entrar no comitê e
+enviesá-lo — o mesmo risco que qualquer desenho de quórum do AwakeFL teria.
+
+### 10.5 Sobre a conclusão atribuída ao survey
+
+A proposta afirma que o survey "identifica a combinação de reputação e smart
+contracts como a **solução definitiva** para o problema de poisoning, validando a
+premissa do AwakeFL".
+
+> ⚠️ Isso não é o que um survey faz, e não é o que este faz. O trabalho mais
+> provável de ser o citado — *Blockchain-Based Federated Learning System: A
+> Survey on Design Choices* (Sensors 23(12):5658; PMC10302079) — cataloga cerca
+> de **31 variações de escolha de projeto**, avaliando prós e contras de cada uma
+> segundo robustez, eficiência, privacidade e justiça. É um mapa de alternativas,
+> não uma coroação.
 >
-> **O que precisa ser conferido antes de entrar aqui.** A seção 12 da proposta
-> marca sete referências com `[VERIFICAR]`. Nenhuma afirmação sobre trabalho
-> relacionado deveria entrar neste documento — nem no texto da IC — antes de a
-> referência ser localizada e lida na fonte.
+> A frase como está é uma citação de autoridade que a fonte não sustenta. O que
+> a literatura sustenta é mais modesto e ainda assim suficiente: reputação
+> ancorada em registro imutável é uma **linha de projeto reconhecida e ativa**,
+> com trabalhos publicados em venues sérias entre 2019 e 2025.
 >
-> **O que este documento já pode afirmar sobre posicionamento**, porque decorre
-> do próprio código:
->
-> - O score de consistência do AwakeFL usa similaridade de cosseno contra uma
->   mediana por coordenada. Isso é próximo do que a literatura de agregação
->   robusta já estabeleceu, e o projeto **não** reivindica uma regra de agregação
->   nova nem garantias teóricas de convergência.
-> - O que o projeto acrescenta está na camada de governança: persistência
->   auditável da reputação, publicação da **justificativa** do score junto do
->   número (`D21`), e exclusão permanente verificável e travada contra
->   inconsistência com o histórico (`D19`).
-> - O ponto fraco declarado é o mesmo apontado em §7.1: o cálculo do score é
->   off-chain.
+> Trocar "solução definitiva" por "linha reconhecida" custa nada e remove um
+> flanco.
+
+### 10.6 O argumento a favor de não inventar uma regra de agregação nova
+
+Há um trabalho recente que serve de defesa direta a uma escolha do AwakeFL:
+*Do We Really Need to Design New Byzantine-robust Aggregation Rules?* (NDSS
+2025, arXiv 2501.17381). A tese, no abstract: não há necessidade de projetar
+novas regras de agregação robusta; o FL pode ser protegido **reforçando as regras
+já bem estabelecidas**. Os autores propõem o FoundationFL, que gera updates
+sintéticos no servidor e aplica trimmed mean ou mediana sobre o conjunto.
+
+Isso é útil para o AwakeFL por um motivo específico: o projeto usa cosseno e
+mediana, ambos conhecidos, e **não reivindica novidade estatística**. Em vez de
+isso ser uma fraqueza a esconder, há literatura recente argumentando que é a
+postura correta. A contribuição pretendida está em outro lugar — na camada de
+governança e auditoria.
+
+### 10.7 O posicionamento honesto do AwakeFL
+
+**O que é razoável reivindicar:**
+
+- **Custo e latência.** A escolha da Solana é defensável contra os trabalhos
+  baseados em Ethereum, e é a resposta direta ao problema que o DFL identifica
+  (bloco de mais de 10 segundos). Uma ressalva: isso ainda **não foi medido**
+  neste projeto (§7.5, objetivo 4 da IC). Enquanto não houver uma transação real
+  cronometrada, é argumento de arquitetura, não resultado experimental.
+- **A justificativa publicada junto do score** (`D21`). Nos trabalhos revisados,
+  o que vai para a cadeia é o número — a reputação, o peso, o voto. O AwakeFL
+  grava também a frase que explica de onde o número veio. Não encontrei isso
+  descrito nos trabalhos consultados; é modesto, mas é específico.
+- **Exclusão permanente travada contra o próprio registro** (`D19`). A autoridade
+  não consegue banir quem o histórico público não condena. Isso é diferente de
+  "a autoridade é confiável" e diferente de "não há autoridade".
+- **Nenhum trabalho de FL sobre Solana apareceu na busca.** Registrado com
+  cuidado: significa que a busca de 21/08/2026 não encontrou, **não** que não
+  exista. Antes de afirmar ineditismo no texto da IC, é preciso uma busca
+  sistemática com string documentada.
+
+**O que não é razoável reivindicar:**
+
+- **Novidade na regra de detecção.** Cosseno contra uma referência é FLTrust;
+  cosseno sobre histórico é FoolsGold; mediana por coordenada é Yin et al. A
+  combinação específica é do projeto; os ingredientes não.
+- **Garantias teóricas.** Yin et al. provam taxas de erro; o AwakeFL não prova
+  nada — mede em 10 sementes. É evidência empírica, com desvio padrão, e deve ser
+  apresentada como tal.
+- **Suporte a *slow poisoning*, nem mesmo "parcial".** A tabela comparativa da
+  proposta marca "Parcial" nessa coluna para o AwakeFL. **Nenhum experimento
+  sustenta isso** — os quatro ataques implementados são de efeito imediato, e
+  nunca rodamos um envenenamento gradual e sutil. A coluna deveria dizer "não
+  avaliado" até que exista o experimento. Fang et al. (2020) mostram que ataques
+  adaptativos passam por detectores desse tipo; presumir o contrário sem medir é
+  o oposto do que este projeto vem praticando (§8).
+- **"Prevenção: Protocolo"** na mesma tabela merece uma nota de rodapé: o
+  banimento é de protocolo, mas o score que o dispara é calculado off-chain
+  (§7.1).
+
+### 10.8 O que a revisão sugere como próximo passo
+
+Ordenado por custo-benefício para a IC:
+
+1. **Implementar o ataque de *slow poisoning*.** É o que falta para a tabela
+   comparativa deixar de ter uma linha sem evidência, e é a hipótese mais
+   interessante que o desenho de reputação permite testar — a memória entre
+   rodadas deveria, em tese, pegar o que uma defesa por rodada não pega.
+2. **Medir latência e custo na Devnet.** Fecha o objetivo 4 e sustenta a
+   comparação com os trabalhos sobre Ethereum.
+3. **Comparar com um baseline da literatura.** Rodar o mesmo cenário com Krum e
+   com mediana pura, e mostrar onde o AwakeFL fica. Sem isso, os números de
+   acurácia não têm régua externa.
+4. **Ler o BPRFL a fundo.** É o vizinho mais próximo, e o comitê com reputação
+   que ele implementa é exatamente o §7.2 deste projeto.
+
+### 10.9 Referências desta seção
+
+Verificadas em 21 de agosto de 2026.
+
+- Blanchard, P., El Mhamdi, E. M., Guerraoui, R., Stainer, J. (2017). *Machine
+  Learning with Adversaries: Byzantine Tolerant Gradient Descent* (Krum). NIPS.
+- Yin, D., Chen, Y., Ramchandran, K., Bartlett, P. (2018). *Byzantine-Robust
+  Distributed Learning: Towards Optimal Statistical Rates*. ICML, PMLR v80.
+  arXiv:1803.01498.
+- McMahan, B. et al. (2017). *Communication-Efficient Learning of Deep Networks
+  from Decentralized Data*. AISTATS.
+- Cao, X., Fang, M., Liu, J., Gong, N. (2021). *FLTrust: Byzantine-robust
+  Federated Learning via Trust Bootstrapping*. NDSS. arXiv:2012.13995.
+- Fung, C., Yoon, C. J. M., Beschastnikh, I. (2020). *The Limitations of
+  Federated Learning in Sybil Settings* (FoolsGold). RAID. arXiv:1808.04866.
+- Fang, M., Cao, X., Jia, J., Gong, N. (2020). *Local Model Poisoning Attacks to
+  Byzantine-Robust Federated Learning*. USENIX Security, pp. 1623–1640.
+- Xu, X., Lyu, L. (2021). *A Reputation Mechanism Is All You Need: Collaborative
+  Fairness and Adversarial Robustness in Federated Learning*. FL-ICML'21.
+  arXiv:2011.10464.
+- Li, Y., Chen, C., Liu, N., Huang, H., Zheng, Z., Yan, Q. (2021). *A
+  Blockchain-Based Decentralized Federated Learning Framework with Committee
+  Consensus* (BFLC). IEEE Network 35(1):234–241. arXiv:2004.00773.
+- Bao, X., Su, C., Xiong, Y., Huang, W., Hu, Y. (2019). *FLChain: A Blockchain
+  for Auditable Federated Learning with Trust and Incentive*. BIGCOM.
+- Tian, Y. et al. (2023). *DFL: High-Performance Blockchain-Based Federated
+  Learning*. ACM Distributed Ledger Technologies: Research and Practice.
+  doi:10.1145/3600225. arXiv:2110.15457.
+- (2025). *A blockchain-based privacy-preserving reputation consensus federated
+  learning* (BPRFL). ScienceDirect, artigo S1110016825011330.
+- Rashid, M. M. et al. (2025). *Trustworthy and Fair Federated Learning via
+  Reputation-Based Consensus and Adaptive Incentives* (TFFL). IEEE TIFS.
+  doi:10.1109/TIFS.2025.3546841.
+- *Blockchain-Based Federated Learning System: A Survey on Design Choices* (2023).
+  Sensors 23(12):5658. PMC10302079.
+- (2025). *Do We Really Need to Design New Byzantine-robust Aggregation Rules?*
+  NDSS. arXiv:2501.17381.
 
 ---
 
-*Última atualização: 21 de agosto de 2026. A seção 10 aguarda o documento de
-pesquisa.*
+*Última atualização: 21 de agosto de 2026.*
