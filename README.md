@@ -103,10 +103,24 @@ O painel roda na Devnet da Solana, com carteira Phantom ou Solflare:
 | **Regras** | as regras de consenso e penalidade, em português |
 | **Validador** | fecha a rodada e assina os scores calculados |
 
-Também há uma [simulação determinística](web/README.md) do ciclo, que mostra as
-mesmas regras sem precisar de carteira nenhuma.
+Em `/simulacao` há uma versão determinística do ciclo inteiro, que mostra as
+mesmas regras **sem precisar de carteira nenhuma** — é por onde vale começar se
+você só quer entender o mecanismo.
 
-O SOL usado é de Devnet — não tem valor, e todas as contas são públicas.
+O SOL usado é de Devnet: não tem valor, e todas as contas são públicas.
+
+### Para rodar na sua máquina
+
+```bash
+git clone https://github.com/AlessaLeit/awakeFL.git
+cd awakeFL/web
+npm ci
+npm run dev
+```
+
+A `/simulacao` funciona de imediato. As telas do participante precisam da
+variável `NEXT_PUBLIC_PROGRAM_ID` — os detalhes estão na
+[visão técnica](README-TECNICO.md#site).
 
 ## Por que Solana
 
