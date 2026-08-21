@@ -1,7 +1,7 @@
 # AwakeFL — site
 
 Landing, demo do ciclo de reputação e a **área do participante**, em Next.js 16
-(App Router), React 19 e Tailwind v4, sobre o design system **Neon Graphite**.
+(App Router), React 19 e Tailwind v4, sobre o design system do projeto.
 
 | Rota | O que é |
 |---|---|
@@ -51,7 +51,7 @@ busca o estado da chain no browser, depois da hidratação.
 web/src/
 ├── app/
 │   ├── layout.tsx           metadata + fontes (Geist, JetBrains Mono)
-│   ├── globals.css          ★ tokens e primitivos do Neon Graphite
+│   ├── globals.css          ★ tokens e primitivos do design system
 │   ├── page.tsx             landing
 │   ├── simulacao/           demo determinística (sem chain)
 │   ├── devnet/              console on-chain cru
@@ -82,14 +82,14 @@ web/src/
         └── estado.tsx       ★ provider de estado on-chain do /painel
 ```
 
-## Design system — Neon Graphite
+## Design system
 
 Grafite profundo (`#131313`) como tela de fundo para que o verde neon
 (`#4AF403`) funcione como **fonte de luz**, não como preenchimento. Geist na
 interface, JetBrains Mono em rótulos, hashes e métricas.
 
-**É mono-tema, de propósito.** Não existe variante clara: um "Neon Graphite
-claro" seria outro design, não este com as cores invertidas. Por isso o
+**É mono-tema, de propósito.** Não existe variante clara: uma versão clara
+seria outro design, não este com as cores invertidas. Por isso o
 alternador de tema foi removido — ele prometia uma escolha que o sistema não
 tem. Os tokens antigos (`--plano`, `--tinta`, `--acento`…) foram mantidos com
 valores novos, o que retinge as páginas antigas sem reescrevê-las.

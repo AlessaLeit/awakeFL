@@ -1,13 +1,12 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   AwakeFL — design system "Neon Graphite".
+   AwakeFL — design system.
 
    Os valores vêm do DESIGN.md das telas do participante. É um sistema
    deliberadamente MONO-TEMA: a paleta é construída sobre um grafite profundo
    para que o verde neon funcione como fonte de luz. Não existe variante clara —
-   um "Neon Graphite claro" seria outro design, não o mesmo com as cores
-   invertidas.
+   uma versão clara seria outro design, não o mesmo com as cores invertidas.
 
    Os nomes de token são os mesmos de antes (--plano, --tinta, --acento...),
    então as páginas já existentes recebem o tema novo sem reescrita.

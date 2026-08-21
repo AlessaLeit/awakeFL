@@ -40,9 +40,6 @@ export default function ConexaoWallet() {
               <span style={{ color: "var(--acento-forte)" }}>Awake</span>
               <span style={{ color: "var(--tinta)" }}>FL</span>
             </div>
-            <div className="rotulo mt-2" style={{ fontSize: 10 }}>
-              Neon Graphite Architecture
-            </div>
           </div>
         </div>
 
