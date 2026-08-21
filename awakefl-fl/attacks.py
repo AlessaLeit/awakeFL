@@ -22,6 +22,7 @@ proposito, para que a iniciacao cientifica possa discutir o trade-off.
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Sequence, Set
 
@@ -226,7 +227,10 @@ def apply_weight_attack(
         return gradient_poisoning(local, global_w, cfg.poison_scale)
     if cfg.type == "free_rider":
         return free_rider(global_w, cfg.free_rider_noise, seed)
-    if cfg.type == "backdoor" and cfg.backdoor_scale != 1.0:
+    # `!= 1.0` em ponto flutuante nao e confiavel: um fator vindo do YAML pode
+    # chegar como 0.9999999999999999 e ligar o model replacement sem querer.
+    # isclose responde a pergunta que interessa — "o fator e neutro?".
+    if cfg.type == "backdoor" and not math.isclose(cfg.backdoor_scale, 1.0):
         return scale_update(local, global_w, cfg.backdoor_scale)
     return [np.asarray(w, dtype=np.float64) for w in local]
 

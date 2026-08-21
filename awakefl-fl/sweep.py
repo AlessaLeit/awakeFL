@@ -44,7 +44,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import run_experiments
-from utils import setup_logging
+from utils import caminho_no_projeto, setup_logging
 
 logger = logging.getLogger("awakefl.sweep")
 
@@ -313,7 +313,9 @@ def main(argv=None) -> int:
     logging.getLogger("awakefl.sweep").setLevel(logging.INFO)
 
     seeds = args.seed_list or list(range(1, args.seeds + 1))
-    destino = args.results_dir
+    # `--results-dir` vem da linha de comando e vira mkdir: confina no projeto
+    # antes de criar pasta em qualquer lugar do disco.
+    destino = caminho_no_projeto(args.results_dir)
     destino.mkdir(parents=True, exist_ok=True)
 
     extra: List[str] = ["--log-level", args.log_level]

@@ -36,7 +36,7 @@ from data import build_partitions, load_dataset
 from model import count_parameters, create_model
 from report import save_report
 from server import History, run_federated, run_flower_simulation
-from utils import deep_update, set_seed, setup_logging
+from utils import caminho_no_projeto, deep_update, set_seed, setup_logging
 
 DEFAULT_CONFIG = Path(__file__).parent / "config.yaml"
 
@@ -48,6 +48,8 @@ DEFAULT_CONFIG = Path(__file__).parent / "config.yaml"
 
 def load_config(path: Path) -> dict:
     """Le o config.yaml. Se nao existir, usa um default embutido minimo."""
+    # `--config` vem da linha de comando: confina no projeto antes de ler.
+    path = caminho_no_projeto(path)
     if path.exists():
         return yaml.safe_load(path.read_text(encoding="utf-8"))
     return {

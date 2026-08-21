@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 import os
 import random
+from pathlib import Path
 from typing import Dict, List, Sequence
 
 import numpy as np
@@ -128,3 +129,31 @@ def deep_update(base: dict, override: dict) -> dict:
         elif value is not None:
             out[key] = value
     return out
+
+
+# ---------------------------------------------------------------------------
+# Caminhos vindos da linha de comando
+# ---------------------------------------------------------------------------
+
+# Raiz do repositorio: utils.py fica em awakefl-fl/, entao dois niveis acima.
+RAIZ_PROJETO = Path(__file__).resolve().parent.parent
+
+
+def caminho_no_projeto(caminho: os.PathLike | str, base: Path = RAIZ_PROJETO) -> Path:
+    """Resolve `caminho` e exige que ele fique dentro de `base`.
+
+    Todo caminho que chega por argumento de linha de comando passa por aqui
+    antes de virar leitura ou escrita. Sem isso, um `--saida ../../algum/lugar`
+    — ou o mesmo argumento montado por um script que chama este — escreve fora
+    do projeto sem nenhum aviso.
+
+    Resolve ANTES de comparar, senao `..` no meio do caminho passaria batido.
+    """
+    alvo = Path(caminho).expanduser().resolve()
+    raiz = Path(base).resolve()
+    if alvo != raiz and raiz not in alvo.parents:
+        raise ValueError(
+            f"caminho fora do projeto: {alvo}\n"
+            f"  permitido apenas dentro de {raiz}"
+        )
+    return alvo

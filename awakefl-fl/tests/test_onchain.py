@@ -49,7 +49,14 @@ def test_hash_tem_formato_de_sha256(pesos):
 
 
 def test_hash_e_deterministico(pesos):
-    assert hash_weights(pesos) == hash_weights(pesos)
+    """Mesmo conteudo em arrays diferentes => mesmo hash.
+
+    Repetir a chamada com o MESMO objeto nao provaria isso: o que precisa
+    valer e que o hash depende do conteudo, nao da identidade do array — e o
+    navegador, do outro lado da ponte, so tem os bytes.
+    """
+    copia = [np.array(w, copy=True) for w in pesos]
+    assert hash_weights(copia) == hash_weights(pesos)
 
 
 def test_hash_muda_com_um_unico_bit(pesos):

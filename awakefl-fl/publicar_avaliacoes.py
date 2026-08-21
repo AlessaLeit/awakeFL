@@ -37,6 +37,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from utils import caminho_no_projeto
+
 PROGRAM_MAX_REPUTATION = 1_000
 # Metade da escala e o limiar entre Aprovado e Rejeitado no programa
 # (`score >= MAX_REPUTATION / 2` em lib.rs).
@@ -87,7 +89,10 @@ def main(argv=None) -> int:
     p.add_argument("--saida", type=Path, default=DESTINO_PADRAO)
     args = p.parse_args(argv)
 
-    origem = args.diretorio / f"ledger_{args.cenario}.json"
+    # Os dois caminhos vem da linha de comando — um vira leitura, o outro vira
+    # escrita dentro de web/public/. Confinar no projeto antes de tocar o disco.
+    origem = caminho_no_projeto(args.diretorio / f"ledger_{args.cenario}.json")
+    destino = caminho_no_projeto(args.saida)
     if not origem.exists():
         print(f"{origem} nao existe. Rode o experimento primeiro.", file=sys.stderr)
         return 1
@@ -103,10 +108,10 @@ def main(argv=None) -> int:
         h for h, v in saida["por_hash"].items() if not v["avaliacao"]["justificativa"]
     ]
 
-    args.saida.parent.mkdir(parents=True, exist_ok=True)
-    args.saida.write_text(json.dumps(saida, indent=2, ensure_ascii=False), encoding="utf-8")
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    destino.write_text(json.dumps(saida, indent=2, ensure_ascii=False), encoding="utf-8")
 
-    print(f"{saida['total']} avaliacoes publicadas em {args.saida}")
+    print(f"{saida['total']} avaliacoes publicadas em {destino}")
     if sem_justificativa:
         print(
             f"  aviso: {len(sem_justificativa)} sem justificativa - o experimento e "

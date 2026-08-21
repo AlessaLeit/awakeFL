@@ -11,18 +11,38 @@
  * Rode isto SEMPRE que rebuildar no Playground:
  *
  *   npm run comparar-idl                    # usa playground/idl-gerado.json
- *   npm run comparar-idl -- ~/Downloads/idl.json
+ *   npm run comparar-idl -- playground/outro-idl.json
+ *
+ * Os caminhos precisam ficar DENTRO do repositório: um IDL baixado deve ser
+ * copiado para cá antes (`cp ~/Downloads/idl.json playground/`). Argumento de
+ * linha de comando vira leitura de arquivo, e confinar na raiz é o que impede
+ * um `../../..` de ler qualquer coisa do disco.
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
+import { dirname, resolve, sep } from "node:path";
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 const RAIZ_WEB = resolve(AQUI, "..");
+const RAIZ_REPO = resolve(RAIZ_WEB, "..");
 
-const caminhoLegado =
-  process.argv[2] ?? resolve(RAIZ_WEB, "..", "playground", "idl-gerado.json");
-const caminhoNovo = process.argv[3] ?? resolve(RAIZ_WEB, "src/lib/idl/awakefl.json");
+/** Resolve o caminho e exige que ele esteja sob a raiz do repositório. */
+function caminhoNoRepo(valor) {
+  const alvo = resolve(RAIZ_REPO, valor);
+  if (alvo !== RAIZ_REPO && !alvo.startsWith(RAIZ_REPO + sep)) {
+    console.error(`\n✕ caminho fora do repositório: ${alvo}`);
+    console.error(`  permitido apenas dentro de ${RAIZ_REPO}\n`);
+    process.exit(2);
+  }
+  return alvo;
+}
+
+const caminhoLegado = caminhoNoRepo(
+  process.argv[2] ?? resolve(RAIZ_REPO, "playground", "idl-gerado.json"),
+);
+const caminhoNovo = caminhoNoRepo(
+  process.argv[3] ?? resolve(RAIZ_WEB, "src/lib/idl/awakefl.json"),
+);
 
 console.log(`\n\x1b[1mIDL do build\x1b[0m  ${caminhoLegado}`);
 console.log(`\x1b[1mIDL do site\x1b[0m   ${caminhoNovo}`);

@@ -63,10 +63,20 @@ def test_config_pda_e_o_endereco_conhecido():
 
 
 def test_pdas_sao_deterministicos():
-    dono = derive_simulation_keypairs(1)[0].pubkey()
-    assert pda_participant(PID, dono) == pda_participant(PID, dono)
-    p = pda_participant(PID, dono)
-    assert pda_contribution(PID, p, 3) == pda_contribution(PID, p, 3)
+    """Duas derivacoes independentes chegam no mesmo endereco.
+
+    O teste so tem valor se as duas pontas forem calculadas do zero: comparar
+    o retorno de uma chamada com o dela mesma nao prova determinismo nenhum.
+    Derivar a carteira duas vezes tambem cobre o
+    `derive_simulation_keypairs`, que e quem alimenta as seeds.
+    """
+    dono_a = derive_simulation_keypairs(1)[0].pubkey()
+    dono_b = derive_simulation_keypairs(1)[0].pubkey()
+
+    p_a = pda_participant(PID, dono_a)
+    p_b = pda_participant(PID, dono_b)
+    assert p_a == p_b
+    assert pda_contribution(PID, p_a, 3) == pda_contribution(PID, p_b, 3)
 
 
 def test_contribuicao_muda_de_endereco_a_cada_rodada():
