@@ -12,8 +12,7 @@ histórico registrado de forma que ninguém possa reescrever.
 [![Anchor](https://img.shields.io/badge/Anchor-0.31-blue?style=flat-square)](https://www.anchor-lang.com/)
 [![Status](https://img.shields.io/badge/status-MVP%20em%20pesquisa-orange?style=flat-square)](#-status-do-projeto)
 
-**[Visão técnica →](README-TECNICO.md)** · como funciona por dentro, como rodar,
-como contribuir com código
+### **[▶ Ver rodando](https://awake-fl.vercel.app/)** · **[Simulação, sem carteira](https://awake-fl.vercel.app/simulacao)** · **[Visão técnica](README-TECNICO.md)**
 
 </div>
 
@@ -93,7 +92,18 @@ para alguma coisa.
 
 ## O que dá para ver hoje
 
-O painel roda na Devnet da Solana, com carteira Phantom ou Solflare:
+**→ [awake-fl.vercel.app](https://awake-fl.vercel.app/)**
+
+Comece pela **[simulação](https://awake-fl.vercel.app/simulacao)**: cinco
+instituições treinando juntas ao longo de 11 rodadas, com o Instituto Delta
+construindo reputação por oito rodadas antes de tentar envenenar o modelo na
+décima. Dá para avançar rodada a rodada e ver a reputação dele cair de 935 para
+30 na detecção, seguida do banimento permanente. Não precisa de carteira, e as
+regras são as mesmas do programa Anchor — mesma média móvel, mesma divisão por
+10.
+
+A **[área do participante](https://awake-fl.vercel.app/painel)** roda na Devnet
+de verdade e pede carteira Phantom ou Solflare:
 
 | Tela | O que faz |
 | --- | --- |
@@ -103,24 +113,12 @@ O painel roda na Devnet da Solana, com carteira Phantom ou Solflare:
 | **Regras** | as regras de consenso e penalidade, em português |
 | **Validador** | fecha a rodada e assina os scores calculados |
 
-Em `/simulacao` há uma versão determinística do ciclo inteiro, que mostra as
-mesmas regras **sem precisar de carteira nenhuma** — é por onde vale começar se
-você só quer entender o mecanismo.
+O SOL usado é de Devnet: não tem valor, e todas as contas são públicas. Peça o
+seu no [faucet oficial](https://faucet.solana.com) — cada conta criada paga
+aluguel na rede.
 
-O SOL usado é de Devnet: não tem valor, e todas as contas são públicas.
-
-### Para rodar na sua máquina
-
-```bash
-git clone https://github.com/AlessaLeit/awakeFL.git
-cd awakeFL/web
-npm ci
-npm run dev
-```
-
-A `/simulacao` funciona de imediato. As telas do participante precisam da
-variável `NEXT_PUBLIC_PROGRAM_ID` — os detalhes estão na
-[visão técnica](README-TECNICO.md#site).
+> Para rodar o site localmente ou mexer no código, veja
+> [rodando o site](README-TECNICO.md#site) na visão técnica.
 
 ## Por que Solana
 

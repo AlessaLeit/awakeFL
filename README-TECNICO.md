@@ -294,6 +294,11 @@ anchor deploy --provider.cluster devnet
 
 ### Site
 
+Em produção: **[awake-fl.vercel.app](https://awake-fl.vercel.app/)** (Vercel,
+publicado a partir da `main`).
+
+Localmente:
+
 ```bash
 cd web
 npm ci
