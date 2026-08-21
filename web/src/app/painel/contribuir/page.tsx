@@ -5,9 +5,19 @@ import Link from "next/link";
 import Cabecalho from "@/components/painel/Cabecalho";
 import { IconeCadeado } from "@/components/painel/Icones";
 import { useAwakeFL } from "@/lib/anchor/estado";
-import { sha256DeArquivo, sha256Hex } from "@/lib/anchor/program";
+import { sha256DeArquivo } from "@/lib/anchor/program";
+import { useAvaliacoes } from "@/lib/avaliacoes";
 
-type Origem = "arquivo" | "semente";
+/**
+ * O compromisso vem SEMPRE do arquivo de pesos.
+ *
+ * Existia aqui um segundo modo que gerava o hash a partir de um texto livre.
+ * Era prático para demonstrar sem arquivo, e justamente por isso perigoso: o
+ * compromisso resultante não tinha relação com modelo nenhum. Se alguém
+ * perguntasse "o que foi hasheado?", a resposta honesta seria "uma string" — e
+ * o argumento de auditabilidade cairia junto. Um compromisso que não
+ * compromete com nada é pior que nenhum.
+ */
 
 export default function NovaContribuicao() {
   const {
@@ -16,52 +26,55 @@ export default function NovaContribuicao() {
     jaContribuiuNestaRodada,
     submeter,
     ocupado,
-    publicKey,
   } = useAwakeFL();
 
-  const [origem, setOrigem] = useState<Origem>("semente");
-  const [semente, setSemente] = useState("pesos-locais-rodada-atual");
+  const avaliacoes = useAvaliacoes();
+
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [hash, setHash] = useState("");
-  const [nSamples, setNSamples] = useState("1200");
-  const [loss, setLoss] = useState("0.31");
-  const [accuracy, setAccuracy] = useState("87.0");
   const inputArquivo = useRef<HTMLInputElement>(null);
 
-  // O hash é recalculado sempre que a entrada muda. A rodada entra na semente
-  // para que a mesma string não produza o mesmo compromisso em rodadas
-  // diferentes — reusar um hash antigo seria replay de contribuição.
+  // Métricas que o próprio treino produziu para este artefato. Quando o hash do
+  // arquivo é conhecido, os campos deixam de ser digitáveis: os números vêm de
+  // onde deveriam vir — do treino — e não da memória de quem está na tela.
+  const publicado = avaliacoes.porHash[hash];
+
+  // Os campos são DERIVADOS, não copiados para o estado por um efeito. Copiar
+  // exigiria um setState dentro de useEffect, que dispara renderização em
+  // cascata — e deixaria os dois em desacordo caso o arquivo trocasse no meio.
+  // O estado manual só existe para o caso de um artefato não publicado.
+  const [nSamplesManual, setNSamples] = useState("");
+  const [lossManual, setLoss] = useState("");
+  const [accuracyManual, setAccuracy] = useState("");
+
+  const nSamples = publicado
+    ? String(publicado.declarado.n_samples)
+    : nSamplesManual;
+  const loss = publicado ? publicado.declarado.loss.toFixed(4) : lossManual;
+  const accuracy = publicado
+    ? (publicado.declarado.accuracy * 100).toFixed(1)
+    : accuracyManual;
+
+  // O digest é dos BYTES CRUS do arquivo, calculado no browser — o mesmo que o
+  // servidor de agregação calcula em memória. É essa igualdade que permite a
+  // qualquer um auditar depois.
   //
-  // Todo setState acontece dentro do `.then`, nunca no corpo do efeito: a Web
-  // Crypto só devolve promessas, e um `setHash("")` síncrono aqui dispararia
-  // uma renderização em cascata a cada tecla digitada na semente.
+  // O setState acontece dentro do `.then`, nunca no corpo do efeito: a Web
+  // Crypto só devolve promessas.
   useEffect(() => {
     let vivo = true;
-    const calcular = async (): Promise<string> => {
-      if (origem === "arquivo") {
-        return arquivo ? sha256DeArquivo(arquivo) : "";
-      }
-      if (!publicKey || !config) return "";
-      return sha256Hex(
-        `${semente}|${publicKey.toBase58()}|${config.currentRound}`,
-      );
-    };
-
-    void calcular().then((h) => {
-      if (vivo) setHash(h);
-    });
-
+    void (arquivo ? sha256DeArquivo(arquivo) : Promise.resolve("")).then(
+      (h) => {
+        if (vivo) setHash(h);
+      },
+    );
     return () => {
       vivo = false;
     };
-  }, [origem, arquivo, semente, publicKey, config]);
+  }, [arquivo]);
 
-  // Derivado, não estado: há entrada válida mas o digest ainda não chegou.
-  const temEntrada =
-    origem === "arquivo"
-      ? Boolean(arquivo)
-      : Boolean(publicKey && config && semente);
-  const calculando = temEntrada && hash.length !== 64;
+  // Derivado, não estado: há arquivo mas o digest ainda não chegou.
+  const calculando = Boolean(arquivo) && hash.length !== 64;
 
   const accNum = Number(accuracy);
   const lossNum = Number(loss);
@@ -159,95 +172,46 @@ export default function NovaContribuicao() {
           if (podeEnviar) enviar();
         }}
       >
-        {/* Origem do hash */}
-        <fieldset>
-          <legend className="rotulo">Origem do compromisso</legend>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {(
-              [
-                ["semente", "Identificador do modelo"],
-                ["arquivo", "Arquivo de pesos local"],
-              ] as const
-            ).map(([valor, rotulo]) => (
-              <button
-                key={valor}
-                type="button"
-                onClick={() => setOrigem(valor)}
-                aria-pressed={origem === valor}
-                className="rounded px-3 py-2 text-sm transition-colors"
-                style={{
-                  border: `1px solid ${origem === valor ? "var(--acento)" : "var(--borda)"}`,
-                  color: origem === valor ? "var(--acento)" : "var(--tinta-2)",
-                  background:
-                    origem === valor ? "var(--acento-lavado)" : "transparent",
-                }}
-              >
-                {rotulo}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-
-        <div className="mt-5">
-          {origem === "semente" ? (
-            <label className="block">
-              <span className="rotulo">Identificador do modelo local</span>
+        <div className="mt-1">
+          <div>
+            <span className="rotulo">Arquivo de pesos</span>
+            <div
+              className="mt-2 flex flex-wrap items-center gap-3 rounded border border-dashed p-4"
+              style={{
+                borderColor: "var(--borda)",
+                background: "var(--superficie-baixa)",
+              }}
+            >
               <input
-                value={semente}
-                onChange={(e) => setSemente(e.target.value)}
-                className="campo mt-2"
-                placeholder="ex: resnet18-hospital-a-epoca-40"
+                ref={inputArquivo}
+                type="file"
+                className="sr-only"
+                onChange={(e) => setArquivo(e.target.files?.[0] ?? null)}
               />
+              <button
+                type="button"
+                onClick={() => inputArquivo.current?.click()}
+                className="btn-contorno px-4 py-2 text-sm"
+              >
+                Escolher arquivo
+              </button>
               <span
-                className="mt-1.5 block text-xs"
-                style={{ color: "var(--tinta-muda)" }}
+                className="mono min-w-0 truncate text-xs"
+                style={{ color: "var(--tinta-2)" }}
               >
-                Combinado com sua chave pública e a rodada corrente antes de
-                gerar o digest, para que o mesmo texto nunca gere o mesmo
-                compromisso duas vezes.
-              </span>
-            </label>
-          ) : (
-            <div>
-              <span className="rotulo">Arquivo de pesos</span>
-              <div
-                className="mt-2 flex flex-wrap items-center gap-3 rounded border border-dashed p-4"
-                style={{
-                  borderColor: "var(--borda)",
-                  background: "var(--superficie-baixa)",
-                }}
-              >
-                <input
-                  ref={inputArquivo}
-                  type="file"
-                  className="sr-only"
-                  onChange={(e) => setArquivo(e.target.files?.[0] ?? null)}
-                />
-                <button
-                  type="button"
-                  onClick={() => inputArquivo.current?.click()}
-                  className="btn-contorno px-4 py-2 text-sm"
-                >
-                  Escolher arquivo
-                </button>
-                <span
-                  className="mono min-w-0 truncate text-xs"
-                  style={{ color: "var(--tinta-2)" }}
-                >
-                  {arquivo
-                    ? `${arquivo.name} · ${(arquivo.size / 1024 / 1024).toFixed(2)} MB`
-                    : "nenhum arquivo selecionado"}
-                </span>
-              </div>
-              <span
-                className="mt-1.5 block text-xs"
-                style={{ color: "var(--tinta-muda)" }}
-              >
-                O arquivo é digerido localmente com a Web Crypto API. Nada sai
-                da máquina — só os 64 caracteres do digest vão para a chain.
+                {arquivo
+                  ? `${arquivo.name} · ${(arquivo.size / 1024 / 1024).toFixed(2)} MB`
+                  : "nenhum arquivo selecionado"}
               </span>
             </div>
-          )}
+            <span
+              className="mt-1.5 block text-xs"
+              style={{ color: "var(--tinta-muda)" }}
+            >
+              O arquivo é digerido localmente com a Web Crypto API. Nada sai da
+              máquina — só os 64 caracteres do digest vão para a chain.
+            </span>
+          </div>
         </div>
 
         {/* Hash resultante */}
@@ -286,7 +250,9 @@ export default function NovaContribuicao() {
               value={nSamples}
               onChange={(e) => setNSamples(e.target.value.replace(/\D/g, ""))}
               inputMode="numeric"
+              readOnly={Boolean(publicado)}
               className="campo tabular mt-2"
+              style={publicado ? { color: "var(--tinta-2)" } : undefined}
               placeholder="Ex: 5000"
             />
           </label>
@@ -296,7 +262,9 @@ export default function NovaContribuicao() {
               value={loss}
               onChange={(e) => setLoss(e.target.value)}
               inputMode="decimal"
+              readOnly={Boolean(publicado)}
               className="campo tabular mt-2"
+              style={publicado ? { color: "var(--tinta-2)" } : undefined}
               placeholder="0.0000"
               aria-invalid={!lossValido}
             />
@@ -315,7 +283,9 @@ export default function NovaContribuicao() {
               value={accuracy}
               onChange={(e) => setAccuracy(e.target.value)}
               inputMode="decimal"
+              readOnly={Boolean(publicado)}
               className="campo tabular mt-2"
+              style={publicado ? { color: "var(--tinta-2)" } : undefined}
               placeholder="95.5"
               aria-invalid={!accValida}
             />
@@ -330,15 +300,28 @@ export default function NovaContribuicao() {
           </label>
         </div>
 
-        <p
-          className="mt-5 text-xs leading-relaxed"
-          style={{ color: "var(--tinta-muda)" }}
-        >
-          Amostras, loss e acurácia são <strong>auto-declarados</strong>: o
-          programa os armazena como você os informa e não tem como verificá-los.
-          Quem confere é a autoridade, ao pontuar a contribuição — e é a
-          reputação que paga por uma declaração falsa.
-        </p>
+        {publicado ? (
+          <p
+            className="mt-5 text-xs leading-relaxed"
+            style={{ color: "var(--acento)" }}
+          >
+            Artefato reconhecido — rodada {publicado.rodada}. As três métricas
+            vieram do próprio treino que gerou este arquivo, e por isso não são
+            editáveis aqui: quem as produz é o processo, não a pessoa.
+          </p>
+        ) : (
+          <p
+            className="mt-5 text-xs leading-relaxed"
+            style={{ color: "var(--tinta-muda)" }}
+          >
+            Amostras, loss e acurácia são <strong>auto-declarados</strong>: o
+            programa os armazena como você os informa e não tem como
+            verificá-los. Ficam gravados de forma imutável como{" "}
+            <strong>evidência do que foi afirmado</strong> — a reputação, essa,
+            é calculada a partir do formato matemático do update, que não dá
+            para falsificar sem se afastar do grupo.
+          </p>
+        )}
 
         <div className="mt-7 flex flex-wrap items-center justify-end gap-3">
           <Link href="/painel" className="btn-fantasma px-5 py-3 text-sm">

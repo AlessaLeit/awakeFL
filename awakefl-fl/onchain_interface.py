@@ -173,6 +173,10 @@ class ContributionRecord:
     num_examples: int
     metrics: Dict[str, float] = field(default_factory=dict)
     score: Optional[float] = None
+    # Como o score foi obtido: cosseno, direcao calibrada, magnitude, veto.
+    # Sem isto o participante recebe um numero sem recurso, e nenhum terceiro
+    # consegue refazer a conta para contestar.
+    score_breakdown: Optional[Dict[str, Any]] = None
     reputation: Optional[float] = None
     reputation_bps: Optional[int] = None
     banned: bool = False
@@ -240,6 +244,7 @@ class SimulatedOnChainLedger:
         score: Optional[float] = None,
         reputation: Optional[float] = None,
         banned: bool = False,
+        breakdown: Optional[Dict[str, Any]] = None,
     ) -> ContributionRecord:
         """Registra (participante, rodada, hash, metricas, score) no livro-razao."""
         from reputation import to_basis_points  # import local evita ciclo
@@ -251,6 +256,7 @@ class SimulatedOnChainLedger:
             num_examples=int(num_examples),
             metrics={k: float(v) for k, v in (metrics or {}).items()},
             score=None if score is None else round(float(score), 6),
+            score_breakdown=breakdown,
             reputation=None if reputation is None else round(float(reputation), 6),
             reputation_bps=None if reputation is None else to_basis_points(reputation),
             banned=banned,

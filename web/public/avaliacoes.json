@@ -1,0 +1,560 @@
+{
+  "gerado_em": "2026-08-21T00:27:32+00:00",
+  "programa": "GhMhTkv7jeHMejEyypQaEFPqduHgXDSzE5g7jE3rXGRA",
+  "cenario": "C",
+  "total": 23,
+  "por_hash": {
+    "3624bfc669533eb58d228ce08128dd3b41f1e276fc9d93d8c344eb3c35c61ecc": {
+      "rodada": 1,
+      "participante": 0,
+      "declarado": {
+        "n_samples": 1839,
+        "loss": 0.887317,
+        "accuracy": 0.897227
+      },
+      "avaliacao": {
+        "score": 950,
+        "aprovado": true,
+        "justificativa": {
+          "score": 0.949724,
+          "cosseno": 0.557476,
+          "cosseno_mediano": 0.559848,
+          "direcao": 0.995762,
+          "magnitude": 0.842302,
+          "norma": 7.020712,
+          "norma_mediana": 8.335145,
+          "razao_norma": 0.842302,
+          "veto_norma": false
+        }
+      }
+    },
+    "7b41d74bfe278c5d021d0a739332542a5ee423699252b70322f228549d9f00a9": {
+      "rodada": 1,
+      "participante": 1,
+      "declarado": {
+        "n_samples": 1465,
+        "loss": 0.990672,
+        "accuracy": 0.81843
+      },
+      "avaliacao": {
+        "score": 996,
+        "aprovado": true,
+        "justificativa": {
+          "score": 0.99554,
+          "cosseno": 0.589039,
+          "cosseno_mediano": 0.559848,
+          "direcao": 1.0,
+          "magnitude": 0.985134,
+          "norma": 8.460925,
+          "norma_mediana": 8.335145,
+          "razao_norma": 1.01509,
+          "veto_norma": false
+        }
+      }
+    },
+    "b21d970675d9d7ac22a619b9163546fb56358b640bf03913493cc01c6e80f0cb": {
+      "rodada": 1,
+      "participante": 2,
+      "declarado": {
+        "n_samples": 1196,
+        "loss": 0.906094,
+        "accuracy": 0.879599
+      },
+      "avaliacao": {
+        "score": 1000,
+        "aprovado": true,
+        "justificativa": {
+          "score": 1.0,
+          "cosseno": 0.559848,
+          "cosseno_mediano": 0.559848,
+          "direcao": 1.0,
+          "magnitude": 1.0,
+          "norma": 8.335145,
+          "norma_mediana": 8.335145,
+          "razao_norma": 1.0,
+          "veto_norma": false
+        }
+      }
+    },
+    "60d1f66179a60403212cf0ff2a957fd102e5f639563882ae8775983e57b56d02": {
+      "rodada": 2,
+      "participante": 0,
+      "declarado": {
+        "n_samples": 1839,
+        "loss": 0.683665,
+        "accuracy": 0.891245
+      },
+      "avaliacao": {
+        "score": 1000,
+        "aprovado": true,
+        "justificativa": {
+          "score": 1.0,
+          "cosseno": 0.625,
+          "cosseno_mediano": 0.625,
+          "direcao": 1.0,
+          "magnitude": 1.0,
+          "norma": 6.529994,
+          "norma_mediana": 6.529994,
+          "razao_norma": 1.0,
+          "veto_norma": false
+        }
+      }
+    },
+    "0de737ef338073f7eb2aa6a942308b23a1eda4d629c9bf7e7c73ff3aff445fa3": {
+      "rodada": 2,
+      "participante": 1,
+      "declarado": {
+        "n_samples": 1465,
+        "loss": 0.469275,
+        "accuracy": 0.939249
+      },
+      "avaliacao": {
+        "score": 991,
+        "aprovado": true,
+        "justificativa": {
+          "score": 0.991168,
+          "cosseno": 0.627195,
+          "cosseno_mediano": 0.625,
+          "direcao": 1.0,
+          "magnitude": 0.970559,
+          "norma": 6.337743,
+          "norma_mediana": 6.529994,
+          "razao_norma": 0.970559,
+          "veto_norma": false
+        }
+      }
+    },
+    "1f93069943d69af875e56e4395c86a4a78105c4ae8b3238086d5d63c3a1bc291": {
+      "rodada": 2,
+      "participante": 2,
+      "declarado": {
+        "n_samples": 1196,
+        "loss": 0.760512,
+        "accuracy": 0.88796
+      },
+      "avaliacao": {
+        "score": 806,
+        "aprovado": true,
+        "justificativa": {
+          "score": 0.806314,
+          "cosseno": 0.470646,
+          "cosseno_mediano": 0.625,
+          "direcao": 0.753033,
+          "magnitude": 0.930636,
+          "norma": 7.016702,
+          "norma_mediana": 6.529994,
+          "razao_norma": 1.074534,
+          "veto_norma": false
+        }
+      }
+    },
+    "a9f90f964a8f85454a24bb572d11e636af045fd59b73f4128c8320fa4cb3f005": {
+      "rodada": 3,
+      "participante": 0,
+      "declarado": {
+        "n_samples": 1839,
+        "loss": 0.354164,
+        "accuracy": 0.917346
+      },
+      "avaliacao": {
+        "score": 981,
+        "aprovado": true,
+        "justificativa": {
+          "score": 0.980719,
+          "cosseno": 0.609132,
+          "cosseno_mediano": 0.609132,
+          "direcao": 1.0,
+          "magnitude": 0.935729,
+          "norma": 4.619757,
+          "norma_mediana": 4.93707,
+          "razao_norma": 0.935729,
+          "veto_norma": false
+        }
+      }
+    },
+    "04ed2647bb4dd654190c7d92052890eb0eb21b3e40275a7b8158dcb2e21aff0e": {
+      "rodada": 3,
+      "participante": 1,
+      "declarado": {
+        "n_samples": 1465,
+        "loss": 0.316678,
+        "accuracy": 0.955631
+      },
+      "avaliacao": {
+        "score": 1000,
+        "aprovado": true,
+        "justificativa": {
+          "score": 1.0,
+          "cosseno": 0.627942,
+          "cosseno_mediano": 0.609132,
+          "direcao": 1.0,
+          "magnitude": 1.0,
+          "norma": 4.93707,
+          "norma_mediana": 4.93707,
+          "razao_norma": 1.0,
+          "veto_norma": false
+        }
+      }
+    },
+    "ec20d0fb41eb0f1630c94983bb19ad9ee1b06ed988df58b01c83c8f495b90319": {
+      "rodada": 3,
+      "participante": 2,
+      "declarado": {
+        "n_samples": 1196,
+        "loss": 0.628244,
+        "accuracy": 0.92893
+      },
+      "avaliacao": {
+        "score": 711,
+        "aprovado": true,
+        "justificativa": {
+          "score": 0.710715,
+          "cosseno": 0.387456,
+          "cosseno_mediano": 0.609132,
+          "direcao": 0.63608,
+          "magnitude": 0.884865,
+          "norma": 5.579464,
+          "norma_mediana": 4.93707,
+          "razao_norma": 1.130116,
+          "veto_norma": false
+        }
+      }
+    },
+    "5f9a7ea33d5456443e7dc8b238beaf1a8878899285172132cdfd89c3e7d5f9a0": {
+      "rodada": 4,
+      "participante": 0,
+      "declarado": {
+        "n_samples": 1839,
+        "loss": 0.202291,
+        "accuracy": 0.967374
+      },
+      "avaliacao": {
+        "score": 1000,
+        "aprovado": true,
+        "justificativa": {
+          "score": 1.0,
+          "cosseno": 0.581844,
+          "cosseno_mediano": 0.581844,
+          "direcao": 1.0,
+          "magnitude": 1.0,
+          "norma": 3.409087,
+          "norma_mediana": 3.409087,
+          "razao_norma": 1.0,
+          "veto_norma": false
+        }
+      }
+    },
+    "5f22ef00777a11f01d1360b4e7f4afeeab0142db14d906a22c11947a49acd956": {
+      "rodada": 4,
+      "participante": 1,
+      "declarado": {
+        "n_samples": 1465,
+        "loss": 0.153105,
+        "accuracy": 0.972696
+      },
+      "avaliacao": {
+        "score": 997,
+        "aprovado": true,
+        "justificativa": {
+          "score": 0.996802,
+          "cosseno": 0.584254,
+          "cosseno_mediano": 0.581844,
+          "direcao": 1.0,
+          "magnitude": 0.989339,
+          "norma": 3.372742,
+          "norma_mediana": 3.409087,
+          "razao_norma": 0.989339,
+          "veto_norma": false
+        }
+      }
+    },
+    "4815cf801368074328b95ab93a966ab300fb29f136c82891e9984132f3f9e640": {
+      "rodada": 4,
+      "participante": 2,
+      "declarado": {
+        "n_samples": 1196,
+        "loss": 0.576791,
+        "accuracy": 0.865385
+      },
+      "avaliacao": {
+        "score": 441,
+        "aprovado": false,
+        "justificativa": {
+          "score": 0.440512,
+          "cosseno": 0.21851,
+          "cosseno_mediano": 0.581844,
+          "direcao": 0.375548,
+          "magnitude": 0.592094,
+          "norma": 5.757677,
+          "norma_mediana": 3.409087,
+          "razao_norma": 1.68892,
+          "veto_norma": false
+        }
+      }
+    },
+    "7e13f7eb7b22505c2056f096eb27c40d8530d39c5d0b4fd991443bfd775b1b5a": {
+      "rodada": 5,
+      "participante": 0,
+      "declarado": {
+        "n_samples": 1839,
+        "loss": 0.202928,
+        "accuracy": 0.957586
+      },
+      "avaliacao": {
+        "score": 992,
+        "aprovado": true,
+        "justificativa": {
+          "score": 0.992078,
+          "cosseno": 0.553071,
+          "cosseno_mediano": 0.553071,
+          "direcao": 1.0,
+          "magnitude": 0.973592,
+          "norma": 2.962833,
+          "norma_mediana": 3.043197,
+          "razao_norma": 0.973592,
+          "veto_norma": false
+        }
+      }
+    },
+    "d8ec36926206ff552848d4675e66fade8760255fc25e5952c0a3e463313693aa": {
+      "rodada": 5,
+      "participante": 1,
+      "declarado": {
+        "n_samples": 1465,
+        "loss": 0.16738,
+        "accuracy": 0.976792
+      },
+      "avaliacao": {
+        "score": 1000,
+        "aprovado": true,
+        "justificativa": {
+          "score": 1.0,
+          "cosseno": 0.594725,
+          "cosseno_mediano": 0.553071,
+          "direcao": 1.0,
+          "magnitude": 1.0,
+          "norma": 3.043197,
+          "norma_mediana": 3.043197,
+          "razao_norma": 1.0,
+          "veto_norma": false
+        }
+      }
+    },
+    "9966027ec0450c063576637e203ae76ea01d331d38c43512bebe9ae4d3d9e12e": {
+      "rodada": 5,
+      "participante": 2,
+      "declarado": {
+        "n_samples": 1196,
+        "loss": 0.381717,
+        "accuracy": 0.960702
+      },
+      "avaliacao": {
+        "score": 281,
+        "aprovado": false,
+        "justificativa": {
+          "score": 0.281107,
+          "cosseno": 0.087814,
+          "cosseno_mediano": 0.553071,
+          "direcao": 0.158776,
+          "magnitude": 0.566546,
+          "norma": 5.371488,
+          "norma_mediana": 3.043197,
+          "razao_norma": 1.765081,
+          "veto_norma": false
+        }
+      }
+    },
+    "00bfa78ce7b7691c3b4a2476751d3dcc0180df90094c2874049ea8378a600a3f": {
+      "rodada": 6,
+      "participante": 0,
+      "declarado": {
+        "n_samples": 1839,
+        "loss": 0.113464,
+        "accuracy": 0.973355
+      },
+      "avaliacao": {
+        "score": 1000,
+        "aprovado": true,
+        "justificativa": {
+          "score": 1.0,
+          "cosseno": 0.511738,
+          "cosseno_mediano": 0.511738,
+          "direcao": 1.0,
+          "magnitude": 1.0,
+          "norma": 2.322143,
+          "norma_mediana": 2.322143,
+          "razao_norma": 1.0,
+          "veto_norma": false
+        }
+      }
+    },
+    "d64aea09df981f4190b61fd0b431fbf7476286f78ec73ab8b86549a1eb7b47af": {
+      "rodada": 6,
+      "participante": 1,
+      "declarado": {
+        "n_samples": 1465,
+        "loss": 0.071189,
+        "accuracy": 0.991809
+      },
+      "avaliacao": {
+        "score": 979,
+        "aprovado": true,
+        "justificativa": {
+          "score": 0.979377,
+          "cosseno": 0.529605,
+          "cosseno_mediano": 0.511738,
+          "direcao": 1.0,
+          "magnitude": 0.931257,
+          "norma": 2.162512,
+          "norma_mediana": 2.322143,
+          "razao_norma": 0.931257,
+          "veto_norma": false
+        }
+      }
+    },
+    "1eeee06f84d349cae35429988f09ae0004aef0a614e8d6b6a3c193dc1172fe10": {
+      "rodada": 6,
+      "participante": 2,
+      "declarado": {
+        "n_samples": 1196,
+        "loss": 0.569233,
+        "accuracy": 0.940635
+      },
+      "avaliacao": {
+        "score": 389,
+        "aprovado": false,
+        "justificativa": {
+          "score": 0.389141,
+          "cosseno": 0.087272,
+          "cosseno_mediano": 0.511738,
+          "direcao": 0.0,
+          "magnitude": 0.389141,
+          "norma": 5.967359,
+          "norma_mediana": 2.322143,
+          "razao_norma": 2.569764,
+          "veto_norma": true
+        }
+      }
+    },
+    "464767907488abd1af91fc42c73c40e935994560f602d0505dd80e4bc169201f": {
+      "rodada": 7,
+      "participante": 0,
+      "declarado": {
+        "n_samples": 1839,
+        "loss": 0.103791,
+        "accuracy": 0.969549
+      },
+      "avaliacao": {
+        "score": 978,
+        "aprovado": true,
+        "justificativa": {
+          "score": 0.97837,
+          "cosseno": 0.465944,
+          "cosseno_mediano": 0.465944,
+          "direcao": 1.0,
+          "magnitude": 0.9279,
+          "norma": 2.156759,
+          "norma_mediana": 2.324344,
+          "razao_norma": 0.9279,
+          "veto_norma": false
+        }
+      }
+    },
+    "93424e58fd61630201754fcc981817109a75bcc157c1c5d1dc3ee14c958fd77b": {
+      "rodada": 7,
+      "participante": 1,
+      "declarado": {
+        "n_samples": 1465,
+        "loss": 0.11514,
+        "accuracy": 0.972696
+      },
+      "avaliacao": {
+        "score": 1000,
+        "aprovado": true,
+        "justificativa": {
+          "score": 1.0,
+          "cosseno": 0.509794,
+          "cosseno_mediano": 0.465944,
+          "direcao": 1.0,
+          "magnitude": 1.0,
+          "norma": 2.324344,
+          "norma_mediana": 2.324344,
+          "razao_norma": 1.0,
+          "veto_norma": false
+        }
+      }
+    },
+    "9d0d5a92f3389cfe2a58bf8b55ed7444fcb278c567191563c326c239befacd56": {
+      "rodada": 7,
+      "participante": 2,
+      "declarado": {
+        "n_samples": 1196,
+        "loss": 0.515174,
+        "accuracy": 0.91388
+      },
+      "avaliacao": {
+        "score": 375,
+        "aprovado": false,
+        "justificativa": {
+          "score": 0.374642,
+          "cosseno": 0.113496,
+          "cosseno_mediano": 0.465944,
+          "direcao": 0.0,
+          "magnitude": 0.374642,
+          "norma": 6.204174,
+          "norma_mediana": 2.324344,
+          "razao_norma": 2.669215,
+          "veto_norma": true
+        }
+      }
+    },
+    "f3293d9b042169cd36a1229f3431b29b2c3442029da5171583ac9eb298e62198": {
+      "rodada": 8,
+      "participante": 0,
+      "declarado": {
+        "n_samples": 1839,
+        "loss": 0.058538,
+        "accuracy": 0.985318
+      },
+      "avaliacao": {
+        "score": 990,
+        "aprovado": true,
+        "justificativa": {
+          "score": 0.9905,
+          "cosseno": 0.723109,
+          "cosseno_mediano": 0.699263,
+          "direcao": 1.0,
+          "magnitude": 0.968335,
+          "norma": 1.727337,
+          "norma_mediana": 1.67264,
+          "razao_norma": 1.032701,
+          "veto_norma": false
+        }
+      }
+    },
+    "ecc8d00868cdf3325ef1cbfc45e43a731d59025494749ad091a70053233a527c": {
+      "rodada": 8,
+      "participante": 1,
+      "declarado": {
+        "n_samples": 1465,
+        "loss": 0.028201,
+        "accuracy": 0.998635
+      },
+      "avaliacao": {
+        "score": 966,
+        "aprovado": true,
+        "justificativa": {
+          "score": 0.966319,
+          "cosseno": 0.675417,
+          "cosseno_mediano": 0.699263,
+          "direcao": 0.965898,
+          "magnitude": 0.967299,
+          "norma": 1.617944,
+          "norma_mediana": 1.67264,
+          "razao_norma": 0.967299,
+          "veto_norma": false
+        }
+      }
+    }
+  }
+}

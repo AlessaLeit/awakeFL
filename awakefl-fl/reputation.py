@@ -148,6 +148,93 @@ def magnitude_score(norm: float, reference_norm: float) -> float:
     return float(np.clip(min(r, 1.0 / r), 0.0, 1.0))
 
 
+@dataclass(frozen=True)
+class ScoreBreakdown:
+    """As partes que formam S(t), para que a nota possa ser auditada.
+
+    Publicar so o numero final ("375") deixa o participante sem recurso: ele nao
+    tem como saber se caiu por ter apontado para outro lado, por ter enviado um
+    update grande demais, ou por ter batido no veto de norma. Com as partes
+    expostas, qualquer terceiro que tenha os artefatos refaz a conta e confere -
+    e e essa recalculabilidade que torna possivel contestar a nota depois.
+    """
+
+    score: float           # S(t) final, em [0, 1]
+    cosseno: float         # cosseno bruto contra a referencia, antes da calibracao
+    cosseno_mediano: float # a regua da rodada
+    direcao: float         # termo de direcao ja calibrado, em [0, 1]
+    magnitude: float       # termo de magnitude, em [0, 1]
+    norma: float           # norma do update deste participante
+    norma_mediana: float   # norma tipica da rodada
+    razao_norma: float     # norma / norma_mediana
+    veto_norma: bool       # True se o veto zerou o credito de direcao
+
+    def as_dict(self) -> dict:
+        return {
+            "score": round(self.score, 6),
+            "cosseno": round(self.cosseno, 6),
+            "cosseno_mediano": round(self.cosseno_mediano, 6),
+            "direcao": round(self.direcao, 6),
+            "magnitude": round(self.magnitude, 6),
+            "norma": round(self.norma, 6),
+            "norma_mediana": round(self.norma_mediana, 6),
+            "razao_norma": round(self.razao_norma, 6),
+            "veto_norma": self.veto_norma,
+        }
+
+
+def score_breakdown(
+    update: np.ndarray,
+    reference: np.ndarray,
+    reference_norm: float,
+    weight_direction: float = 0.7,
+    weight_magnitude: float = 0.3,
+    reference_cosine: float = 1.0,
+    norm_veto_ratio: float = 2.5,
+) -> ScoreBreakdown:
+    """Calcula S(t) devolvendo tambem cada parte da conta.
+
+    `consistency_score` e um atalho para `score_breakdown(...).score`. As duas
+    compartilham a implementacao de proposito: se a nota publicada e a nota
+    aplicada pudessem divergir, a justificativa deixaria de ser justificativa.
+    """
+    if not np.all(np.isfinite(update)):
+        # Update com NaN/inf: sem informacao utilizavel, credibilidade zero.
+        return ScoreBreakdown(0.0, 0.0, reference_cosine, 0.0, 0.0, float("nan"),
+                              reference_norm, float("nan"), False)
+
+    cosseno = max(0.0, cosine_similarity(update, reference))
+    direcao = cosseno / reference_cosine if reference_cosine > EPS else cosseno
+    direcao = float(np.clip(direcao, 0.0, 1.0))
+
+    norma = float(np.linalg.norm(update))
+    magnitude = magnitude_score(norma, reference_norm)
+    razao = norma / reference_norm if reference_norm > EPS else float("inf")
+
+    vetado = norm_veto_ratio > 1.0 and (razao > norm_veto_ratio or razao < 1.0 / norm_veto_ratio)
+    if vetado:
+        score = float(np.clip(magnitude, 0.0, 1.0))
+    else:
+        total = weight_direction + weight_magnitude
+        if total <= 0:
+            raise ValueError("weight_direction + weight_magnitude deve ser > 0.")
+        score = float(
+            np.clip((weight_direction * direcao + weight_magnitude * magnitude) / total, 0.0, 1.0)
+        )
+
+    return ScoreBreakdown(
+        score=score,
+        cosseno=cosseno,
+        cosseno_mediano=reference_cosine,
+        direcao=0.0 if vetado else direcao,
+        magnitude=magnitude,
+        norma=norma,
+        norma_mediana=reference_norm,
+        razao_norma=razao,
+        veto_norma=vetado,
+    )
+
+
 def consistency_score(
     update: np.ndarray,
     reference: np.ndarray,
@@ -176,27 +263,15 @@ def consistency_score(
     heterogeneos - para um update 3x maior que o do grupo. O veto e a peca que
     fecha essa brecha sem endurecer o criterio para quem esta dentro da faixa.
     """
-    if not np.all(np.isfinite(update)):
-        # Update com NaN/inf: sem informacao utilizavel, credibilidade zero.
-        return 0.0
-
-    direction = max(0.0, cosine_similarity(update, reference))
-    if reference_cosine > EPS:
-        direction = direction / reference_cosine
-    norm = float(np.linalg.norm(update))
-    magnitude = magnitude_score(norm, reference_norm)
-
-    ratio = norm / reference_norm if reference_norm > EPS else float("inf")
-    if norm_veto_ratio > 1.0 and (ratio > norm_veto_ratio or ratio < 1.0 / norm_veto_ratio):
-        return float(np.clip(magnitude, 0.0, 1.0))
-
-    total = weight_direction + weight_magnitude
-    if total <= 0:
-        raise ValueError("weight_direction + weight_magnitude deve ser > 0.")
-    score = (
-        weight_direction * float(np.clip(direction, 0.0, 1.0)) + weight_magnitude * magnitude
-    ) / total
-    return float(np.clip(score, 0.0, 1.0))
+    return score_breakdown(
+        update,
+        reference,
+        reference_norm,
+        weight_direction,
+        weight_magnitude,
+        reference_cosine,
+        norm_veto_ratio,
+    ).score
 
 
 def next_reputation(previous: float, score: float, alpha: float = 0.5) -> float:
@@ -342,6 +417,10 @@ class ReputationLedger:
         # `enabled=False` = cenario B: ainda *medimos* score e reputacao (para o
         # relatorio poder mostrar que o sinal existia), mas nunca banimos ninguem.
         self.enabled = enabled
+        # Detalhamento do score da ultima rodada avaliada, por participante.
+        # Preenchido por `compute_scores`; consumido por quem publica a
+        # justificativa (server.py -> livro-razao -> painel).
+        self.last_breakdown: Dict[int, ScoreBreakdown] = {}
         self.states: Dict[int, ParticipantState] = {
             cid: ParticipantState(cid, reputation=initial, history=[initial])
             for cid in range(num_participants)
@@ -440,8 +519,11 @@ class ReputationLedger:
         cosines = {cid: max(0.0, cosine_similarity(u, reference)) for cid, u in active.items()}
         reference_cosine = float(np.median(list(cosines.values()))) if cosines else 1.0
 
-        scores = {
-            cid: consistency_score(
+        # Guardamos a conta inteira, nao so o numero: e ela que vai publicada
+        # para o participante saber POR QUE tirou aquela nota, e para um
+        # terceiro poder refazer o calculo e contestar.
+        self.last_breakdown = {
+            cid: score_breakdown(
                 u,
                 reference,
                 reference_norm,
@@ -452,6 +534,7 @@ class ReputationLedger:
             )
             for cid, u in active.items()
         }
+        scores = {cid: b.score for cid, b in self.last_breakdown.items()}
         scores.update({cid: 0.0 for cid in broken})  # nao-finitos: credibilidade zero
         return scores, reference_norm
 

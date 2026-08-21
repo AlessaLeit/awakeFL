@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Cabecalho from "@/components/painel/Cabecalho";
 import { useAwakeFL } from "@/lib/anchor/estado";
 import {
@@ -8,6 +7,21 @@ import {
   explorerConta,
   type ContribuicaoConta,
 } from "@/lib/anchor/program";
+import {
+  explicaScore,
+  useAvaliacoes,
+  type EstadoAvaliacoes,
+} from "@/lib/avaliacoes";
+
+/**
+ * A autoridade NÃO pontua — ela assina o que o agregador calculou.
+ *
+ * O limiar abaixo espelha `ban_threshold` do config off-chain (0,4 na escala
+ * [0,1] = 400 aqui). Enquanto a reputação estiver acima dele, o botão de
+ * penalizar fica desabilitado: banir alguém que os próprios números da chain
+ * não condenam seria uma decisão pessoal, não uma consequência da regra.
+ */
+const LIMIAR_BANIMENTO = 400;
 
 export default function Validador() {
   const {
@@ -23,7 +37,7 @@ export default function Validador() {
     carregando,
   } = useAwakeFL();
 
-  const [scores, setScores] = useState<Record<string, string>>({});
+  const avaliacoes = useAvaliacoes();
 
   const daRodada = config
     ? contribuicoes.filter((c) => c.round === config.currentRound)
@@ -294,7 +308,14 @@ export default function Validador() {
                   {souAutoridade && !p.isBanned && (
                     <button
                       onClick={() => void penalizar(p)}
-                      disabled={ocupado !== null}
+                      disabled={
+                        ocupado !== null || p.reputation >= LIMIAR_BANIMENTO
+                      }
+                      title={
+                        p.reputation >= LIMIAR_BANIMENTO
+                          ? `Reputação ${p.reputation} ainda está acima do limiar ${LIMIAR_BANIMENTO}. O banimento é consequência da regra, não uma decisão da autoridade.`
+                          : `Reputação ${p.reputation} cruzou o limiar ${LIMIAR_BANIMENTO} — banimento permanente.`
+                      }
                       className="shrink-0 rounded border px-2 py-1 text-[11px] disabled:opacity-40"
                       style={{
                         borderColor: "var(--critico)",
@@ -325,16 +346,30 @@ export default function Validador() {
             Contribuições pendentes · rodada {config.currentRound}
           </h2>
           <p className="mt-1 text-sm" style={{ color: "var(--tinta-2)" }}>
-            {souAutoridade
-              ? "Um score de 0 a 1000. Metade da escala é o limiar: 500 ou mais aprova, abaixo disso rejeita. A reputação move pela média móvel em qualquer dos casos."
-              : "Aguardando a autoridade pontuar."}
+            O score é calculado pelo agregador a partir do formato matemático da
+            contribuição — a autoridade não escolhe a nota, apenas assina o
+            envio. Metade da escala é o limiar: 500 ou mais aprova.
           </p>
+          {avaliacoes.ausente && (
+            <p className="mono mt-3 text-xs" style={{ color: "var(--aviso)" }}>
+              Nenhuma avaliação publicada. Gere com{" "}
+              <code>python awakefl-fl/publicar_avaliacoes.py results_demo</code>{" "}
+              — sem isso não há score para assinar.
+            </p>
+          )}
+          {avaliacoes.geradoEm && (
+            <p
+              className="mono mt-3 text-xs"
+              style={{ color: "var(--tinta-muda)" }}
+            >
+              Avaliações publicadas em {avaliacoes.geradoEm}
+            </p>
+          )}
         </div>
         <TabelaContribuicoes
           linhas={pendentesDaRodada}
           souAutoridade={souAutoridade}
-          scores={scores}
-          setScores={setScores}
+          avaliacoes={avaliacoes}
           validar={validar}
           ocupado={ocupado}
           vazio="Nenhuma contribuição pendente nesta rodada."
@@ -355,8 +390,7 @@ export default function Validador() {
         <TabelaContribuicoes
           linhas={julgadas}
           souAutoridade={false}
-          scores={scores}
-          setScores={setScores}
+          avaliacoes={avaliacoes}
           validar={validar}
           ocupado={ocupado}
           vazio="Nada foi validado ainda."
@@ -369,16 +403,14 @@ export default function Validador() {
 function TabelaContribuicoes({
   linhas,
   souAutoridade,
-  scores,
-  setScores,
+  avaliacoes,
   validar,
   ocupado,
   vazio,
 }: {
   linhas: ContribuicaoConta[];
   souAutoridade: boolean;
-  scores: Record<string, string>;
-  setScores: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  avaliacoes: EstadoAvaliacoes;
   validar: (c: ContribuicaoConta, score: number) => Promise<void>;
   ocupado: string | null;
   vazio: string;
@@ -419,8 +451,10 @@ function TabelaContribuicoes({
           )}
           {linhas.map((c) => {
             const chave = c.endereco.toBase58();
-            const bruto = scores[chave] ?? "";
-            const valido = bruto !== "" && Number(bruto) <= 1000;
+            // A avaliação é encontrada pelo HASH gravado on-chain — nenhum
+            // mapeamento de carteira no meio.
+            const publicada = avaliacoes.porHash[c.updateHash];
+            const score = publicada?.avaliacao.score;
             return (
               <tr
                 key={chave}
@@ -458,46 +492,76 @@ function TabelaContribuicoes({
                 </td>
                 <td className="px-6 py-4">
                   {c.status !== "Pendente" ? (
-                    <span
-                      className="chip"
-                      style={{
-                        borderColor:
-                          c.status === "Aprovado"
-                            ? "color-mix(in srgb, var(--bom) 45%, transparent)"
-                            : "color-mix(in srgb, var(--critico) 45%, transparent)",
-                        color:
-                          c.status === "Aprovado"
-                            ? "var(--bom)"
-                            : "var(--critico)",
-                      }}
-                    >
-                      {c.status === "Aprovado" ? "✓" : "✕"} {c.status}
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span
+                        className="chip"
+                        style={{
+                          borderColor:
+                            c.status === "Aprovado"
+                              ? "color-mix(in srgb, var(--bom) 45%, transparent)"
+                              : "color-mix(in srgb, var(--critico) 45%, transparent)",
+                          color:
+                            c.status === "Aprovado"
+                              ? "var(--bom)"
+                              : "var(--critico)",
+                        }}
+                      >
+                        {c.status === "Aprovado" ? "✓" : "✕"} {c.status}
+                      </span>
+                      {score !== undefined && (
+                        <span
+                          className="tabular text-xs"
+                          style={{ color: "var(--tinta-muda)" }}
+                        >
+                          score {score}
+                        </span>
+                      )}
                     </span>
                   ) : souAutoridade ? (
-                    <span className="flex items-center gap-2">
-                      <input
-                        value={bruto}
-                        onChange={(e) =>
-                          setScores((s) => ({
-                            ...s,
-                            [chave]: e.target.value
-                              .replace(/\D/g, "")
-                              .slice(0, 4),
-                          }))
-                        }
-                        placeholder="0–1000"
-                        inputMode="numeric"
-                        aria-label={`Score da contribuição ${encurta(c.endereco)}`}
-                        className="campo tabular w-24 px-2 py-1.5 text-xs"
-                      />
-                      <button
-                        onClick={() => void validar(c, Number(bruto))}
-                        disabled={ocupado !== null || !valido}
-                        className="btn-neon px-3 py-1.5 text-xs"
+                    score === undefined ? (
+                      <span
+                        className="text-xs"
+                        style={{ color: "var(--aviso)" }}
                       >
-                        Validar
-                      </button>
-                    </span>
+                        {avaliacoes.carregando
+                          ? "carregando avaliações…"
+                          : "sem avaliação publicada para este hash"}
+                      </span>
+                    ) : (
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span
+                          className="chip tabular"
+                          style={{
+                            borderColor: publicada.avaliacao.aprovado
+                              ? "var(--acento)"
+                              : "var(--critico)",
+                            color: publicada.avaliacao.aprovado
+                              ? "var(--acento)"
+                              : "var(--critico)",
+                          }}
+                          title={explicaScore(
+                            publicada.avaliacao.justificativa,
+                          )}
+                        >
+                          score {score}
+                        </span>
+                        <button
+                          onClick={() => void validar(c, score)}
+                          disabled={ocupado !== null}
+                          className="btn-neon px-3 py-1.5 text-xs"
+                        >
+                          Assinar
+                        </button>
+                        {/* O porquê da nota, visível e não só no tooltip: um
+                            número sem explicação não pode ser contestado. */}
+                        <span
+                          className="basis-full text-[11px] leading-snug"
+                          style={{ color: "var(--tinta-muda)" }}
+                        >
+                          {explicaScore(publicada.avaliacao.justificativa)}
+                        </span>
+                      </span>
+                    )
                   ) : (
                     <span
                       className="chip"

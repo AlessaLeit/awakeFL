@@ -236,6 +236,13 @@ def run_federated(
                 num_examples=num_examples[cid],
                 metrics=declared[cid],
                 score=outcome.scores.get(cid),
+                # A justificativa acompanha a nota: sem ela o participante
+                # recebe um numero sem recurso e ninguem consegue contestar.
+                breakdown=(
+                    ledger.last_breakdown[cid].as_dict()
+                    if cid in ledger.last_breakdown
+                    else None
+                ),
                 reputation=ledger.reputation_of(cid),
                 banned=ledger.is_banned(cid),
             )
