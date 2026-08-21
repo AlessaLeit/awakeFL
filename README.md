@@ -166,5 +166,5 @@ respondê-lo — não como intenção vaga, mas como pergunta de pesquisa formul
 ---
 
 <div align="center">
-<sub>Projeto de pesquisa em Iniciação Científica · Solana Devnet · 2026</sub>
+<sub>Projeto de pesquisa · Solana Devnet · 2026</sub>
 </div>
