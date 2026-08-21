@@ -589,16 +589,33 @@ governança e auditoria.
 - **Garantias teóricas.** Yin et al. provam taxas de erro; o AwakeFL não prova
   nada — mede em 10 sementes. É evidência empírica, com desvio padrão, e deve ser
   apresentada como tal.
-- **Suporte a *slow poisoning*, nem mesmo "parcial".** A tabela comparativa da
-  proposta marca "Parcial" nessa coluna para o AwakeFL. **Nenhum experimento
-  sustenta isso** — os quatro ataques implementados são de efeito imediato, e
-  nunca rodamos um envenenamento gradual e sutil. A coluna deveria dizer "não
-  avaliado" até que exista o experimento. Fang et al. (2020) mostram que ataques
-  adaptativos passam por detectores desse tipo; presumir o contrário sem medir é
-  o oposto do que este projeto vem praticando (§8).
-- **"Prevenção: Protocolo"** na mesma tabela merece uma nota de rodapé: o
-  banimento é de protocolo, mas o score que o dispara é calculado off-chain
-  (§7.1).
+- **Suporte a *slow poisoning*.** A reivindicação foi **retirada**. Os quatro
+  ataques implementados são de efeito imediato; nunca rodamos um envenenamento
+  gradual e sutil, então não há experimento que sustente nem um "parcial". Fang
+  et al. (2020) mostram que ataques adaptativos passam por detectores desse tipo,
+  o que torna a presunção ainda mais arriscada. Fica como hipótese a testar
+  (§10.8), não como propriedade do sistema.
+- **"Prevenção: Protocolo"** merece nota de rodapé: o banimento é de protocolo,
+  mas o score que o dispara é calculado off-chain (§7.1).
+
+**Tabela comparativa corrigida.** Substitui a da seção 12.5 da proposta. A coluna
+de *slow poisoning* sai, porque nenhum dos trabalhos comparados foi avaliado por
+nós nesse quesito — manter a coluna exigiria medir todos, não só o AwakeFL:
+
+| Solução | Tipo | Auditável | Prevenção | Custo |
+| --- | --- | --- | --- | --- |
+| FedAvg | Estatística | Não | Nenhuma | Baixo |
+| Krum / Median | Estatística | Não | Reativa | Baixo |
+| FLTrust | Estatística | Não | Reativa | Médio |
+| FoolsGold | Estatística | Não | Reativa | Baixo |
+| FLChain | Blockchain | Sim | Protocolo | Alto |
+| DFL | Blockchain | Sim | Protocolo | Médio |
+| BFLC | Reputação / BC | Sim | Protocolo | Médio |
+| BPRFL | Reputação / BC | Sim | Protocolo | Médio |
+| AwakeFL | Reputação / BC | Sim | Protocolo¹ | Baixo² |
+
+¹ O banimento é de protocolo; o score que o dispara é calculado off-chain (§7.1).
+² Estimado pela arquitetura da Solana. **Ainda não medido** neste projeto (§7.5).
 
 ### 10.8 O que a revisão sugere como próximo passo
 
