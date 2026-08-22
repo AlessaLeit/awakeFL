@@ -406,9 +406,9 @@ pub const MAX_HASH_LEN: usize = 64;
 pub struct Config {
     /// Agregador da rodada: valida contribuicoes e penaliza.
     pub authority: Pubkey, // 32
-    pub current_round: u64, // 8
+    pub current_round: u64,      // 8
     pub total_participants: u64, // 8
-    pub bump: u8, // 1
+    pub bump: u8,                // 1
 }
 // INIT_SPACE = 49 | space = 8 + 49 = 57
 

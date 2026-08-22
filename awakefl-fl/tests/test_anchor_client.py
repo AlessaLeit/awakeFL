@@ -79,6 +79,36 @@ def test_pdas_sao_deterministicos():
     assert pda_contribution(PID, p_a, 3) == pda_contribution(PID, p_b, 3)
 
 
+def test_os_dois_livros_razao_aceitam_a_mesma_chamada():
+    """`AnchorLedger` e `SimulatedOnChainLedger` sao intercambiaveis no servidor.
+
+    O servidor nao sabe qual backend esta usando: chama
+    `register_contribution(...)` com o mesmo conjunto de argumentos nomeados nos
+    dois casos. Quando um ganha um parametro e o outro nao, `--chain devnet`
+    quebra na primeira contribuicao — e foi exatamente o que aconteceu com o
+    `breakdown`, que existia so no simulado.
+
+    Comparar as assinaturas e mais barato do que rodar a federacao inteira em
+    cada backend so para descobrir isso.
+    """
+    import inspect
+
+    from onchain_interface import SimulatedOnChainLedger
+
+    def nomes(cls, metodo):
+        params = inspect.signature(getattr(cls, metodo)).parameters
+        return {n for n in params if n != "self"}
+
+    for metodo in ("register_contribution", "register_ban", "advance_round"):
+        do_simulado = nomes(SimulatedOnChainLedger, metodo)
+        do_anchor = nomes(AnchorLedger, metodo)
+        faltando = do_simulado - do_anchor
+        assert not faltando, (
+            f"AnchorLedger.{metodo} nao aceita {sorted(faltando)}, que o "
+            f"servidor passa quando fala com o ledger simulado"
+        )
+
+
 def test_contribuicao_muda_de_endereco_a_cada_rodada():
     """A rodada entra na seed, entao cada rodada tem sua propria conta.
 

@@ -31,7 +31,7 @@ import logging
 import struct
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Sequence
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Set
 
 import numpy as np
 
@@ -196,6 +196,42 @@ class BanRecord:
     reason_code: int = 1
 
 
+def exporta_artefato(
+    export_dir: Optional[Path],
+    export_rounds: Optional[Set[int]],
+    record: ContributionRecord,
+    weights: Sequence[np.ndarray],
+    artifacts: List[Dict[str, Any]],
+) -> Optional[Path]:
+    """Grava o artefato canonico da contribuicao, se a exportacao estiver ligada.
+
+    E o que fecha a auditoria de ponta a ponta: o arquivo daqui, subido em
+    /painel/contribuir, produz no navegador o mesmo hash que esta no registro.
+
+    Funcao de modulo, e nao metodo, porque os DOIS livros-razao precisam dela —
+    o simulado e o da Devnet. Enquanto morava so no simulado, `--export-weights`
+    com `--chain devnet` era aceito e nao gravava nada: o participante ficava
+    sem o arquivo que a tela pede para subir.
+    """
+    if export_dir is None:
+        return None
+    if export_rounds is not None and record.round_number not in export_rounds:
+        return None
+
+    nome = f"rodada{record.round_number:02d}_participante{record.participant_id:02d}{CANONICAL_EXT}"
+    caminho = export_weights(weights, Path(export_dir) / nome)
+    artifacts.append(
+        {
+            "round_number": record.round_number,
+            "participant_id": record.participant_id,
+            "file": nome,
+            "weights_hash": record.weights_hash,
+            "bytes": caminho.stat().st_size,
+        }
+    )
+    return caminho
+
+
 class SimulatedOnChainLedger:
     """Livro-razao em memoria com encadeamento por hash (mini-blockchain didatica).
 
@@ -304,28 +340,9 @@ class SimulatedOnChainLedger:
     def _export_artifact(
         self, record: ContributionRecord, weights: Sequence[np.ndarray]
     ) -> Optional[Path]:
-        """Grava o artefato canonico da contribuicao, se a exportacao estiver ligada.
-
-        E o que fecha a auditoria de ponta a ponta: o arquivo daqui, subido em
-        /painel/contribuir, produz no navegador o mesmo hash que esta no registro.
-        """
-        if self.export_dir is None:
-            return None
-        if self.export_rounds is not None and record.round_number not in self.export_rounds:
-            return None
-
-        nome = f"rodada{record.round_number:02d}_participante{record.participant_id:02d}{CANONICAL_EXT}"
-        caminho = export_weights(weights, self.export_dir / nome)
-        self.artifacts.append(
-            {
-                "round_number": record.round_number,
-                "participant_id": record.participant_id,
-                "file": nome,
-                "weights_hash": record.weights_hash,
-                "bytes": caminho.stat().st_size,
-            }
+        return exporta_artefato(
+            self.export_dir, self.export_rounds, record, weights, self.artifacts
         )
-        return caminho
 
     def _append_block(self, payload: Dict[str, Any]) -> str:
         previous = self._chain[-1] if self._chain else self.GENESIS

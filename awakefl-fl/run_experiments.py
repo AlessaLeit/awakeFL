@@ -244,7 +244,14 @@ def resolve_local_steps(valor, partitions, batch_size: int) -> Optional[int]:
     return int(valor)
 
 
-def build_chain(modo: str, num_clients: int, seed: int, keypair_path: Optional[Path]):
+def build_chain(
+    modo: str,
+    num_clients: int,
+    seed: int,
+    keypair_path: Optional[Path],
+    export_dir: Optional[Path] = None,
+    export_rounds: Optional[List[int]] = None,
+):
     """Monta o livro-razao pedido. `None` = o servidor usa o simulado.
 
     O `AnchorLedger` so e importado aqui dentro: o extra `[chain]` e opcional e
@@ -257,10 +264,15 @@ def build_chain(modo: str, num_clients: int, seed: int, keypair_path: Optional[P
 
     participantes = derive_simulation_keypairs(num_clients, seed=seed)
 
+    # A exportacao de pesos acompanha o livro-razao, seja ele qual for: o
+    # artefato e o que o participante sobe em /painel/contribuir, e ele nao
+    # pode depender de qual backend o experimento usou.
+    exportacao = dict(export_dir=export_dir, export_rounds=export_rounds)
+
     if modo == "dry-run":
         # Autoridade descartavel: em dry-run nada e assinado de fato.
         autoridade = derive_simulation_keypairs(1, seed=seed + 10_000)[0]
-        return AnchorLedger(autoridade, participantes, dry_run=True)
+        return AnchorLedger(autoridade, participantes, dry_run=True, **exportacao)
 
     if not keypair_path:
         raise SystemExit("--chain devnet exige --authority-keypair (ex.: ~/.config/solana/id.json)")
@@ -269,7 +281,7 @@ def build_chain(modo: str, num_clients: int, seed: int, keypair_path: Optional[P
 
     bytes_chave = json.loads(Path(keypair_path).expanduser().read_text(encoding="utf-8"))
     autoridade = Keypair.from_bytes(bytes(bytes_chave))
-    return AnchorLedger(autoridade, participantes, dry_run=False)
+    return AnchorLedger(autoridade, participantes, dry_run=False, **exportacao)
 
 
 def run_scenario(
@@ -387,15 +399,20 @@ def main(argv=None) -> int:
     for key in args.scenarios:
         spec = plan[key]
         t0 = time.time()
+        pasta_pesos = (results_dir / "pesos" / key) if args.export_weights else None
+        rodadas_exportadas = resolve_export_rounds(
+            args.export_weights, int(cfg["federation"]["rounds"])
+        )
         histories[key] = run_scenario(
             key, cfg, data_bundle, backend=args.backend, device=device,
-            export_dir=(results_dir / "pesos" / key) if args.export_weights else None,
-            export_rounds=resolve_export_rounds(args.export_weights, int(cfg["federation"]["rounds"])),
+            export_dir=pasta_pesos,
+            export_rounds=rodadas_exportadas,
             # Um livro-razao por cenario: A, B e C sao federacoes distintas e
             # misturar as contribuicoes num so registro tornaria o extrato
             # impossivel de ler.
             chain=build_chain(args.chain, int(cfg["federation"]["num_clients"]),
-                              seed, args.authority_keypair),
+                              seed, args.authority_keypair,
+                              export_dir=pasta_pesos, export_rounds=rodadas_exportadas),
             **spec,
         )
         logger.info("Cenario %s concluido em %.1fs\n", key, time.time() - t0)

@@ -52,6 +52,7 @@ from onchain_interface import (
     SEED_PARTICIPANT,
     BanRecord,
     ContributionRecord,
+    exporta_artefato,
     hash_weights,
 )
 from reputation import to_program_scale
@@ -263,6 +264,8 @@ class AnchorLedger:
         rpc_url: str = DEVNET_RPC,
         idl_path: Optional[str | Path] = None,
         dry_run: bool = False,
+        export_dir: Optional[str | Path] = None,
+        export_rounds: Optional[Sequence[int]] = None,
     ) -> None:
         """
         Args:
@@ -272,6 +275,10 @@ class AnchorLedger:
             dry_run: monta as instrucoes e deriva os PDAs, mas nao envia nada.
                 Serve para conferir a integracao sem gastar SOL nem depender da
                 rede - e o que os testes usam.
+            export_dir: onde gravar o artefato canonico dos pesos. Mesmo
+                contrato do ledger simulado - a tela do participante precisa
+                desse arquivo, e ele nao pode existir so num dos backends.
+            export_rounds: de quais rodadas exportar. `None` = todas.
         """
         _exige_dependencias()
         self.authority = authority
@@ -288,6 +295,8 @@ class AnchorLedger:
         self.bans: List[BanRecord] = []
         self.artifacts: List[Dict[str, Any]] = []
         self.signatures: List[Dict[str, str]] = []
+        self.export_dir = Path(export_dir) if export_dir else None
+        self.export_rounds = set(export_rounds) if export_rounds is not None else None
         # Em dry-run o contador vive so na memoria, comecando em 0. Sem isso o
         # ensaio derivaria o MESMO PDA em todas as rodadas - exatamente o bug
         # que o advance_round existe para evitar - e daria a impressao errada
@@ -374,6 +383,7 @@ class AnchorLedger:
         score: Optional[float] = None,
         reputation: Optional[float] = None,
         banned: bool = False,
+        breakdown: Optional[Dict[str, Any]] = None,
     ) -> ContributionRecord:
         """`submit_contribution` + `validate_contribution`, nesta ordem.
 
@@ -426,10 +436,17 @@ class AnchorLedger:
             num_examples=int(num_examples),
             metrics=metricas,
             score=None if score is None else round(float(score), 6),
+            # A justificativa do score NAO cabe na conta Contribution — a chain
+            # guarda o numero. Ela fica no registro local, que e a fonte do
+            # avaliacoes.json que a tela do validador le pelo hash.
+            score_breakdown=breakdown,
             reputation=None if reputation is None else round(float(reputation), 6),
             reputation_bps=None if reputation is None else int(round(reputation * 10_000)),
             banned=banned,
             tx_signature=sig_envio,
+        )
+        exporta_artefato(
+            self.export_dir, self.export_rounds, registro, weights, self.artifacts
         )
         self.contributions.append(registro)
         self.signatures.append(
