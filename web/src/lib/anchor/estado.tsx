@@ -347,6 +347,10 @@ export function EstadoAwakeFL({ children }: { children: React.ReactNode }) {
         "penalize_participant",
         async (program, pid, dono) =>
           (program.methods as Metodos)
+            // reason_code 1 = reputation_below_threshold, a mesma tabela do
+            // onchain_interface.py (2 = manual_authority_action). O painel só
+            // habilita o botão abaixo do limiar, então 1 é sempre o motivo
+            // certo aqui — se um dia houver banimento manual, o código muda.
             .penalizeParticipant(1)
             .accountsPartial({
               config: pdaConfig(pid),
