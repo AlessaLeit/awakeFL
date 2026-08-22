@@ -5,3 +5,7 @@ target
 node_modules
 test-ledger
 .yarn
+
+# Configuracao local do Claude Code: permissoes concedidas nesta maquina.
+# O launch.json fica versionado de proposito — descreve como subir o dev server.
+.claude/settings.local.json
