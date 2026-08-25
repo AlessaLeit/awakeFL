@@ -14,7 +14,7 @@ interface Linha {
   quando: number | null;
   referencia: string;
   url: string;
-  status: "Confirmado" | "Pendente" | "Aprovado" | "Rejeitado" | "Expirado";
+  status: "Confirmado" | "Pendente" | "Aprovado" | "Rejeitado";
   familia: Exclude<Filtro, "todos">;
   detalhe: string;
 }
@@ -24,9 +24,6 @@ const CORES: Record<Linha["status"], string> = {
   Aprovado: "var(--bom)",
   Pendente: "var(--aviso)",
   Rejeitado: "var(--critico)",
-  // Neutro: expirar não é reprovar. A contribuição não foi julgada ruim —
-  // não foi julgada.
-  Expirado: "var(--tinta-muda)",
 };
 
 export default function Extrato() {

@@ -111,8 +111,7 @@ export function walletProgram(
 // Tipos das contas, já normalizados (o Anchor devolve BN e enums como objeto)
 // ---------------------------------------------------------------------------
 
-export type StatusContribuicaoOnChain =
-  "Pendente" | "Aprovado" | "Rejeitado" | "Expirado";
+export type StatusContribuicaoOnChain = "Pendente" | "Aprovado" | "Rejeitado";
 
 export interface ConfigConta {
   authority: PublicKey;
@@ -147,7 +146,6 @@ function statusDe(raw: any): StatusContribuicaoOnChain {
   const chave = Object.keys(raw ?? {})[0];
   if (chave === "aprovado") return "Aprovado";
   if (chave === "rejeitado") return "Rejeitado";
-  if (chave === "expirado") return "Expirado";
   return "Pendente";
 }
 

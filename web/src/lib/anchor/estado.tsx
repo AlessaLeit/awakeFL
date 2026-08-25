@@ -91,7 +91,6 @@ interface Estado {
   registrar: () => Promise<void>;
   submeter: (dados: FormularioContribuicao) => Promise<void>;
   validar: (c: ContribuicaoConta, score: number) => Promise<void>;
-  expirar: (c: ContribuicaoConta) => Promise<void>;
   penalizar: (p: ParticipanteConta) => Promise<void>;
   avancarRodada: () => Promise<void>;
 }
@@ -341,24 +340,6 @@ export function EstadoAwakeFL({ children }: { children: React.ReactNode }) {
     [enviar],
   );
 
-  const expirar = useCallback(
-    (c: ContribuicaoConta) =>
-      enviar(
-        `expirar-${c.endereco.toBase58()}`,
-        "expire_contribution",
-        async (program, pid, dono) =>
-          (program.methods as Metodos)
-            .expireContribution()
-            .accountsPartial({
-              config: pdaConfig(pid),
-              contribution: c.endereco,
-              authority: dono,
-            })
-            .rpc(),
-      ),
-    [enviar],
-  );
-
   const penalizar = useCallback(
     (p: ParticipanteConta) =>
       enviar(
@@ -417,7 +398,6 @@ export function EstadoAwakeFL({ children }: { children: React.ReactNode }) {
     registrar,
     submeter,
     validar,
-    expirar,
     penalizar,
     avancarRodada,
   };

@@ -33,7 +33,6 @@ export default function Validador() {
     inicializar,
     avancarRodada,
     validar,
-    expirar,
     penalizar,
     carregando,
   } = useAwakeFL();
@@ -46,19 +45,20 @@ export default function Validador() {
   const pendentesDaRodada = daRodada.filter((c) => c.status === "Pendente");
   const julgadas = contribuicoes.filter((c) => c.status !== "Pendente");
 
-  // Pendentes de QUALQUER rodada, não só da corrente.
+  // Pendentes de rodada ANTERIOR: sobreviveram a um `advance_round` e não
+  // aparecem na fila da rodada corrente. O programa continua aceitando
+  // validá-las (as seeds saem de `contribution.round`, a rodada guardada na
+  // própria conta, não do config), então elas não estão perdidas — só não
+  // pertencem à fila de trabalho de agora.
   //
-  // Enquanto a lista era filtrada pela rodada atual, uma contribuição que
-  // sobrevivesse a um `advance_round` sumia da tela — e ficava irrecuperável na
-  // prática, embora o programa continue aceitando validá-la (as seeds saem de
-  // `contribution.round`, a rodada guardada na própria conta, não do config).
-  // A instância da Devnet tem duas contribuições assim, da rodada 0, com o
-  // config já na rodada 2.
-  const pendentes = contribuicoes
-    .filter((c) => c.status === "Pendente")
-    .sort((a, b) => a.round - b.round);
+  // Ficam numa seção separada, e não misturadas com as pendentes da rodada,
+  // por uma razão prática: uma delas pode nunca ter avaliação publicada, e aí
+  // permaneceria para sempre numa lista que promete ação. A instância da
+  // Devnet tem duas assim, da rodada 0.
   const atrasadas = config
-    ? pendentes.filter((c) => c.round !== config.currentRound)
+    ? contribuicoes
+        .filter((c) => c.status === "Pendente" && c.round !== config.currentRound)
+        .sort((a, b) => a.round - b.round)
     : [];
 
   // Quanto da rodada já foi decidido. Com zero contribuições não há progresso a
@@ -384,15 +384,14 @@ export default function Validador() {
         </section>
       </div>
 
-      {/* Contribuições pendentes — de qualquer rodada */}
+      {/* Fila de trabalho: só a rodada corrente */}
       <section className="vidro mt-4 overflow-hidden">
         <div
           className="border-b p-6 pb-4"
           style={{ borderColor: "var(--borda)" }}
         >
           <h2 className="text-lg font-semibold">
-            Contribuições pendentes
-            {pendentes.length > 0 && ` · ${pendentes.length}`}
+            Contribuições pendentes · rodada {config.currentRound}
           </h2>
           <p className="mt-1 text-sm" style={{ color: "var(--tinta-2)" }}>
             O score é calculado pelo agregador a partir do formato matemático da
@@ -415,36 +414,52 @@ export default function Validador() {
             </p>
           )}
         </div>
-        {atrasadas.length > 0 && (
-          <p
-            className="mx-6 mb-4 rounded border p-3 text-xs"
-            style={{
-              borderColor: "var(--aviso)",
-              color: "var(--tinta-2)",
-              background: "var(--superficie-baixa)",
-            }}
-          >
-            <strong style={{ color: "var(--aviso)" }}>
-              {atrasadas.length} de rodada anterior.
-            </strong>{" "}
-            Ficaram sem score quando a rodada avançou. Continuam válidas — a
-            conta guarda a própria rodada, então a assinatura ainda é aceita.
-            Sem avaliação publicada não há nota para assinar; nesse caso,{" "}
-            <strong>Expirar</strong> encerra a pendência mantendo hash, rodada e
-            métricas gravados.
-          </p>
-        )}
         <TabelaContribuicoes
-          linhas={pendentes}
+          linhas={pendentesDaRodada}
           souAutoridade={souAutoridade}
           avaliacoes={avaliacoes}
           validar={validar}
-          expirar={expirar}
-          rodadaCorrente={config.currentRound}
           ocupado={ocupado}
-          vazio="Nenhuma contribuição pendente."
+          vazio="Nenhuma contribuição pendente nesta rodada."
         />
       </section>
+
+      {/* Pendências que sobreviveram ao avanço da rodada.
+          Seção própria, e não misturadas com a fila acima, porque a fila
+          promete ação: tudo que está lá pode ser assinado agora. Uma pendência
+          sem avaliação publicada nunca poderá, e ficaria ali para sempre
+          fingindo ser trabalho a fazer. */}
+      {atrasadas.length > 0 && (
+        <section className="vidro mt-4 overflow-hidden">
+          <div
+            className="border-b p-6 pb-4"
+            style={{ borderColor: "var(--borda)" }}
+          >
+            <h2 className="text-lg font-semibold">
+              Pendências de rodadas anteriores · {atrasadas.length}
+            </h2>
+            <p
+              className="mt-1 max-w-3xl text-sm leading-relaxed"
+              style={{ color: "var(--tinta-2)" }}
+            >
+              Ficaram sem score quando a rodada avançou. Não estão perdidas: a
+              conta guarda a própria rodada, então o programa ainda aceita
+              assiná-las — e é isso que a linha oferece, quando há avaliação
+              publicada para o hash. Sem avaliação, não há nota a assinar, e o
+              registro permanece como está: o livro-razão não tem instrução que
+              remova uma contribuição.
+            </p>
+          </div>
+          <TabelaContribuicoes
+            linhas={atrasadas}
+            souAutoridade={souAutoridade}
+            avaliacoes={avaliacoes}
+            validar={validar}
+            ocupado={ocupado}
+            vazio=""
+          />
+        </section>
+      )}
 
       {/* Histórico */}
       <section className="vidro mt-4 overflow-hidden">
@@ -470,19 +485,11 @@ export default function Validador() {
   );
 }
 
-function corDoStatus(status: ContribuicaoConta["status"]): string {
-  if (status === "Aprovado") return "var(--bom)";
-  if (status === "Expirado") return "var(--tinta-muda)";
-  return "var(--critico)";
-}
-
 function TabelaContribuicoes({
   linhas,
   souAutoridade,
   avaliacoes,
   validar,
-  expirar,
-  rodadaCorrente,
   ocupado,
   vazio,
 }: {
@@ -490,8 +497,6 @@ function TabelaContribuicoes({
   souAutoridade: boolean;
   avaliacoes: EstadoAvaliacoes;
   validar: (c: ContribuicaoConta, score: number) => Promise<void>;
-  expirar?: (c: ContribuicaoConta) => Promise<void>;
-  rodadaCorrente?: number;
   ocupado: string | null;
   vazio: string;
 }) {
@@ -573,22 +578,20 @@ function TabelaContribuicoes({
                 <td className="px-6 py-4">
                   {c.status !== "Pendente" ? (
                     <span className="flex flex-wrap items-center gap-2">
-                      {/* Expirado é neutro, não reprovação: ninguém julgou a
-                          contribuição. Pintá-la de vermelho junto das
-                          rejeitadas diria que ela foi considerada ruim. */}
                       <span
                         className="chip"
                         style={{
-                          borderColor: `color-mix(in srgb, ${corDoStatus(c.status)} 45%, transparent)`,
-                          color: corDoStatus(c.status),
+                          borderColor:
+                            c.status === "Aprovado"
+                              ? "color-mix(in srgb, var(--bom) 45%, transparent)"
+                              : "color-mix(in srgb, var(--critico) 45%, transparent)",
+                          color:
+                            c.status === "Aprovado"
+                              ? "var(--bom)"
+                              : "var(--critico)",
                         }}
                       >
-                        {c.status === "Aprovado"
-                          ? "✓"
-                          : c.status === "Expirado"
-                            ? "—"
-                            : "✕"}{" "}
-                        {c.status}
+                        {c.status === "Aprovado" ? "✓" : "✕"} {c.status}
                       </span>
                       {score !== undefined && (
                         <span
@@ -601,33 +604,13 @@ function TabelaContribuicoes({
                     </span>
                   ) : souAutoridade ? (
                     score === undefined ? (
-                      <span className="flex flex-wrap items-center gap-2">
-                        <span
-                          className="text-xs"
-                          style={{ color: "var(--aviso)" }}
-                        >
-                          {avaliacoes.carregando
-                            ? "carregando avaliações…"
-                            : "sem avaliação publicada para este hash"}
-                        </span>
-                        {/* Saída para a pendência que nunca terá nota. Só de
-                            rodada encerrada: na corrente, a obrigação da
-                            autoridade é pontuar, não expirar. */}
-                        {expirar &&
-                          rodadaCorrente !== undefined &&
-                          c.round < rodadaCorrente &&
-                          !avaliacoes.carregando && (
-                            <button
-                              onClick={() => void expirar(c)}
-                              disabled={ocupado !== null}
-                              className="btn-contorno px-3 py-1.5 text-xs"
-                              title="Encerra a pendência sem apagar o registro: hash, rodada e métricas continuam na conta"
-                            >
-                              {ocupado === `expirar-${chave}`
-                                ? "Assinando…"
-                                : "Expirar"}
-                            </button>
-                          )}
+                      <span
+                        className="text-xs"
+                        style={{ color: "var(--aviso)" }}
+                      >
+                        {avaliacoes.carregando
+                          ? "carregando avaliações…"
+                          : "sem avaliação publicada para este hash"}
                       </span>
                     ) : (
                       <span className="flex flex-wrap items-center gap-2">

@@ -288,79 +288,10 @@ describe("awakefl", () => {
     assert.isTrue(acc.isBanned);
   });
 
-  it("expira pendencia de rodada passada sem apagar o registro", async () => {
-    // `honest` submeteu na rodada 4 e nunca foi validado (a rodada 4 so teve o
-    // teste de hash grande). Essa contribuicao ficou orfa quando a rodada
-    // avancou — exatamente o caso que a instrucao existe para resolver.
-    const p = participantPda(honest.publicKey);
-    await submit(honest, 7, "honest-orfa"); // a rodada corrente e a 7
-
-    const expirar = (owner: PublicKey, roundNo: number) =>
-      program.methods
-        .expireContribution()
-        .accounts({
-          config: configPda,
-          contribution: contributionPda(participantPda(owner), roundNo),
-          authority: authority.publicKey,
-        })
-        .rpc();
-
-    // Na rodada corrente a autoridade tem que pontuar, nao expirar.
-    try {
-      await expirar(honest.publicKey, 7);
-      assert.fail("deveria ter recusado: a rodada 7 ainda esta aberta");
-    } catch (e) {
-      assert.include(e.toString(), "RoundStillOpen");
-    }
-
-    const antes = await program.account.contribution.fetch(
-      contributionPda(p, 7),
-    );
-    const contribsAntes = (
-      await program.account.participant.fetch(p)
-    ).contribCount.toNumber();
-
-    await advance(); // rodada 8 — agora a 7 esta encerrada
-    await expirar(honest.publicKey, 7);
-
-    const depois = await program.account.contribution.fetch(
-      contributionPda(p, 7),
-    );
-    assert.deepEqual(depois.status, { expirado: {} });
-
-    // O que o "expirar" NAO faz, que e o ponto do desenho: nada some. O
-    // compromisso, a rodada e as metricas declaradas continuam gravados, e a
-    // contagem de submissoes do participante nao e reescrita.
-    assert.equal(depois.updateHash, antes.updateHash);
-    assert.equal(depois.round.toNumber(), antes.round.toNumber());
-    assert.equal(depois.nSamples.toNumber(), antes.nSamples.toNumber());
-    assert.equal(
-      (await program.account.participant.fetch(p)).contribCount.toNumber(),
-      contribsAntes,
-    );
-  });
-
-  it("nao expira duas vezes nem expira o que ja foi julgado", async () => {
-    const p = participantPda(honest.publicKey);
-    try {
-      await program.methods
-        .expireContribution()
-        .accounts({
-          config: configPda,
-          contribution: contributionPda(p, 7),
-          authority: authority.publicKey,
-        })
-        .rpc();
-      assert.fail("deveria ter recusado: ja esta expirada");
-    } catch (e) {
-      assert.include(e.toString(), "AlreadyValidated");
-    }
-  });
-
   it("participante banido nao consegue mais contribuir", async () => {
-    await advance(); // rodada 9
+    await advance(); // rodada 8
     try {
-      await submit(sleepy, 9, "sleepy-after-ban");
+      await submit(sleepy, 8, "sleepy-after-ban");
       assert.fail("banido nao deveria conseguir submeter");
     } catch (e) {
       assert.include(e.toString(), "ParticipantBanned");
