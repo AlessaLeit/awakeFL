@@ -161,8 +161,16 @@ a `find_program_address`.
 | `register_participant` | participante | cria o `Participant` com reputação 500 |
 | `submit_contribution(hash, n_samples, loss, accuracy)` | participante | registra o compromisso da rodada corrente |
 | `validate_contribution(score)` | autoridade | aplica a EMA e marca Aprovado/Rejeitado |
+| `expire_contribution` | autoridade | encerra pendência de rodada passada, sem apagar o registro |
 | `penalize_participant(reason_code)` | autoridade | reputação / 10 + banimento permanente |
 | `advance_round` | autoridade | incrementa a rodada global |
+
+Uma `Contribution` tem quatro estados: `Pendente` no envio, `Aprovado` ou
+`Rejeitado` quando pontuada, e `Expirado` quando a rodada passou sem
+julgamento. O último existe porque uma pendência sem nota possível — resíduo de
+teste, participante que sumiu — ficaria para sempre na fila da autoridade.
+Expirar **não remove nada**: hash, rodada e métricas continuam gravados, e o
+`contrib_count` do participante não é reescrito.
 
 ### Travas
 
@@ -170,6 +178,9 @@ a `find_program_address`.
   maior que 64 caracteres (`HashTooLong`).
 - `validate_contribution` recusa score acima de 1000 (`InvalidScore`) e
   revalidação (`AlreadyValidated`); só a autoridade assina (`ConstraintHasOne`).
+- `expire_contribution` recusa contribuição da rodada corrente
+  (`RoundStillOpen`) — ali a obrigação é pontuar — e o que já foi julgado
+  (`AlreadyValidated`).
 - `penalize_participant` recusa segunda penalidade (`AlreadyBanned`) e — esta é a
   trava que importa — **recusa banir quem ainda está acima do limiar**
   (`ReputationAboveThreshold`). A autoridade não pode contradizer o registro
