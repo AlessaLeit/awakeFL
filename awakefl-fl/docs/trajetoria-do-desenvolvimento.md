@@ -230,7 +230,7 @@ assina o que a lógica calculou. Não é ele que decide o número.
 
 Três documentos, com públicos diferentes: a **Anatomia** (como funciona, em dois
 níveis de leitura), a **Aritmética** (as contas com números reais) e o **Registro
-de decisões** (23 decisões, 7 achados, 6 erros). Este documento fecha a série.
+de decisões** (23 decisões, 7 achados, 7 erros). Este documento fecha a série.
 
 Uma escolha de formato: o registro é Markdown, não PDF nem slide. É documento
 vivo, cola direto no texto da IC e o diff no git mostra o que mudou entre uma
@@ -291,9 +291,14 @@ trabalho futuro.
 
 ### 7.5 O `--chain devnet` nunca enviou uma transação real
 
-Implementado, validado em *dry-run*, com o PDA conferido contra a conta real na
-Devnet. Nunca executou de verdade porque as carteiras de simulação não foram
-financiadas nem registradas.
+Implementado, com o PDA conferido contra a conta real na Devnet. Nunca executou
+de verdade porque as carteiras de simulação não foram financiadas nem
+registradas.
+
+Este documento dizia "validado em dry-run" até 24/08/2026, e a palavra estava
+errada: o dry-run monta as instruções e deriva os PDAs, mas não envia nem
+confere nada. Quando o caminho foi finalmente exercitado, ele quebrava na
+primeira contribuição — ver `E07`.
 
 ### 7.6 A trava de banimento não está em produção
 
@@ -678,4 +683,4 @@ Verificadas em 21 de agosto de 2026.
 
 ---
 
-*Última atualização: 21 de agosto de 2026.*
+*Última atualização: 24 de agosto de 2026.*

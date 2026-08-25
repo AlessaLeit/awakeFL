@@ -571,6 +571,29 @@ troca para a branch de documentos. Teve que ser regerado da fonte.
 
 **Lição.** Trocar de branch **antes** de criar o arquivo, não depois.
 
+### E07 · Dizer "validado" sobre um caminho que só o padrão exercitava
+
+O livro-razão da Devnet (`AnchorLedger`) e o simulado são intercambiáveis: o
+servidor chama os dois com os mesmos argumentos. Quando o score ganhou
+justificativa publicada (`D21`), o servidor passou a mandar `breakdown` — e só o
+simulado tinha esse parâmetro. `--chain dry-run` e `--chain devnet` quebravam
+com `TypeError` **antes de a primeira rodada terminar**.
+
+Junto veio um segundo: `--export-weights` era aceito e não gravava nada nos
+backends de chain, porque a exportação do artefato morava dentro do ledger
+simulado. Quem rodasse com `--chain devnet` terminava sem o arquivo `.awfl` que
+a tela do participante pede para subir.
+
+Nenhum dos dois aparecia no uso normal, porque o backend padrão é o simulado.
+E este registro afirmava, até 24/08/2026, que `--chain devnet` estava
+"implementado e validado em dry-run". Estava implementado; validado, não.
+
+**Lição.** "Validado" precisa dizer *por qual execução*. Um caminho alternativo
+que ninguém roda diverge em silêncio, e a divergência aparece na hora mais cara
+— aqui, seria na primeira transação real, gastando SOL. O conserto veio com um
+teste que compara as **assinaturas** dos dois backends: mais barato do que rodar
+a federação inteira em cada um para descobrir que deixaram de concordar.
+
 ---
 
 # Parte 4 — Estado atual
@@ -579,16 +602,17 @@ troca para a branch de documentos. Teve que ser regerado da fonte.
 
 | Camada | Estado |
 | --- | --- |
-| Simulação de FL | 3 cenários, 4 ataques, 66 testes |
+| Simulação de FL | 3 cenários, 4 ataques, 67 testes |
 | Programa Anchor | 6 instruções, publicado na Devnet, testes em TypeScript |
 | Site | 8 rotas; o painel executa as 6 instruções |
-| Artefato canônico | hash do navegador bate com o do servidor, verificado no CI |
+| Artefato canônico | hash do navegador bate com o do servidor — no CI e conferido à mão num `.awfl` real em 24/08/2026 |
 | Cliente Anchor (Python) | implementado; PDA confirmado contra a conta real |
 
 ## O que existe mas nunca rodou de verdade
 
-- **`--chain devnet`** — implementado e validado em dry-run; nunca enviou uma
-  transação real. Falta financiar as carteiras.
+- **`--chain devnet`** — implementado; o dry-run monta as instruções e deriva os
+  PDAs, mas **não envia nem confere nada**, e por isso não é validação (`E07`).
+  Nenhuma transação real foi enviada. Falta financiar as carteiras.
 - **Participação parcial** — `fraction_fit` existe; todos os experimentos
   rodaram com participação total.
 - **Backend Flower** — a estratégia existe; o motor local é o padrão por
@@ -613,4 +637,4 @@ Demo de 3 participantes, 8 rodadas: banimento na rodada 7, acurácia final
 
 ---
 
-*Última atualização: 21 de agosto de 2026.*
+*Última atualização: 24 de agosto de 2026.*

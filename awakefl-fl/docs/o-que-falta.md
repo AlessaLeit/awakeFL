@@ -10,7 +10,7 @@ Não é lista de tarefas. Uma tarefa se marca como feita; um item daqui se
 
 Os documentos irmãos: **Anatomia do AwakeFL** (arquitetura), **Aritmética da
 Reputação** (as contas), **Registro de decisões** (por que cada escolha,
-`D01`–`D23`, `A01`–`A07`, `E01`–`E06`) e **Trajetória do Desenvolvimento** (a
+`D01`–`D23`, `A01`–`A07`, `E01`–`E07`) e **Trajetória do Desenvolvimento** (a
 história e a revisão de trabalhos relacionados).
 
 ---
@@ -94,13 +94,17 @@ auditoria, e o texto precisa dizer isso.
 `submit_contribution` + `validate_contribution` + `advance_round` — para N
 participantes na Devnet?
 
-**Por que ficou.** `--chain devnet` está implementado e validado em *dry-run*,
-mas nunca enviou transação real: as carteiras de simulação não foram financiadas
-nem registradas (Trajetória §7.5).
+**Por que ficou.** `--chain devnet` está implementado, mas nunca enviou
+transação real: as carteiras de simulação não foram financiadas nem registradas
+(Trajetória §7.5).
 
-**O que já existe.** O cliente Anchor funciona, o PDA foi conferido contra a
-conta real, e o programa está publicado
-(`GhMhTkv7jeHMejEyypQaEFPqduHgXDSzE5g7jE3rXGRA`). Falta rodar.
+**O que já existe.** O cliente Anchor roda de ponta a ponta em *dry-run*, o PDA
+foi conferido contra a conta real, e o programa está publicado
+(`GhMhTkv7jeHMejEyypQaEFPqduHgXDSzE5g7jE3rXGRA`). Falta enviar.
+
+Cuidado com a palavra "validado" aqui: o dry-run monta as instruções e deriva os
+PDAs, mas não envia nem confere retorno. Até 22/08/2026 esse caminho estava
+**quebrado** e ninguém sabia, porque o backend padrão é o simulado (`E07`).
 
 **Como responder.** Financiar as carteiras pelo faucet, registrar os
 participantes, rodar o experimento padrão com `--chain devnet` e cronometrar.
