@@ -83,9 +83,10 @@ inteira quebra com `ModuleNotFoundError: pytest_asyncio`.
 
 ## Estado pendente
 
-- A trava `ReputationAboveThreshold` está no código e **não** no binário
-  publicado na Devnet — falta redeploy. Até lá, banir acima do limiar continua
-  possível
+- A trava `ReputationAboveThreshold` **está publicada** na Devnet desde
+  2026-08-24 (slot 487585196). Conferido lendo o bytecode: a mensagem de erro
+  está no binário, e `ExpireContribution` não — ou seja, o deploy é da versão
+  sem a instrução revertida
 - Duas contribuições da rodada 0 na Devnet ficaram pendentes sem avaliação
   publicada. Não travam nada: aparecem numa seção própria do validador. Não há
   instrução que remova contribuição, e isso é deliberado — `expire_contribution`
