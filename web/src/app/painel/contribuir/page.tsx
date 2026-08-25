@@ -76,6 +76,12 @@ export default function NovaContribuicao() {
   // Derivado, não estado: há arquivo mas o digest ainda não chegou.
   const calculando = Boolean(arquivo) && hash.length !== 64;
 
+  const reconhecido = Boolean(publicado);
+  // Só acusa depois que as avaliações chegaram: durante o carregamento, todo
+  // hash pareceria desconhecido e a tela piscaria um alerta falso.
+  const naoReconhecido =
+    hash.length === 64 && !publicado && !avaliacoes.carregando;
+
   const accNum = Number(accuracy);
   const lossNum = Number(loss);
   const accValida = Number.isFinite(accNum) && accNum >= 0 && accNum <= 100;
@@ -128,6 +134,59 @@ export default function NovaContribuicao() {
           </p>
         </div>
       </div>
+
+      {/* Explicação de origem do artefato.
+          Esta área é usada para demonstração, então quem chega aqui quase nunca
+          rodou o treino federado — e sem saber QUE arquivo subir, a tela vira
+          um seletor de arquivo sem sentido. */}
+      <details className="vidro mb-6 p-5" open>
+        <summary className="cursor-pointer font-semibold">
+          Que arquivo eu subo aqui?
+        </summary>
+        <div
+          className="mt-3 space-y-3 text-sm leading-relaxed"
+          style={{ color: "var(--tinta-2)" }}
+        >
+          <p>
+            O arquivo <code className="mono">.awfl</code> com os pesos que o seu
+            treino local produziu nesta rodada. Ele é gerado pela camada de
+            simulação, em <code className="mono">awakefl-fl/</code>:
+          </p>
+          <pre
+            className="mono overflow-x-auto rounded border p-3 text-xs"
+            style={{
+              borderColor: "var(--borda)",
+              background: "var(--superficie-baixa)",
+            }}
+          >
+            python run_experiments.py --export-weights
+          </pre>
+          <p>
+            Os artefatos ficam em{" "}
+            <code className="mono">
+              results_&lt;nome&gt;/pesos/C/rodada07_participante03.awfl
+            </code>{" "}
+            — um por participante, por rodada exportada. Escolha o da{" "}
+            <strong>sua</strong> instituição.
+          </p>
+          <p>
+            <strong style={{ color: "var(--tinta)" }}>
+              O arquivo não é enviado.
+            </strong>{" "}
+            O navegador lê os bytes, calcula o SHA-256 e manda para a blockchain
+            só os 64 caracteres do resumo. É esse número que compromete você com
+            um modelo específico: qualquer pessoa pode, depois, recalcular o
+            hash do arquivo e provar que é o mesmo — ou que não é.
+          </p>
+          <p>
+            Por isso o formato importa. O <code className="mono">.awfl</code>{" "}
+            grava os tensores numa ordem fixa e byte a byte, para que o hash
+            calculado aqui e o do servidor de agregação sejam idênticos. Um{" "}
+            <code className="mono">.pt</code> salvo pelo PyTorch não serve: ele
+            carrega metadados que mudam entre versões.
+          </p>
+        </div>
+      </details>
 
       {!meuParticipante && (
         <Bloqueio titulo="Seu nó ainda não está registrado">
@@ -237,9 +296,34 @@ export default function NovaContribuicao() {
             >
               {calculando
                 ? "calculando…"
-                : hash || "informe uma origem para gerar o compromisso"}
+                : hash || "escolha o arquivo de pesos para gerar o compromisso"}
             </code>
           </div>
+
+          {/* O que este hash significa para o resto do fluxo.
+              Sem isto, um arquivo qualquer era aceito em silêncio e a pessoa só
+              descobriria o problema na tela do validador — onde não apareceria
+              score nenhum para assinar. */}
+          {reconhecido && (
+            <p className="mt-2 text-xs" style={{ color: "var(--acento)" }}>
+              ✓ Artefato reconhecido — rodada {publicado.rodada}. Já existe uma
+              avaliação publicada para este hash, então o validador terá o score
+              calculado para assinar.
+            </p>
+          )}
+          {naoReconhecido && (
+            <p
+              className="mt-2 text-xs leading-relaxed"
+              style={{ color: "var(--aviso)" }}
+            >
+              Este arquivo não corresponde a nenhuma avaliação publicada. Você
+              consegue registrar o compromisso normalmente — mas{" "}
+              <strong>o validador não terá score para assinar</strong>, porque a
+              nota é calculada pelo agregador a partir dos pesos, e este arquivo
+              não passou por ele. Para a demonstração, use um artefato de{" "}
+              <code className="mono">results_&lt;nome&gt;/pesos/</code>.
+            </p>
+          )}
         </div>
 
         {/* Métricas declaradas */}
@@ -305,9 +389,9 @@ export default function NovaContribuicao() {
             className="mt-5 text-xs leading-relaxed"
             style={{ color: "var(--acento)" }}
           >
-            Artefato reconhecido — rodada {publicado.rodada}. As três métricas
-            vieram do próprio treino que gerou este arquivo, e por isso não são
-            editáveis aqui: quem as produz é o processo, não a pessoa.
+            As três métricas acima vieram do próprio treino que gerou este
+            arquivo, e por isso não são editáveis: quem as produz é o processo,
+            não a pessoa.
           </p>
         ) : (
           <p

@@ -153,6 +153,46 @@ pub mod awakefl {
         Ok(())
     }
 
+    /// Encerra uma submissão que ficou sem julgamento e cuja rodada já passou.
+    ///
+    /// Não remove nada: hash, rodada e métricas declaradas continuam gravados,
+    /// e a conta segue existindo. Só o `status` avança para um estado terminal
+    /// — a mesma coisa que `validate_contribution` já faz ao gravar `Aprovado`
+    /// ou `Rejeitado`. Por isso expirar não abala a garantia de auditoria:
+    /// quem lê a cadeia continua sabendo que houve submissão, de quem, em que
+    /// rodada e com que compromisso.
+    ///
+    /// Existe porque, sem ela, uma pendência que nunca poderá receber nota
+    /// — resíduo de teste, participante que sumiu — fica para sempre na fila
+    /// da autoridade, sem nenhum caminho de saída.
+    ///
+    /// O `contrib_count` do participante NÃO é decrementado: a submissão
+    /// aconteceu e o registro dela permanece. Mexer no contador aqui seria
+    /// reescrever um fato para melhorar uma estatística.
+    pub fn expire_contribution(ctx: Context<ExpireContribution>) -> Result<()> {
+        let config = &ctx.accounts.config;
+        let contribution = &mut ctx.accounts.contribution;
+
+        require!(
+            contribution.status == ContributionStatus::Pendente,
+            FlError::AlreadyValidated
+        );
+        // Só rodada encerrada. Na rodada corrente a autoridade ainda tem a
+        // obrigação de pontuar; expirar seria fugir do trabalho.
+        require!(
+            contribution.round < config.current_round,
+            FlError::RoundStillOpen
+        );
+
+        contribution.status = ContributionStatus::Expirado;
+
+        emit!(ContributionExpired {
+            participant: contribution.participant,
+            round: contribution.round,
+        });
+        Ok(())
+    }
+
     /// Avança a rodada global de FL. Só a autoridade pode.
     pub fn advance_round(ctx: Context<AdvanceRound>) -> Result<()> {
         let config = &mut ctx.accounts.config;
@@ -258,6 +298,23 @@ pub struct ValidateContribution<'info> {
 }
 
 #[derive(Accounts)]
+pub struct ExpireContribution<'info> {
+    #[account(seeds = [b"config"], bump = config.bump, has_one = authority)]
+    pub config: Account<'info, Config>,
+    #[account(
+        mut,
+        seeds = [
+            b"contribution",
+            contribution.participant.as_ref(),
+            contribution.round.to_le_bytes().as_ref()
+        ],
+        bump = contribution.bump
+    )]
+    pub contribution: Account<'info, Contribution>,
+    pub authority: Signer<'info>,
+}
+
+#[derive(Accounts)]
 pub struct PenalizeParticipant<'info> {
     #[account(seeds = [b"config"], bump = config.bump, has_one = authority)]
     pub config: Account<'info, Config>,
@@ -319,6 +376,12 @@ pub struct RoundAdvanced {
     pub round: u64,
 }
 
+#[event]
+pub struct ContributionExpired {
+    pub participant: Pubkey,
+    pub round: u64,
+}
+
 // ---------------------------------------------------------------------------
 // Erros
 // ---------------------------------------------------------------------------
@@ -345,4 +408,6 @@ pub enum FlError {
     // mensagem errada.
     #[msg("Reputacao ainda acima do limiar: o banimento precisa ser justificado pelo registro")]
     ReputationAboveThreshold,
+    #[msg("A rodada desta contribuicao ainda esta aberta: pontue em vez de expirar")]
+    RoundStillOpen,
 }

@@ -122,6 +122,16 @@ pub enum ContributionStatus {
     Pendente,
     Aprovado,
     Rejeitado,
+    /// Submissao que ficou sem julgamento e teve a rodada encerrada.
+    ///
+    /// Variante NOVA vai no FIM, pela mesma razao das variantes de erro: a
+    /// posicao vira o byte gravado na conta. Inserir no meio faria toda conta
+    /// ja existente ser lida com o status errado.
+    ///
+    /// Nada e apagado ao expirar — hash, rodada e metricas continuam na conta.
+    /// E um estado TERMINAL, nao uma remocao: o registro de que houve
+    /// submissao sobrevive, e e isso que mantem o livro-razao auditavel.
+    Expirado,
 }
 
 impl Default for ContributionStatus {

@@ -146,6 +146,24 @@
       ]
     },
     {
+      "name": "expire_contribution",
+      "discriminator": [206, 96, 165, 191, 41, 214, 217, 244],
+      "accounts": [
+        {
+          "name": "config"
+        },
+        {
+          "name": "contribution",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "advance_round",
       "discriminator": [230, 88, 119, 80, 54, 4, 212, 250],
       "accounts": [
@@ -195,6 +213,10 @@
     {
       "name": "RoundAdvanced",
       "discriminator": [215, 177, 143, 241, 202, 145, 181, 213]
+    },
+    {
+      "name": "ContributionExpired",
+      "discriminator": [28, 35, 218, 65, 197, 45, 197, 231]
     }
   ],
   "errors": [
@@ -237,6 +259,11 @@
       "code": 6007,
       "name": "ReputationAboveThreshold",
       "msg": "Reputacao ainda acima do limiar: o banimento precisa ser justificado pelo registro"
+    },
+    {
+      "code": 6008,
+      "name": "RoundStillOpen",
+      "msg": "A rodada desta contribuicao ainda esta aberta: pontue em vez de expirar"
     }
   ],
   "types": [
@@ -353,6 +380,9 @@
           },
           {
             "name": "Rejeitado"
+          },
+          {
+            "name": "Expirado"
           }
         ]
       }
@@ -462,6 +492,22 @@
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "round",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ContributionExpired",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "participant",
+            "type": "pubkey"
+          },
           {
             "name": "round",
             "type": "u64"

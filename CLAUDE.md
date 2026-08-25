@@ -83,8 +83,9 @@ inteira quebra com `ModuleNotFoundError: pytest_asyncio`.
 
 ## Estado pendente
 
-- A trava `ReputationAboveThreshold` está no código e **não** no binário
-  publicado na Devnet — falta redeploy
+- A trava `ReputationAboveThreshold` e a instrução `expire_contribution` estão
+  no código e **não** no binário publicado na Devnet — falta redeploy. Até lá,
+  o botão "Expirar" do painel falha, e banir acima do limiar continua possível
 - `tests/awakefl.ts` foi reescrito e nunca executou
 - `--chain devnet` nunca enviou transação real: carteiras não financiadas
 - Latência e custo na Solana nunca medidos (objetivo 4 da IC)
