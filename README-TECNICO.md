@@ -161,16 +161,19 @@ a `find_program_address`.
 | `register_participant` | participante | cria o `Participant` com reputação 500 |
 | `submit_contribution(hash, n_samples, loss, accuracy)` | participante | registra o compromisso da rodada corrente |
 | `validate_contribution(score)` | autoridade | aplica a EMA e marca Aprovado/Rejeitado |
-| `expire_contribution` | autoridade | encerra pendência de rodada passada, sem apagar o registro |
 | `penalize_participant(reason_code)` | autoridade | reputação / 10 + banimento permanente |
 | `advance_round` | autoridade | incrementa a rodada global |
 
-Uma `Contribution` tem quatro estados: `Pendente` no envio, `Aprovado` ou
-`Rejeitado` quando pontuada, e `Expirado` quando a rodada passou sem
-julgamento. O último existe porque uma pendência sem nota possível — resíduo de
-teste, participante que sumiu — ficaria para sempre na fila da autoridade.
-Expirar **não remove nada**: hash, rodada e métricas continuam gravados, e o
-`contrib_count` do participante não é reescrito.
+Uma `Contribution` tem três estados: `Pendente` no envio, `Aprovado` ou
+`Rejeitado` quando pontuada. Não há quarto estado e **não existe instrução que
+remova uma contribuição** — nem para a autoridade, nem para o dono.
+
+Isso é deliberado, e custou uma discussão para chegar aqui. Uma submissão que
+nunca foi julgada fica `Pendente` para sempre, e isso é a coisa mais honesta que
+a cadeia pode registrar: que a autoridade não a julgou. Qualquer instrução de
+remoção ou de encerramento acrescentaria uma ação da autoridade por cima desse
+fato — arrumando a aparência de uma omissão. O custo é ergonômico, e o painel
+resolve mostrando essas pendências numa seção separada da fila de trabalho.
 
 ### Travas
 
@@ -178,9 +181,6 @@ Expirar **não remove nada**: hash, rodada e métricas continuam gravados, e o
   maior que 64 caracteres (`HashTooLong`).
 - `validate_contribution` recusa score acima de 1000 (`InvalidScore`) e
   revalidação (`AlreadyValidated`); só a autoridade assina (`ConstraintHasOne`).
-- `expire_contribution` recusa contribuição da rodada corrente
-  (`RoundStillOpen`) — ali a obrigação é pontuar — e o que já foi julgado
-  (`AlreadyValidated`).
 - `penalize_participant` recusa segunda penalidade (`AlreadyBanned`) e — esta é a
   trava que importa — **recusa banir quem ainda está acima do limiar**
   (`ReputationAboveThreshold`). A autoridade não pode contradizer o registro
