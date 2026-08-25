@@ -290,6 +290,56 @@ cross-silo" é afirmação; "precisa de pelo menos N participantes" é resultado
 
 ---
 
+## P13 · O que a reputação deve dizer sobre quem está presente e calado? [2]
+
+**Pergunta.** Um participante registrado que **nunca submete** mantém a
+reputação inicial para sempre e continua recebendo o modelo global. A reputação
+deveria decair por inatividade — e, se sim, sem recriar o viés contra
+participantes pequenos?
+
+**Por que ficou.** Nunca foi decidido; simplesmente não existe. A reputação só
+se move quando uma contribuição é validada, dos dois lados: on-chain o
+`apply_ema` só roda dentro de `validate_contribution`, e off-chain o
+`apply_scores` itera apenas sobre quem submeteu naquela rodada. Quem não aparece
+não é tocado.
+
+**O que já existe.** O ataque `free_rider` implementado é *"submete um modelo
+não treinado"*, e esse **é detectado** — o termo de magnitude simétrico (`D03`)
+existe exatamente porque o cosseno sozinho não pega quem devolve o modelo quase
+intocado. A variante *"não submete nada"* nunca foi modelada, e não há
+experimento sobre ela.
+
+**Como responder.** Primeiro medir o dano: rodar a federação com uma fração de
+participantes inertes e ver quanto a acurácia final perde em relação ao cenário
+A. Se a perda for pequena, a inatividade é um problema de justiça, não de
+utilidade — e isso muda o remédio. Depois, se houver remédio, comparar duas
+políticas: decaimento por rodada ausente contra peso de agregação proporcional à
+atividade recente.
+
+**O contra-argumento, que precisa entrar na análise.** Punir ausência recria, por
+outra porta, o problema que o achado `A02` custou caro para descobrir: um
+hospital honesto de 436 amostras sendo banido porque o detector media **porte**
+em vez de comportamento. Num consórcio cross-silo, quem mais falta às rodadas é
+justamente o participante pequeno — menos infraestrutura, menos pessoal, menos
+dado novo por período. Um decaimento mal calibrado o expulsa, e o projeto volta
+a ser um filtro de porte.
+
+Por isso a hipótese a testar talvez não seja *"a ausência deve custar"*, e sim
+*"a presença deve render"* — que é a `P08`, medir contribuição marginal, por
+outro caminho.
+
+**O que muda.** Define o que a reputação deste sistema significa. Hoje ela mede
+**qualidade quando há contribuição**, não engajamento — e o texto da IC deveria
+dizer isso explicitamente, porque um leitor assume o contrário.
+
+**Custo técnico, se a resposta for decair.** Exigiria um campo tipo
+`last_active_round` no `Participant`, levando a conta de 66 para 74 bytes —
+migração de conta, com instrução de `realloc`. E como o programa não percorre
+contas, o decaimento teria de ser disparado participante a participante pela
+autoridade.
+
+---
+
 # Parte 3 — Perguntas sobre a própria revisão
 
 ## P11 · Existe FL sobre Solana publicado? [1]
@@ -345,7 +395,8 @@ defesa, e custa cinco minutos consertar.
 `P04` `n_samples` declarado · `P11` busca sistemática · `P12` referências
 
 **[2] Fecham objetivo declarado da IC**
-`P02` (objetivo 4) · `P03` · `P05` comitê · `P09` CIFAR-10 e Flower
+`P02` (objetivo 4) · `P03` · `P05` comitê · `P09` CIFAR-10 e Flower ·
+`P13` inatividade
 
 **[3] Expandem o escopo**
 `P06` ZKP · `P07` Sybil e stake · `P08` Shapley · `P10` escala mínima
@@ -355,4 +406,4 @@ externa, e `P01` porque é a pergunta que só este desenho permite fazer.
 
 ---
 
-*Última atualização: 21 de agosto de 2026.*
+*Última atualização: 24 de agosto de 2026.*
