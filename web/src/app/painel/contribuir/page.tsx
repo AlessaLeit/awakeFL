@@ -148,8 +148,20 @@ export default function NovaContribuicao() {
           style={{ color: "var(--tinta-2)" }}
         >
           <p>
-            O arquivo <code className="mono">.awfl</code> com os pesos que o seu
-            treino local produziu nesta rodada. Ele é gerado pela camada de
+            <strong style={{ color: "var(--tinta)" }}>
+              Antes: o que são “pesos”.
+            </strong>{" "}
+            Uma rede neural é, no fundo, um monte de números, e treinar é
+            ajustar esses números. Os pesos são eles — o que o modelo aprendeu,
+            separado dos dados que o ensinaram. Se os dados são o livro, os
+            pesos são o que ficou na cabeça do aluno depois de estudar. No
+            Federated Learning você empresta o que aprendeu, nunca o livro.
+          </p>
+          <p>
+            O que entra aqui é o arquivo <code className="mono">.awfl</code> com
+            os pesos que o seu treino local produziu <strong>nesta rodada</strong>.
+            Não é a sua base de dados, e não é o modelo final: é o estado do
+            modelo depois do treino desta volta. Ele é gerado pela camada de
             simulação, em <code className="mono">awakefl-fl/</code>:
           </p>
           <pre
