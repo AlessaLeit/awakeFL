@@ -102,9 +102,13 @@ inteira quebra com `ModuleNotFoundError: pytest_asyncio`.
   domina a taxa em 23,5×. **Latência segue não medida** — é o que falta do
   objetivo 4 da IC
 
-## Estado da Devnet (lido em 2026-08-27)
+## Estado da Devnet
 
-Rodada corrente **3**, 3 participantes, 20 transações e **nenhum erro**. As
-reputações saíram de 500: 748, 750 e 725. Ninguém banido. Das 6 contribuições, 3
-estão `Aprovado` — ou seja, o ciclo completo (registrar → submeter → validar →
-avançar) já rodou de verdade, e o painel tem histórico para mostrar.
+O ciclo completo (registrar → submeter → validar → avançar) **roda de verdade**,
+assinado por carteira pelo painel web, sem transação com erro. As reputações
+saíram dos 500 iniciais e sobem a cada validação; ninguém banido até agora. As
+duas contribuições pendentes da rodada 0 continuam pendentes e não travam nada.
+
+Números exatos envelhecem em minutos — em 2026-08-27 a rodada passou de 3 para 4
+no intervalo de uma sessão. **Não escreva o estado em documento**: leia de
+`/devnet`, que renderiza direto das contas do programa.

@@ -139,7 +139,7 @@ redes onde um bloco leva mais de dez segundos torna o esquema caro e lento.
 Solana muda essa conta. A escolha aqui é por custo e latência de transação, não
 por preferência de ecossistema.
 
-**Medido na Devnet em 2026-08-27**, lendo as contas e as 20 transações reais do
+**Medido na Devnet em 2026-08-27**, lendo as contas e as transações reais do
 programa publicado:
 
 | | lamports | |
@@ -170,10 +170,14 @@ Conclusão de Curso**. O que existe hoje é uma prova de conceito completa de po
 a ponta: a simulação de Federated Learning, o programa on-chain publicado na
 Devnet e a interface que executa o ciclo inteiro.
 
-E não ficou no desenho: **o ciclo completo já rodou na Devnet.** Três
-participantes registrados, contribuições submetidas, validadas e a federação
-avançada até a rodada 3 — 20 transações, nenhum erro. As reputações saíram dos
-500 iniciais e hoje estão em 748, 750 e 725.
+E não ficou no desenho: **o ciclo completo já roda na Devnet.** Participantes
+registrados, contribuições submetidas, validadas e a federação avançando de
+rodada — tudo assinado por carteira, sem transação com erro. As reputações
+saíram dos 500 iniciais e se movem a cada validação.
+
+O estado ao vivo, lido direto das contas do programa, fica em
+**[awake-fl.vercel.app/devnet](https://awake-fl.vercel.app/devnet)** — qualquer
+pessoa audita sem pedir acesso, que é o ponto do projeto.
 
 O que ainda **não** existe, e está declarado de propósito:
 
