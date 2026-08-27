@@ -362,6 +362,11 @@ if FLOWER_AVAILABLE:
             reputation_ledger: ReputationLedger,
             chain: Optional[SimulatedOnChainLedger] = None,
             use_reputation_weights: bool = True,
+            # Precisam ser parametros: a classe e definida no escopo do modulo,
+            # entao ler `export_dir` de fora daqui procuraria um global que nao
+            # existe — so o `run_flower_simulation` conhece esses valores.
+            export_dir: Optional[str] = None,
+            export_rounds: Optional[Sequence[int]] = None,
             **kwargs,
         ) -> None:
             super().__init__(**kwargs)
@@ -500,6 +505,8 @@ def run_flower_simulation(
         reputation_ledger=ledger,
         chain=chain,  # None => a estrategia cria o ledger simulado
         use_reputation_weights=reputation_cfg.get("weighted_aggregation", True),
+        export_dir=export_dir,
+        export_rounds=export_rounds,
         fraction_fit=fraction_fit,
         fraction_evaluate=0.0,
         min_fit_clients=max(2, int(fraction_fit * len(clients))),
