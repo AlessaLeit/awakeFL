@@ -89,9 +89,10 @@ export default function Home() {
             >
               No Federated Learning, várias instituições treinam uma IA sem
               trocar dados — e um único participante malicioso pode corromper o
-              modelo de todos sem deixar rastro. O AwakeFL registra cada
-              contribuição de forma imutável na Solana, mede confiança a cada
-              rodada e bane quem ataca.
+              modelo de todos sem deixar rastro. O AwakeFL é uma camada sobre a
+              federação que você já tem: não treina, não substitui o seu
+              agregador. Ele mede a confiança de cada contribuição, registra o
+              resultado de forma imutável na Solana e bane quem ataca.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -349,9 +350,9 @@ export default function Home() {
                     [
                       "Custo de operação",
                       "Baixo",
-                      "Frações de centavo por registro",
+                      "0,0019 SOL por contribuição, medido na Devnet",
                     ],
-                    ["Latência", "Milissegundos", "Sub-segundo na Solana"],
+                    ["Latência", "Milissegundos", "Ainda não medida"],
                   ].map(([req, central, chain]) => (
                     <tr key={req}>
                       <th

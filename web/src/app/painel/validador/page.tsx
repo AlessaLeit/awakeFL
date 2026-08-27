@@ -57,7 +57,9 @@ export default function Validador() {
   // Devnet tem duas assim, da rodada 0.
   const atrasadas = config
     ? contribuicoes
-        .filter((c) => c.status === "Pendente" && c.round !== config.currentRound)
+        .filter(
+          (c) => c.status === "Pendente" && c.round !== config.currentRound,
+        )
         .sort((a, b) => a.round - b.round)
     : [];
 

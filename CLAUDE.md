@@ -93,5 +93,18 @@ inteira quebra com `ModuleNotFoundError: pytest_asyncio`.
   chegou a existir e foi revertida por ser poder de protocolo motivado por
   limpeza de resíduo de teste
 - `tests/awakefl.ts` foi reescrito e nunca executou
-- `--chain devnet` nunca enviou transação real: carteiras não financiadas
-- Latência e custo na Solana nunca medidos (objetivo 4 da IC)
+- O **cliente Python** (`--chain devnet`) nunca enviou transação: carteiras não
+  financiadas. As transações que existem na Devnet vieram do painel web, assinadas
+  por carteira
+- **Custo medido** em 2026-08-27, lendo contas e transações reais: aluguel de
+  1.879.200 lamports por `Contribution` (142 bytes), 1.350.240 por `Participant`
+  (66), 1.287.600 por `Config` (57); taxa de 80.000 por transação. O aluguel
+  domina a taxa em 23,5×. **Latência segue não medida** — é o que falta do
+  objetivo 4 da IC
+
+## Estado da Devnet (lido em 2026-08-27)
+
+Rodada corrente **3**, 3 participantes, 20 transações e **nenhum erro**. As
+reputações saíram de 500: 748, 750 e 725. Ninguém banido. Das 6 contribuições, 3
+estão `Aprovado` — ou seja, o ciclo completo (registrar → submeter → validar →
+avançar) já rodou de verdade, e o painel tem histórico para mostrar.

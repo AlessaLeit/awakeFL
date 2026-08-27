@@ -56,6 +56,38 @@ simulado`), o programa Anchor funciona sem a simulação, e o site funciona com 
 demo determinística sem carteira. Isso é de propósito: cada uma é testável
 isoladamente.
 
+### Onde o AwakeFL se encaixa
+
+O AwakeFL não executa a federação. O que ele é, em código, são três chamadas
+dentro do momento em que o servidor tem todas as atualizações da rodada na mão —
+o único ponto em que dá para comparar umas com as outras:
+
+```python
+outcome = ledger.process_round(rodada, deltas)       # pontua
+chain.register_contribution(...)                     # registra on-chain
+weights = ledger.aggregation_weights(...)            # repondera a média
+```
+
+Existem dois hospedeiros para essas três linhas, selecionados por `--backend`:
+
+| Backend | Quem roda o laço | Estado |
+| --- | --- | --- |
+| `local` (padrão) | `run_federated`, um laço próprio | é daqui que vêm todos os números medidos |
+| `flower` | `flwr.simulation.start_simulation` | a estratégia existe e é testada; **nunca executou uma rodada** |
+
+No caminho Flower, o encaixe é literal: [`AwakeFLStrategy`](awakefl-fl/server.py)
+herda de `FedAvg` e sobrescreve **um** método, `aggregate_fit`. Configuração de
+rodada, amostragem de clientes e avaliação continuam sendo do Flower —
+`tests/test_server_flower.py` trava isso numa asserção.
+
+A federação do backend `local` não é o produto: é bancada de teste. Para medir
+precisão e recall do detector é preciso **saber quem são os atacantes**, e
+nenhuma federação real envenena o próprio modelo para você medir. Por isso ela
+existe — e é por isso que os resultados vêm dela.
+
+> Rodar o caminho Flower de ponta a ponta exige `pip install "flwr[simulation]"`
+> (traz o Ray). Sem o Ray, só a construção da estratégia é exercitada.
+
 ## O ciclo, passo a passo
 
 1. **Treino local.** Cada participante roda um número fixo de passos de SGD sobre
@@ -186,9 +218,9 @@ resolve mostrando essas pendências numa seção separada da fila de trabalho.
   (`ReputationAboveThreshold`). A autoridade não pode contradizer o registro
   público.
 
-> ⚠️ A última trava está no código-fonte e **não** no binário publicado. Enquanto
-> não houver redeploy, banir alguém com reputação alta continua funcionando na
-> Devnet. O redeploy não migra conta nenhuma.
+> Essa trava **está publicada** na Devnet desde 2026-08-24 (slot 487585196).
+> Conferido lendo o bytecode: a mensagem `Reputacao ainda acima do limiar` está
+> no binário.
 
 Variante nova de erro vai sempre no **fim** do enum: o Anchor numera por posição
 (6000 + índice), e inserir no meio renumera os erros seguintes, quebrando
@@ -359,12 +391,12 @@ item, está em
 | Score calculado off-chain | ponto único de confiança que sobra no desenho |
 | Autoridade única | comitê, quórum e contestação desenhados, não implementados |
 | Resistência a Sybil | parcial; `stake_amount` existe e está zerado |
-| Latência e custo na Solana | nunca medidos — nenhuma transação real foi enviada |
+| Latência na Solana | não medida; o custo foi (2026-08-27, ver [README](README.md#por-que-solana)) |
 | Baseline da literatura | não comparado com Krum, mediana pura ou FLTrust |
 | Datasets | só MNIST; CIFAR-10 previsto e não executado |
 | Participação parcial | `fraction_fit` implementado, nunca exercitado |
 | *Slow poisoning* | não avaliado; os quatro ataques são de efeito imediato |
-| Trava de banimento | no código, ainda não no binário publicado |
+| Backend Flower | a estratégia existe e é testada; nunca executou uma rodada (falta o Ray) |
 
 ## Documentação de apoio
 

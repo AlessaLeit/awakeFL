@@ -40,17 +40,27 @@ o quê.
 
 ## O que o AwakeFL faz
 
-Cada contribuição vira um registro público e permanente. Cada participante
-carrega uma reputação que sobe quando ele colabora e desce quando ele destoa.
-Quem cai abaixo do limiar é banido — e o banimento é **definitivo**, porque está
-gravado onde ninguém apaga.
+**O AwakeFL não é uma plataforma de Federated Learning — é uma camada sobre a que
+você já tem.** Ele não treina, não distribui rodadas e não substitui o seu
+agregador. Ele se encaixa no único momento em que o servidor tem todas as
+atualizações na mão ao mesmo tempo, porque é só aí que dá para comparar umas com
+as outras.
+
+A partir desse ponto: cada contribuição vira um registro público e permanente,
+cada participante carrega uma reputação que sobe quando ele colabora e desce
+quando ele destoa, e quem cai abaixo do limiar é banido — o banimento é
+**definitivo**, porque está gravado onde ninguém apaga.
 
 ```
-   Participante treina localmente
+   Participante treina localmente          ┐
+              ↓                            │  a federação que você já tem
+   Agregador recebe as atualizações        ┘  (Flower, FLARE, o seu servidor)
+              ↓
+  ─────────────────────────────────────────── daqui para baixo é o AwakeFL
               ↓
    Registra o compromisso na blockchain    ← hash dos pesos, imutável
               ↓
-   O sistema mede a consistência           ← contra o consenso da rodada
+   Mede a consistência                     ← contra o consenso da rodada
               ↓
    A reputação é atualizada                ← R(t) = 0,5·R(t-1) + 0,5·S(t)
               ↓
@@ -129,9 +139,23 @@ redes onde um bloco leva mais de dez segundos torna o esquema caro e lento.
 Solana muda essa conta. A escolha aqui é por custo e latência de transação, não
 por preferência de ecossistema.
 
-> **Ressalva honesta:** esse custo ainda **não foi medido** neste projeto.
-> Nenhuma transação real foi cronometrada até agora. É argumento de arquitetura,
-> não resultado experimental — e está na fila como próximo passo.
+**Medido na Devnet em 2026-08-27**, lendo as contas e as 20 transações reais do
+programa publicado:
+
+| | lamports | |
+| --- | ---: | --- |
+| Aluguel de uma contribuição | 1.879.200 | conta de 142 bytes |
+| Taxa de uma transação | 80.000 | 5.000 de base + prioridade da carteira |
+| Uma rodada com 10 participantes | 20.472.000 | ≈ **0,0205 SOL** |
+
+O resultado mais interessante não é o total: é a proporção. **O aluguel domina a
+taxa em 23,5×.** O gargalo econômico deste desenho não é a taxa de transação —
+é o espaço de conta. E como não existe instrução que remova uma contribuição,
+esse aluguel fica travado enquanto o registro existir, que é exatamente o que o
+projeto promete.
+
+> **A latência continua não medida.** Custo e latência são coisas diferentes, e
+> só a primeira tem número. Cronometrar a confirmação é o próximo passo.
 
 ---
 
@@ -145,6 +169,11 @@ O projeto nasceu como exploração técnica durante o curso **Bloco 4** e está 
 Conclusão de Curso**. O que existe hoje é uma prova de conceito completa de ponta
 a ponta: a simulação de Federated Learning, o programa on-chain publicado na
 Devnet e a interface que executa o ciclo inteiro.
+
+E não ficou no desenho: **o ciclo completo já rodou na Devnet.** Três
+participantes registrados, contribuições submetidas, validadas e a federação
+avançada até a rodada 3 — 20 transações, nenhum erro. As reputações saíram dos
+500 iniciais e hoje estão em 748, 750 e 725.
 
 O que ainda **não** existe, e está declarado de propósito:
 
