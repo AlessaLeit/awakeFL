@@ -94,26 +94,47 @@ auditoria, e o texto precisa dizer isso.
 `submit_contribution` + `validate_contribution` + `advance_round` — para N
 participantes na Devnet?
 
-**Por que ficou.** `--chain devnet` está implementado, mas nunca enviou
-transação real: as carteiras de simulação não foram financiadas nem registradas
-(Trajetória §7.5).
+**Metade respondida em 27/08/2026: o custo.** A outra metade, a latência,
+continua aberta — e é só ela que ainda segura o objetivo 4.
 
-**O que já existe.** O cliente Anchor roda de ponta a ponta em *dry-run*, o PDA
-foi conferido contra a conta real, e o programa está publicado
-(`GhMhTkv7jeHMejEyypQaEFPqduHgXDSzE5g7jE3rXGRA`). Falta enviar.
+**O que já existe.** Medição feita lendo as contas e as transações reais do
+programa publicado (`GhMhTkv7jeHMejEyypQaEFPqduHgXDSzE5g7jE3rXGRA`):
+
+| | bytes | lamports |
+| --- | ---: | ---: |
+| aluguel do `Config` | 57 | 1.287.600 |
+| aluguel do `Participant` | 66 | 1.350.240 |
+| aluguel da `Contribution` | 142 | 1.879.200 |
+| taxa por transação | — | 80.000 |
+
+Os três valores de aluguel conferem com `(128 + bytes) × 6.960`, o que confirma a
+fórmula e permite projetar qualquer tamanho de conta sem medir de novo.
+
+Uma rodada com dez participantes sai por **20.472.000 lamports** (≈ 0,0205 SOL):
+dez aluguéis de contribuição, dez taxas de submissão, dez de validação e uma de
+avanço.
+
+O resultado que interessa não é o total, é a proporção: **o aluguel domina a taxa
+em 23,5×**. O gargalo econômico do desenho não é taxa de transação — é espaço de
+conta. Isso desloca a otimização inteira, e virou `P14`.
+
+**O que falta — a latência.** As transações que existem na Devnet vieram do
+painel web, assinadas por carteira. O cliente Python (`--chain devnet`) continua
+sem nunca ter enviado nada: as carteiras de simulação não foram financiadas
+(Trajetória §7.5).
 
 Cuidado com a palavra "validado" aqui: o dry-run monta as instruções e deriva os
 PDAs, mas não envia nem confere retorno. Até 22/08/2026 esse caminho estava
 **quebrado** e ninguém sabia, porque o backend padrão é o simulado (`E07`).
 
-**Como responder.** Financiar as carteiras pelo faucet, registrar os
+**Como responder o que falta.** Financiar as carteiras pelo faucet, registrar os
 participantes, rodar o experimento padrão com `--chain devnet` e cronometrar.
 Reportar mediana e cauda (p95), não só a média — o que interessa numa cadeia é o
 pior caso.
 
-**O que muda.** Fecha o **objetivo específico 4** da proposta de IC, que hoje
-está parcial. E transforma "custo baixo" de estimativa de arquitetura em
-resultado medido — hoje é a nota de rodapé ² da tabela comparativa.
+**O que muda.** O custo deixou de ser estimativa de arquitetura e virou resultado
+medido, o que resolve a nota de rodapé ² da tabela comparativa. O **objetivo
+específico 4** fecha quando a latência acompanhar.
 
 ## P03 · Onde o AwakeFL fica em relação aos baselines da literatura? [1] [2]
 
@@ -342,6 +363,70 @@ migração de conta, com instrução de `realloc`. E como o programa não percor
 contas, o decaimento teria de ser disparado participante a participante pela
 autoridade.
 
+## P14 · O custo cresce sem teto com o tempo de vida da federação? [2] [3]
+
+**Pergunta.** O aluguel travado numa federação do AwakeFL cresce linearmente com
+`rodadas × participantes` e nunca é liberado. A partir de que ponto isso deixa de
+ser irrelevante — e qual desenho reduz o crescimento sem destruir a
+auditabilidade que justifica o projeto?
+
+**Por que ficou.** `P02` mediu o custo de **uma** contribuição. Ninguém tinha
+olhado o que acontece depois de mil.
+
+**O que já existe.** A fórmula confirmada em `P02`, mais uma consequência do
+desenho que ainda não tem código no registro: **não existe instrução que feche uma
+`Contribution`**, então o depósito de aluguel nunca volta. Isso é deliberado — uma
+instrução de remoção chegou a ser escrita duas vezes e foi revertida nas duas —
+mas a conta de custo disso nunca foi feita. Projetando:
+
+| federação | contas | SOL travado, permanente |
+| --- | ---: | ---: |
+| 10 participantes × 100 rodadas | 1.000 | 1,88 |
+| 10 participantes × 1.000 rodadas | 10.000 | 18,79 |
+| 50 participantes × 500 rodadas | 25.000 | 46,98 |
+
+E o número que aponta para onde otimizar: a sobrecarga fixa de 128 bytes por
+conta custa 891.840 lamports, ou **47% do aluguel de uma contribuição**, antes de
+um único byte de dado nosso. Reduzir o **número** de contas rende mais que
+encolher cada uma.
+
+**Como responder.** Escrever a função de custo e variar um termo por vez:
+
+```
+custo(N, R) = R × N × [(128 + bytes) × 6960] + transações × taxa
+```
+
+Quatro desenhos alternativos, cada um mexendo num termo diferente:
+
+1. **Encolher a conta.** Hash como `[u8; 32]` em vez de `String` de 64
+   caracteres; `loss` e `accuracy` em ponto fixo em vez de `f64`. Leva a
+   `Contribution` de 142 para ~86 bytes: 21% mais barato. Não custa nada em
+   auditabilidade, e esbarra no piso dos 128.
+2. **Uma conta por rodada.** Raiz de Merkle das N contribuições em vez de N
+   contas: ~15× mais barato com N = 10. **Custa auditabilidade direta** — a
+   contribuição individual deixa de ser legível na chain, e verificar passa a
+   exigir a prova. É a troca que precisa ser medida, não assumida.
+3. **Eventos em vez de contas.** `emit!` só paga taxa. Mas RPC público poda
+   histórico, então o registro deixa de ser recuperável a longo prazo. É a mesma
+   objeção que já derrubou uma proposta anterior de apoiar garantia em evento:
+   "fica no histórico" vale menos do que parece quando o histórico é podado.
+4. **State compression.** Árvore de Merkle concorrente com o dado no ledger e a
+   raiz on-chain — o mecanismo desenhado pela própria Solana para "muitos
+   registros, aluguel mínimo". É o candidato mais forte e o menos conhecido
+   deste projeto; exige estudo do ferramental antes de qualquer afirmação.
+
+A métrica não pode ser "custo por contribuição": tem que ser **custo acumulado
+após R rodadas**, medido contra uma linha de base centralizada. E cada desenho
+precisa declarar quanto de auditabilidade ele vendeu pelo desconto — medir só o
+lamport transforma a pergunta em otimização, e o que a torna pesquisa é o
+trade-off.
+
+**O que muda.** Responde de forma defensável a pergunta "isso escala?", que hoje
+só tem resposta pontual. E força uma decisão que o projeto ainda não tomou: se a
+promessa é que *toda* contribuição seja legível na chain para sempre, ou se basta
+que toda contribuição seja *verificável* — que são coisas diferentes, e a segunda
+é ordens de grandeza mais barata.
+
 ---
 
 # Parte 3 — Perguntas sobre a própria revisão
@@ -399,15 +484,21 @@ defesa, e custa cinco minutos consertar.
 `P04` `n_samples` declarado · `P11` busca sistemática · `P12` referências
 
 **[2] Fecham objetivo declarado da IC**
-`P02` (objetivo 4) · `P03` · `P05` comitê · `P09` CIFAR-10 e Flower ·
-`P13` inatividade
+`P02` (objetivo 4, metade feito) · `P03` · `P05` comitê · `P09` CIFAR-10 e
+Flower · `P13` inatividade · `P14` escala do aluguel
 
 **[3] Expandem o escopo**
-`P06` ZKP · `P07` Sybil e stake · `P08` Shapley · `P10` escala mínima
+`P06` ZKP · `P07` Sybil e stake · `P08` Shapley · `P10` escala mínima ·
+`P14` desenhos alternativos de armazenamento
 
-Se for para escolher três: `P02` e `P03` porque fecham o objetivo 4 e dão régua
-externa, e `P01` porque é a pergunta que só este desenho permite fazer.
+Se for para escolher três: `P02` — agora só a latência — e `P03`, porque fecham o
+objetivo 4 e dão régua externa, e `P01` porque é a pergunta que só este desenho
+permite fazer.
+
+`P14` é o candidato a crescer para TCC: tem função de custo fechada, parâmetros já
+medidos e um trade-off entre custo e auditabilidade que ninguém neste projeto
+resolveu ainda.
 
 ---
 
-*Última atualização: 24 de agosto de 2026.*
+*Última atualização: 27 de agosto de 2026.*
