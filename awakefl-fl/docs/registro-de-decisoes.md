@@ -9,6 +9,39 @@ tenha resposta escrita em vez de arqueologia de commits.
 
 ---
 
+## Sumário
+
+- [Como usar](#como-usar)
+- [Parte 1 — Decisões de projeto](#parte-1--decisões-de-projeto)
+  - [Score de consistência](#score-de-consistência)
+  - [Reputação](#reputação)
+  - [Treino local](#treino-local)
+  - [Ponte com a blockchain](#ponte-com-a-blockchain)
+  - [Interface](#interface)
+- [Parte 2 — Achados experimentais](#parte-2--achados-experimentais)
+  - [A01 · A reputação inicial não afeta a detecção](#a01--a-reputação-inicial-não-afeta-a-detecção)
+  - [A02 · O detector punia participantes por serem pequenos](#a02--o-detector-punia-participantes-por-serem-pequenos)
+  - [A03 · Nivelar os passos pela média destruiu o experimento](#a03--nivelar-os-passos-pela-média-destruiu-o-experimento)
+  - [A04 · A defesa devolve previsibilidade, não só acurácia](#a04--a-defesa-devolve-previsibilidade-não-só-acurácia)
+  - [A05 · As duas correções agem em momentos diferentes](#a05--as-duas-correções-agem-em-momentos-diferentes)
+  - [A06 · O atacante declara acurácia alta e é pego mesmo assim](#a06--o-atacante-declara-acurácia-alta-e-é-pego-mesmo-assim)
+  - [A07 · Com poucos participantes a detecção é mais lenta](#a07--com-poucos-participantes-a-detecção-é-mais-lenta)
+- [Parte 3 — Erros que cometemos](#parte-3--erros-que-cometemos)
+  - [E01 · Medir numa janela curta demais e concluir o oposto](#e01--medir-numa-janela-curta-demais-e-concluir-o-oposto)
+  - [E02 · Corrigir o viés e quebrar o experimento](#e02--corrigir-o-viés-e-quebrar-o-experimento)
+  - [E03 · Uma frase de efeito que era falsa](#e03--uma-frase-de-efeito-que-era-falsa)
+  - [E04 · Inserir a variante de erro no meio do enum](#e04--inserir-a-variante-de-erro-no-meio-do-enum)
+  - [E05 · Apresentar dados derivados como se fossem observados](#e05--apresentar-dados-derivados-como-se-fossem-observados)
+  - [E06 · Gerar arquivo de uma branch estando em outra](#e06--gerar-arquivo-de-uma-branch-estando-em-outra)
+  - [E07 · Dizer "validado" sobre um caminho que só o padrão exercitava](#e07--dizer-validado-sobre-um-caminho-que-só-o-padrão-exercitava)
+- [Parte 4 — Estado atual](#parte-4--estado-atual)
+  - [O que está pronto e verificado](#o-que-está-pronto-e-verificado)
+  - [O que existe mas nunca rodou de verdade](#o-que-existe-mas-nunca-rodou-de-verdade)
+  - [O que está em código mas não em produção](#o-que-está-em-código-mas-não-em-produção)
+  - [Números de referência](#números-de-referência)
+
+---
+
 ## Como usar
 
 **Para escrever a IC.** As decisões estão numeradas (`D01`, `D02`…) para poderem
@@ -31,11 +64,11 @@ história em prosa: em que ordem tudo foi construído e o que ficou de fora) e
 
 ---
 
-# Parte 1 — Decisões de projeto
+## Parte 1 — Decisões de projeto
 
-## Score de consistência
+### Score de consistência
 
-### D01 · Cosseno em vez de distância euclidiana
+#### D01 · Cosseno em vez de distância euclidiana
 
 **Contexto.** Medir o quanto a contribuição de um participante combina com o
 consenso.
@@ -50,7 +83,7 @@ divergente **por ser grande**, e seria punido por isso. Separar direção de
 tamanho permite pesá-los diferente — e foi o que possibilitou o veto de norma
 (D04) sem endurecer o critério para quem está dentro da faixa.
 
-### D02 · Mediana por coordenada, não média
+#### D02 · Mediana por coordenada, não média
 
 **Contexto.** Construir o vetor que representa "o consenso" da rodada.
 
@@ -66,7 +99,7 @@ participantes. No exemplo de 5 participantes documentado na *Aritmética*, a
 mediana fica em `[0,95 · 0,30]` enquanto a média já foi arrastada para
 `[0,63 · 0,31]` por um atacante só.
 
-### D03 · Termo de magnitude simétrico: `min(r, 1/r)`
+#### D03 · Termo de magnitude simétrico: `min(r, 1/r)`
 
 **Contexto.** Punir updates com tamanho anômalo.
 
@@ -80,7 +113,7 @@ amplificação). Punir update minúsculo parece estranho até aparecer o
 sozinho não o pega: a direção do ruído dele é aleatória e às vezes calha de
 apontar para o lado certo. É o termo de magnitude que denuncia.
 
-### D04 · Veto de norma zera o crédito de direção, não desconta
+#### D04 · Veto de norma zera o crédito de direção, não desconta
 
 **Contexto.** Um atacante que aponte na direção certa mas amplifique a
 magnitude domina a agregação — é o ataque de *model replacement*, usado para
@@ -97,7 +130,7 @@ nota. Zerar remove o cálculo: não existe amplificação que valha a pena. Na d
 de 3 participantes, foi exatamente o veto que derrubou o atacante — razão de
 norma 2,67, score 375.
 
-### D05 · Calibração pela mediana da rodada, não por limiar absoluto
+#### D05 · Calibração pela mediana da rodada, não por limiar absoluto
 
 **Contexto.** Quanto os honestos concordam entre si não é constante: com dados
 IID o cosseno entre updates honestos fica em ~0,9; com dados heterogêneos cai
@@ -115,7 +148,7 @@ está hoje"* — pergunta invariante ao regime de dados. **Efeito colateral
 descoberto depois:** essa mesma calibração neutraliza boa parte do ganho da
 suavização de updates (ver A05).
 
-### D06 · Pesos 0,7 direção / 0,3 magnitude
+#### D06 · Pesos 0,7 direção / 0,3 magnitude
 
 **Contexto.** Combinar os dois sinais em uma nota.
 
@@ -126,9 +159,9 @@ fácil de imitar. No exemplo da *Aritmética*, o atacante tira **nota máxima em
 magnitude** — a norma dele é exatamente a típica. Um sistema que olhasse só o
 tamanho o consideraria irrepreensível.
 
-## Reputação
+### Reputação
 
-### D07 · Reputação inicial neutra (0,5), não boa-fé (1,0)
+#### D07 · Reputação inicial neutra (0,5), não boa-fé (1,0)
 
 **Contexto.** Com quanto um participante recém-registrado entra.
 
@@ -151,7 +184,7 @@ código de fato faz.
 
 Ver A01: essa decisão **não** afeta a capacidade de detecção.
 
-### D08 · Graça por tempo de casa, não por rodada global
+#### D08 · Graça por tempo de casa, não por rodada global
 
 **Contexto.** Proteger as primeiras contribuições, quando o modelo global ainda
 está instável e todos parecem inconsistentes.
@@ -168,7 +201,7 @@ rodada 50 entraria **sem proteção nenhuma**, em R = 0,5, a um passo do limiar
 simulação, em que todos entram na rodada 1, os dois critérios coincidem; a
 diferença só aparece on-chain, e é lá que ela importa.
 
-### D09 · Banimento permanente, sem reversão
+#### D09 · Banimento permanente, sem reversão
 
 **Contexto.** O que acontece quando a reputação cruza o limiar.
 
@@ -182,7 +215,7 @@ envenena de novo. A irreversibilidade elimina o ciclo. O custo é real e aparece
 na prática: um falso positivo é a morte civil de um participante honesto (ver
 A02).
 
-### D10 · Penalidade divide a reputação por 10
+#### D10 · Penalidade divide a reputação por 10
 
 **Contexto.** O que fazer com a reputação no momento do banimento, já que ela
 está abaixo do limiar de qualquer forma.
@@ -195,7 +228,7 @@ na vigésima primeira contando com a memória da média móvel para amortecer a
 queda. A divisão torna a reputação acumulada sem valor no instante do flagrante:
 não existe crédito guardado que compre um ataque.
 
-### D11 · Média móvel com α = 0,5
+#### D11 · Média móvel com α = 0,5
 
 **Contexto.** Quanto o passado pesa na reputação.
 
@@ -208,9 +241,9 @@ a falso positivo. **Nota importante:** como R converge para a média de S
 independentemente de onde partiu, α governa a *velocidade*, e o valor inicial
 (D07) governa apenas o transiente.
 
-## Treino local
+### Treino local
 
-### D12 · Passos fixos, nivelados pelo MAIOR participante
+#### D12 · Passos fixos, nivelados pelo MAIOR participante
 
 **Contexto.** Com épocas fixas, quem tem 586 amostras dá 18 passos de SGD e quem
 tem 1.928 dá 60. O update do primeiro chega ~1,8× mais ruidoso, e o detector lê
@@ -227,7 +260,7 @@ pequeno repassar várias vezes pelos próprios dados (4× no caso extremo medido
 sobreajustar um pouco. Entre um pequeno que sobreajusta e um pequeno banido por
 engano, o projeto escolhe o primeiro.
 
-### D13 · Suavizar o update antes de pontuar, não o score depois
+#### D13 · Suavizar o update antes de pontuar, não o score depois
 
 **Contexto.** O ruído de amostragem "gira" o vetor de update, e o cosseno de um
 vetor ruidoso é sistematicamente menor que o da direção verdadeira.
@@ -242,9 +275,9 @@ malicioso, por ser sistemático, atravessa a média intacto. Existem hoje **duas
 médias móveis com papéis diferentes: a do update cancela ruído, a de R(t) dá
 memória à reputação.
 
-## Ponte com a blockchain
+### Ponte com a blockchain
 
-### D14 · Formato canônico próprio para os pesos, não `torch.save`
+#### D14 · Formato canônico próprio para os pesos, não `torch.save`
 
 **Contexto.** O navegador calcula SHA-256 dos bytes crus do arquivo que a
 instituição sobe; o servidor calcula o hash em memória. Os dois precisam bater.
@@ -265,7 +298,7 @@ sem ter o código do modelo. Verificado: 861.576 bytes = 215.370 parâmetros × 
 estivesse escrito em dois lugares, o hash do arquivo poderia divergir do hash em
 memória sem ninguém perceber até a auditoria falhar.
 
-### D15 · O índice de artefatos fica FORA da cadeia de blocos
+#### D15 · O índice de artefatos fica FORA da cadeia de blocos
 
 **Contexto.** O livro-razão simulado encadeia os registros por hash. Onde
 registrar o caminho dos arquivos `.awfl` exportados.
@@ -276,7 +309,7 @@ registrar o caminho dos arquivos `.awfl` exportados.
 experimento. Incluí-lo no hash faria a mesma federação produzir cadeias
 diferentes só por ter exportado ou não os pesos.
 
-### D16 · A rodada é da chain, não do servidor
+#### D16 · A rodada é da chain, não do servidor
 
 **Contexto.** O programa deriva o endereço da contribuição a partir de
 `config.current_round`. O servidor de FL tem o próprio contador.
@@ -290,7 +323,7 @@ pegaria, porque ele não confere nada contra o programa. O valor lido fica em
 cache: são N contribuições por rodada e reler o Config em cada uma seria uma ida
 ao RPC por participante sem informação nova.
 
-### D17 · IDL único, convertido em memória
+#### D17 · IDL único, convertido em memória
 
 **Contexto.** O Anchor mudou o formato do IDL na versão 0.30; o anchorpy ainda
 lê o formato anterior.
@@ -304,7 +337,7 @@ do `playground/lib.rs`. A conversão trata duas mudanças silenciosas: `pubkey`
 virou o nome curto de `publicKey`, e `defined` deixou de ser string para virar
 `{"name": ...}`.
 
-### D18 · Variante nova de erro vai sempre no FIM do enum
+#### D18 · Variante nova de erro vai sempre no FIM do enum
 
 **Contexto.** Acrescentar `ReputationAboveThreshold` ao programa.
 
@@ -313,7 +346,7 @@ virou o nome curto de `publicKey`, e `defined` deixou de ser string para virar
 antigo passa a exibir a **mensagem errada** para o erro certo. Cometido e
 corrigido na mesma sessão (ver E04).
 
-### D19 · Banimento só quando o próprio registro o justifica
+#### D19 · Banimento só quando o próprio registro o justifica
 
 **Contexto.** `penalize_participant` só verificava se a conta já estava banida.
 A autoridade podia banir permanentemente um participante com reputação 1000, sem
@@ -333,9 +366,9 @@ invisível.
 > garantia: uma autoridade mal-intencionada ignora a tela e chama o programa
 > direto.
 
-## Interface
+### Interface
 
-### D20 · O score é calculado, nunca digitado
+#### D20 · O score é calculado, nunca digitado
 
 **Contexto.** A tela do validador tinha um campo onde a autoridade digitava um
 score de 0 a 1000.
@@ -352,7 +385,7 @@ A avaliação publicada é indexada pelo **hash da contribuição**, que é o qu
 gravado on-chain — assim a tela liga contribuição a avaliação sem depender de
 mapeamento de carteiras.
 
-### D21 · Publicar a justificativa, não só o número
+#### D21 · Publicar a justificativa, não só o número
 
 **Escolha.** A avaliação carrega cosseno, cosseno mediano, direção calibrada,
 magnitude, razão de norma e se o veto disparou.
@@ -366,7 +399,7 @@ norma: update 2,67× a mediana"* — e um terceiro consegue refazer a conta.
 nota publicada e a nota aplicada pudessem divergir, a justificativa deixaria de
 ser justificativa.
 
-### D22 · Compromisso vem sempre do arquivo
+#### D22 · Compromisso vem sempre do arquivo
 
 **Contexto.** A tela de contribuição tinha um modo que gerava o hash a partir de
 um texto livre — prático para demonstrar sem arquivo.
@@ -380,7 +413,7 @@ compromete com nada é pior que nenhum.** Consequência colateral: a contribuiç
 de teste que estava pendente na Devnet, criada por esse modo, não pode mais ser
 validada.
 
-### D23 · A lateral é um trilho, não uma gaveta
+#### D23 · A lateral é um trilho, não uma gaveta
 
 **Contexto.** O botão de menu morava na barra superior.
 
@@ -391,7 +424,7 @@ barra superior fica só com a carteira.
 
 ---
 
-# Parte 2 — Achados experimentais
+## Parte 2 — Achados experimentais
 
 Todos reproduzíveis. Os comandos assumem o diretório `awakefl-fl/`.
 
@@ -517,7 +550,7 @@ banimento não aparece. Vale medir antes de montar o roteiro.
 
 ---
 
-# Parte 3 — Erros que cometemos
+## Parte 3 — Erros que cometemos
 
 Registrados porque a IC ganha mais em contar o que deu errado do que em fingir
 um caminho reto.
@@ -596,9 +629,9 @@ a federação inteira em cada um para descobrir que deixaram de concordar.
 
 ---
 
-# Parte 4 — Estado atual
+## Parte 4 — Estado atual
 
-## O que está pronto e verificado
+### O que está pronto e verificado
 
 | Camada | Estado |
 | --- | --- |
@@ -608,7 +641,7 @@ a federação inteira em cada um para descobrir que deixaram de concordar.
 | Artefato canônico | hash do navegador bate com o do servidor — no CI e conferido à mão num `.awfl` real em 24/08/2026 |
 | Cliente Anchor (Python) | implementado; PDA confirmado contra a conta real |
 
-## O que existe mas nunca rodou de verdade
+### O que existe mas nunca rodou de verdade
 
 - **`--chain devnet`** — implementado; o dry-run monta as instruções e deriva os
   PDAs, mas **não envia nem confere nada**, e por isso não é validação (`E07`).
@@ -618,14 +651,14 @@ a federação inteira em cada um para descobrir que deixaram de concordar.
 - **Backend Flower** — a estratégia existe; o motor local é o padrão por
   reprodutibilidade.
 
-## O que está em código mas não em produção
+### O que está em código mas não em produção
 
 A trava de banimento (D19) está no código e **não** no binário publicado na
 Devnet. Enquanto não houver redeploy, banir um participante com reputação alta
 continua funcionando. Nenhuma conta muda no redeploy — só foram acrescentados
 uma constante e uma variante de erro.
 
-## Números de referência
+### Números de referência
 
 Configuração padrão, `label_flipping`, semente 42, 10 participantes, 12 rodadas:
 

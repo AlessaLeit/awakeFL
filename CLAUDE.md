@@ -25,12 +25,13 @@ quê*, não *o quê* — o código já diz o quê. Sem emoji em commit.
 
 **Nada de afirmar o que não foi medido.** Vale para README, documentação e
 comparação com outros trabalhos. Se um número não veio de execução, ele é
-estimativa e precisa estar marcado como tal. Esta regra saiu de erros reais e
-está registrada na branch `documentacao`.
+estimativa e precisa estar marcado como tal. Esta regra saiu de erros reais e está
+registrada na Parte 3 do
+[`registro-de-decisoes.md`](awakefl-fl/docs/registro-de-decisoes.md).
 
-**Decisão com alternativa descartada vira registro.** O `registro-de-decisoes.md`
-(branch `documentacao`) usa códigos `D01`–`D23`, achados `A01`–`A07` e erros
-`E01`–`E06`. Ao mudar um parâmetro, procure-o lá antes — vários foram escolhidos
+**Decisão com alternativa descartada vira registro.** O
+[`registro-de-decisoes.md`](awakefl-fl/docs/registro-de-decisoes.md) usa códigos
+`D01`–`D23`, achados `A01`–`A07` e erros `E01`–`E07`. Ao mudar um parâmetro, procure-o lá antes — vários foram escolhidos
 contra uma alternativa específica.
 
 **Espelhamento off-chain ↔ on-chain.** Toda constante do modelo existe nos dois
@@ -68,10 +69,17 @@ inteira quebra com `ModuleNotFoundError: pytest_asyncio`.
 
 ## Branches
 
-- `main` — código. É de onde o Vercel publica <https://awake-fl.vercel.app>
-- `documentacao` — os documentos longos em `awakefl-fl/docs/`
-- Links entre elas precisam de URL completa do GitHub com a branch no caminho,
-  senão quebram
+- `main` — tudo. É de onde o Vercel publica <https://awake-fl.vercel.app>
+- Os documentos longos vivem em `awakefl-fl/docs/`, **na própria main**. Eles já
+  moraram numa branch `documentacao`, e os READMEs linkavam para lá com URL
+  completa do GitHub com a branch no caminho. Isso acabou: **link entre
+  documentos é caminho relativo**. Se você se pegar escrevendo
+  `github.com/AlessaLeit/awakeFL/blob/<branch>/` para um arquivo que está no
+  repositório, é bug — o link quebra no dia em que a branch sumir
+- Documento novo é `.md`. Não há mais `.html` versionado: o GitHub serve HTML
+  como código-fonte, então um `.html` aqui nasce ilegível. Diagrama vai em
+  Mermaid; só o que o Mermaid não expressa (gráfico de dados, diagrama
+  vetorial) vira `.svg` em `awakefl-fl/docs/img/`
 
 ## Ambiente (Windows)
 

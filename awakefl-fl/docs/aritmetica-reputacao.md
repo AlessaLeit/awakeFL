@@ -518,4 +518,4 @@ Os passos **0** e **2** são as correções do passo 11. Repare que há duas mé
 | carência | 2 | contribuições, não rodadas |
 | veto de norma | 2,5× | menor = mais rígido com amplificação |
 
-Os números do exemplo saíram do próprio código — `reputation.py`, as mesmas funções que rodam no experimento. Os resultados de 10 sementes vêm de `sweep.py`, e a análise do viés de tamanho de `analise_tamanho.py`, ambos reproduzíveis com um comando. Este documento acompanha a *Anatomia do AwakeFL*, que cobre a arquitetura; aqui só as contas.
+Os números do exemplo saíram do próprio código — `reputation.py`, as mesmas funções que rodam no experimento. Os resultados de 10 sementes vêm de `sweep.py`, e a análise do viés de tamanho de `analise_tamanho.py`, ambos reproduzíveis com um comando. Este documento acompanha a [Anatomia do AwakeFL](anatomia-awakefl.md), que cobre a arquitetura; aqui só as contas.

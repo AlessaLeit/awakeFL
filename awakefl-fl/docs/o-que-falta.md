@@ -15,6 +15,31 @@ história e a revisão de trabalhos relacionados).
 
 ---
 
+## Sumário
+
+- [A regra desta agenda](#a-regra-desta-agenda)
+- [Como cada item está escrito](#como-cada-item-está-escrito)
+- [Parte 1 — Perguntas que fecham buracos existentes](#parte-1--perguntas-que-fecham-buracos-existentes)
+  - [P01 · A reputação pega envenenamento lento? [1]](#p01--a-reputação-pega-envenenamento-lento-1)
+  - [P02 · Quanto custa e quanto demora uma rodada na Solana? [1] [2]](#p02--quanto-custa-e-quanto-demora-uma-rodada-na-solana-1-2)
+  - [P03 · Onde o AwakeFL fica em relação aos baselines da literatura? [1] [2]](#p03--onde-o-awakefl-fica-em-relação-aos-baselines-da-literatura-1-2)
+  - [P04 · O n_samples declarado importa? [1]](#p04--o-n_samples-declarado-importa-1)
+- [Parte 2 — Perguntas que expandem o desenho](#parte-2--perguntas-que-expandem-o-desenho)
+  - [P05 · Comitê de validadores, quórum e prazo de contestação [2]](#p05--comitê-de-validadores-quórum-e-prazo-de-contestação-2)
+  - [P06 · Verificação on-chain do score [3]](#p06--verificação-on-chain-do-score-3)
+  - [P07 · Resistência a Sybil [3]](#p07--resistência-a-sybil-3)
+  - [P08 · Contribuição proporcional ao porte [3]](#p08--contribuição-proporcional-ao-porte-3)
+  - [P09 · CIFAR-10, Flower e participação parcial [2]](#p09--cifar-10-flower-e-participação-parcial-2)
+  - [P10 · Quantos participantes o detector precisa? [3]](#p10--quantos-participantes-o-detector-precisa-3)
+  - [P13 · O que a reputação deve dizer sobre quem está presente e calado? [2]](#p13--o-que-a-reputação-deve-dizer-sobre-quem-está-presente-e-calado-2)
+  - [P14 · O custo cresce sem teto com o tempo de vida da federação? [2] [3]](#p14--o-custo-cresce-sem-teto-com-o-tempo-de-vida-da-federação-2-3)
+- [Parte 3 — Perguntas sobre a própria revisão](#parte-3--perguntas-sobre-a-própria-revisão)
+  - [P11 · Existe FL sobre Solana publicado? [1]](#p11--existe-fl-sobre-solana-publicado-1)
+  - [P12 · As referências herdadas conferem? [1]](#p12--as-referências-herdadas-conferem-1)
+- [Índice por prioridade](#índice-por-prioridade)
+
+---
+
 ## A regra desta agenda
 
 Vários itens aqui chegaram por retirada: uma afirmação foi feita, não se
@@ -50,9 +75,9 @@ fecha um objetivo declarado da IC · **[3]** expande o escopo.
 
 ---
 
-# Parte 1 — Perguntas que fecham buracos existentes
+## Parte 1 — Perguntas que fecham buracos existentes
 
-## P01 · A reputação pega envenenamento lento? [1]
+### P01 · A reputação pega envenenamento lento? [1]
 
 **Pergunta.** Um atacante que envenena pouco a cada rodada — mantendo o score
 individual dentro da faixa aceitável — acaba sendo detectado pela **memória** da
@@ -88,7 +113,7 @@ persistência da reputação compra alguma coisa que a agregação robusta não 
 Se for igual, também é resultado: significa que o ganho do AwakeFL está só na
 auditoria, e o texto precisa dizer isso.
 
-## P02 · Quanto custa e quanto demora uma rodada na Solana? [1] [2]
+### P02 · Quanto custa e quanto demora uma rodada na Solana? [1] [2]
 
 **Pergunta.** Qual a latência e o custo em lamports de um ciclo completo —
 `submit_contribution` + `validate_contribution` + `advance_round` — para N
@@ -136,7 +161,7 @@ pior caso.
 medido, o que resolve a nota de rodapé ² da tabela comparativa. O **objetivo
 específico 4** fecha quando a latência acompanhar.
 
-## P03 · Onde o AwakeFL fica em relação aos baselines da literatura? [1] [2]
+### P03 · Onde o AwakeFL fica em relação aos baselines da literatura? [1] [2]
 
 **Pergunta.** Rodando o mesmo cenário, com a mesma partição e as mesmas sementes,
 como o AwakeFL se compara a Krum, mediana pura e FLTrust?
@@ -157,7 +182,7 @@ AwakeFL (Trajetória §10.3).
 competitiva". Sem isso, um parecerista pergunta *comparado a quê?* e não há
 resposta.
 
-## P04 · O `n_samples` declarado importa? [1]
+### P04 · O `n_samples` declarado importa? [1]
 
 **Pergunta.** Quanta acurácia se perde se a agregação parar de confiar no número
 de amostras auto-declarado pelo participante?
@@ -181,9 +206,9 @@ verificação — e aí vira `P08`.
 
 ---
 
-# Parte 2 — Perguntas que expandem o desenho
+## Parte 2 — Perguntas que expandem o desenho
 
-## P05 · Comitê de validadores, quórum e prazo de contestação [2]
+### P05 · Comitê de validadores, quórum e prazo de contestação [2]
 
 **Pergunta.** Substituir a autoridade única por N validadores com quórum muda a
 detecção, ou só a governança?
@@ -206,7 +231,7 @@ rodadas entre a penalidade e o banimento definitivo.
 **O que muda.** Remove o ponto único de confiança na **decisão**. Não remove o
 ponto único de confiança no **cálculo** — isso é `P06`.
 
-## P06 · Verificação on-chain do score [3]
+### P06 · Verificação on-chain do score [3]
 
 **Pergunta.** Dá para provar que o score publicado corresponde ao update
 comprometido, sem colocar os pesos na cadeia?
@@ -228,7 +253,7 @@ operações vetoriais grandes, e se o custo cabe numa transação Solana.
 ambicioso desta agenda e o mais provável de virar trabalho de mestrado em vez de
 IC.
 
-## P07 · Resistência a Sybil [3]
+### P07 · Resistência a Sybil [3]
 
 **Pergunta.** Qual o custo mínimo de identidade que torna o banimento permanente
 economicamente relevante?
@@ -250,7 +275,7 @@ Os números de `k` já existem (banimentos nas rodadas 6 e 7). Falta definir `G`
 custo de evasão perto de zero — e essa é a crítica mais direta que se pode fazer
 ao desenho.
 
-## P08 · Contribuição proporcional ao porte [3]
+### P08 · Contribuição proporcional ao porte [3]
 
 **Pergunta.** Como medir o valor real que um participante agrega, em vez de
 confiar no tamanho que ele declara?
@@ -274,7 +299,7 @@ ponto de partida).
 E responde `P04` por outro caminho: se dá para medir contribuição, o `n_samples`
 declarado deixa de importar.
 
-## P09 · CIFAR-10, Flower e participação parcial [2]
+### P09 · CIFAR-10, Flower e participação parcial [2]
 
 **Pergunta.** Os resultados sobrevivem fora do MNIST, com backend Flower real e
 participação parcial por rodada?
@@ -296,7 +321,7 @@ honesto e publicável.
 parcial é o cenário realista: num consórcio de hospitais, ninguém aparece todas
 as rodadas.
 
-## P10 · Quantos participantes o detector precisa? [3]
+### P10 · Quantos participantes o detector precisa? [3]
 
 **Pergunta.** Abaixo de quantos participantes a mediana de referência deixa de
 ser confiável?
@@ -315,7 +340,7 @@ cross-silo" é afirmação; "precisa de pelo menos N participantes" é resultado
 
 ---
 
-## P13 · O que a reputação deve dizer sobre quem está presente e calado? [2]
+### P13 · O que a reputação deve dizer sobre quem está presente e calado? [2]
 
 **Pergunta.** Um participante registrado que **nunca submete** mantém a
 reputação inicial para sempre e continua recebendo o modelo global. A reputação
@@ -363,7 +388,7 @@ migração de conta, com instrução de `realloc`. E como o programa não percor
 contas, o decaimento teria de ser disparado participante a participante pela
 autoridade.
 
-## P14 · O custo cresce sem teto com o tempo de vida da federação? [2] [3]
+### P14 · O custo cresce sem teto com o tempo de vida da federação? [2] [3]
 
 **Pergunta.** O aluguel travado numa federação do AwakeFL cresce linearmente com
 `rodadas × participantes` e nunca é liberado. A partir de que ponto isso deixa de
@@ -429,9 +454,9 @@ que toda contribuição seja *verificável* — que são coisas diferentes, e a 
 
 ---
 
-# Parte 3 — Perguntas sobre a própria revisão
+## Parte 3 — Perguntas sobre a própria revisão
 
-## P11 · Existe FL sobre Solana publicado? [1]
+### P11 · Existe FL sobre Solana publicado? [1]
 
 **Pergunta.** O AwakeFL é o primeiro sistema de reputação para FL sobre Solana,
 ou a busca é que foi insuficiente?
@@ -452,7 +477,7 @@ revisão sistemática, e leva menos tempo do que parece.
 no texto da IC. Antes disso, a frase é indefensável — e é exatamente o tipo de
 afirmação que um parecerista testa com uma busca de dois minutos.
 
-## P12 · As referências herdadas conferem? [1]
+### P12 · As referências herdadas conferem? [1]
 
 **Pergunta.** Quantas outras referências do texto da IC têm o mesmo problema das
 que já foram conferidas?

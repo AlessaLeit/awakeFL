@@ -20,6 +20,21 @@ Os documentos irmãos:
 
 ---
 
+## Sumário
+
+- [1. O ponto de partida](#1-o-ponto-de-partida)
+- [2. Fase 1 — o livro-razão antes daquilo que ele mede](#2-fase-1--o-livro-razão-antes-daquilo-que-ele-mede)
+- [3. Fase 2 — a camada off-chain e o primeiro choque](#3-fase-2--a-camada-off-chain-e-o-primeiro-choque)
+- [4. Fase 3 — medir para valer, e descobrir que o detector estava errado](#4-fase-3--medir-para-valer-e-descobrir-que-o-detector-estava-errado)
+- [5. Fase 4 — a honestidade da interface](#5-fase-4--a-honestidade-da-interface)
+- [6. Fase 5 — documentar](#6-fase-5--documentar)
+- [7. Os pontos de trava — o que ficou de fora, e por quê](#7-os-pontos-de-trava--o-que-ficou-de-fora-e-por-quê)
+- [8. O que a trajetória ensinou sobre método](#8-o-que-a-trajetória-ensinou-sobre-método)
+- [9. Onde a trajetória encontra a proposta de IC](#9-onde-a-trajetória-encontra-a-proposta-de-ic)
+- [10. Trabalhos relacionados](#10-trabalhos-relacionados)
+
+---
+
 ## 1. O ponto de partida
 
 A pergunta de pesquisa veio antes do código: *como detectar e mitigar ataques de
