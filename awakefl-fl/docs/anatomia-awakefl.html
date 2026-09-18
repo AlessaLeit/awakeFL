@@ -1,0 +1,1624 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Documentacao em camadas do AwakeFL: cada parte do sistema explicada primeiro em linguagem simples, depois no detalhe tecnico.">
+<title>Anatomia do AwakeFL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+/* ---------------------------------------------------------------------------
+   Paleta e tipografia herdadas do design system do AwakeFL ("Neon Graphite",
+   web/src/app/globals.css). O sistema e deliberadamente MONO-TEMA: o grafite
+   profundo existe para que o verde neon funcione como fonte de luz. Por isso
+   nao ha variante clara aqui - seria outro design, nao o mesmo invertido.
+--------------------------------------------------------------------------- */
+:root {
+  color-scheme: dark;
+
+  --plano: #131313;
+  --superficie-baixa: #0e0e0e;
+  --superficie: #1c1b1b;
+  --superficie-2: #201f1f;
+  --superficie-3: #2a2a2a;
+
+  --tinta: #e5e2e1;
+  --tinta-2: #a8a5a4;
+  --tinta-muda: #7a7877;
+
+  --grade: rgba(255, 255, 255, 0.05);
+  --borda: rgba(255, 255, 255, 0.1);
+  --borda-luz: rgba(255, 255, 255, 0.16);
+
+  --acento: #4af403;
+  --acento-lavado: rgba(74, 244, 3, 0.1);
+  --sobre-acento: #042100;
+
+  --aviso: #fab219;
+  --critico: #ff5449;
+  --critico-lavado: rgba(255, 84, 73, 0.12);
+
+  --tipo-ui: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --tipo-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --medida: 68ch;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--plano);
+  color: var(--tinta);
+  font-family: var(--tipo-ui);
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* --- Estrutura ----------------------------------------------------------- */
+
+.casca {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px 120px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+}
+
+@media (min-width: 1040px) {
+  .casca {
+    grid-template-columns: 232px minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.trilho { display: none; }
+
+@media (min-width: 1040px) {
+  .trilho {
+    display: block;
+    position: sticky;
+    top: 40px;
+    padding-top: 8px;
+    border-right: 1px solid var(--borda);
+    padding-right: 20px;
+  }
+}
+
+.trilho h2 {
+  font-family: var(--tipo-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tinta-muda);
+  margin: 0 0 14px;
+}
+
+.trilho ol {
+  list-style: none;
+  margin: 0 0 26px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.trilho a {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  color: var(--tinta-2);
+  text-decoration: none;
+  font-size: 13.5px;
+  line-height: 1.4;
+  padding: 4px 8px 4px 6px;
+  border-radius: 4px;
+  border-left: 2px solid transparent;
+}
+
+.trilho a:hover,
+.trilho a:focus-visible { color: var(--tinta); background: var(--superficie); }
+
+.trilho a.ativo {
+  color: var(--tinta);
+  border-left-color: var(--acento);
+  background: var(--superficie);
+}
+
+.trilho .n {
+  font-family: var(--tipo-mono);
+  font-size: 11px;
+  color: var(--tinta-muda);
+  font-variant-numeric: tabular-nums;
+}
+
+.corpo { max-width: 860px; min-width: 0; }
+
+/* --- Capa ---------------------------------------------------------------- */
+
+.capa { padding: 88px 0 56px; border-bottom: 1px solid var(--borda); }
+
+.marca {
+  font-family: var(--tipo-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--acento);
+  margin: 0 0 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.marca::before {
+  content: "";
+  width: 22px;
+  height: 1px;
+  background: var(--acento);
+}
+
+.capa h1 {
+  font-size: clamp(2.6rem, 6.4vw, 4rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  font-weight: 600;
+  margin: 0 0 24px;
+  text-wrap: balance;
+}
+
+.capa .abre {
+  font-size: 1.24rem;
+  line-height: 1.55;
+  color: var(--tinta-2);
+  max-width: 60ch;
+  margin: 0 0 36px;
+  font-weight: 300;
+}
+
+.capa .abre strong { color: var(--tinta); font-weight: 500; }
+
+/* --- Cartao de leitura --------------------------------------------------- */
+
+.como-ler {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  padding: 22px 24px;
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 640px) { .como-ler { grid-template-columns: 1fr 1fr; gap: 28px; } }
+
+.como-ler p { margin: 6px 0 0; font-size: 14.5px; color: var(--tinta-2); line-height: 1.55; }
+
+/* --- Rotulos de registro ------------------------------------------------- */
+
+.selo {
+  font-family: var(--tipo-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selo-simples { color: var(--acento); }
+.selo-tecnico { color: var(--tinta-muda); }
+
+.selo::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* --- Secoes -------------------------------------------------------------- */
+
+section { padding-top: 64px; scroll-margin-top: 24px; }
+
+.eyebrow {
+  font-family: var(--tipo-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tinta-muda);
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.eyebrow .arquivo { color: var(--acento); text-transform: none; letter-spacing: 0.02em; }
+
+h2.titulo {
+  font-size: clamp(1.6rem, 3.4vw, 2.1rem);
+  line-height: 1.14;
+  letter-spacing: -0.028em;
+  font-weight: 600;
+  margin: 0 0 28px;
+  text-wrap: balance;
+}
+
+h3 {
+  font-size: 1.06rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 32px 0 10px;
+}
+
+p { margin: 0 0 18px; max-width: var(--medida); }
+
+/* Registro simples: texto maior, respirado, com fio neon a esquerda. */
+.simples {
+  border-left: 2px solid var(--acento);
+  padding-left: 22px;
+  margin: 18px 0 34px;
+}
+
+.simples p {
+  font-size: 1.09rem;
+  line-height: 1.72;
+  color: var(--tinta);
+  font-weight: 300;
+}
+
+.simples p strong { font-weight: 500; }
+
+.simples .selo { margin-bottom: 12px; }
+
+/* Registro tecnico: superficie recuada, denso, mono nos rotulos. */
+.tecnico {
+  background: var(--superficie-baixa);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  padding: 22px 26px 8px;
+  margin: 0 0 12px;
+}
+
+.tecnico > .selo { margin-bottom: 14px; }
+.tecnico p { font-size: 15.5px; color: var(--tinta-2); line-height: 1.62; }
+.tecnico p strong { color: var(--tinta); font-weight: 500; }
+.tecnico li { font-size: 15.5px; color: var(--tinta-2); }
+.tecnico li strong { color: var(--tinta); font-weight: 500; }
+
+ul, ol.lista { max-width: var(--medida); padding-left: 20px; margin: 0 0 18px; }
+li { margin-bottom: 8px; line-height: 1.6; }
+
+code {
+  font-family: var(--tipo-mono);
+  font-size: 0.87em;
+  background: var(--superficie-2);
+  border: 1px solid var(--borda);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--tinta);
+}
+
+.tecnico code { background: var(--superficie-2); }
+
+/* --- Formula ------------------------------------------------------------- */
+
+.formula {
+  font-family: var(--tipo-mono);
+  font-size: 15px;
+  line-height: 1.9;
+  background: var(--superficie-2);
+  border: 1px solid var(--borda);
+  border-left: 2px solid var(--acento);
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin: 0 0 20px;
+  overflow-x: auto;
+  color: var(--tinta);
+}
+
+.formula .cmt { color: var(--tinta-muda); }
+
+/* --- Tabelas ------------------------------------------------------------- */
+
+.rolo { overflow-x: auto; margin: 0 0 22px; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14.5px;
+  min-width: 460px;
+}
+
+th, td {
+  text-align: left;
+  padding: 9px 14px 9px 0;
+  border-bottom: 1px solid var(--borda);
+  vertical-align: top;
+}
+
+th {
+  font-family: var(--tipo-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tinta-muda);
+  font-weight: 500;
+  border-bottom-color: var(--borda-luz);
+}
+
+td { color: var(--tinta-2); }
+td strong { color: var(--tinta); font-weight: 500; }
+td.num, th.num { font-family: var(--tipo-mono); font-variant-numeric: tabular-nums; }
+
+.pill {
+  font-family: var(--tipo-mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.pill-ok { background: var(--acento-lavado); color: var(--acento); }
+.pill-mal { background: var(--critico-lavado); color: var(--critico); }
+
+/* --- Figuras ------------------------------------------------------------- */
+
+figure {
+  margin: 26px 0 30px;
+  background: var(--superficie-baixa);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  padding: 22px 20px 16px;
+}
+
+figure .rolo { margin: 0; }
+figure svg { display: block; width: 100%; height: auto; min-width: 520px; }
+
+figcaption {
+  font-size: 13.5px;
+  color: var(--tinta-muda);
+  line-height: 1.55;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--borda);
+  max-width: var(--medida);
+}
+
+figcaption strong { color: var(--tinta-2); font-weight: 500; }
+
+/* --- Nota lateral -------------------------------------------------------- */
+
+.nota {
+  border: 1px solid var(--borda);
+  border-left: 2px solid var(--aviso);
+  background: var(--superficie);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 0 0 26px;
+  max-width: var(--medida);
+}
+
+.nota p { font-size: 14.5px; color: var(--tinta-2); margin: 0; }
+.nota p + p { margin-top: 10px; }
+.nota strong { color: var(--tinta); font-weight: 500; }
+
+.nota-titulo {
+  font-family: var(--tipo-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--aviso);
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* --- Numeros ------------------------------------------------------------- */
+
+.placar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--borda);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 0 0 26px;
+}
+
+.placar div { background: var(--superficie); padding: 16px 18px; }
+
+.placar .rot {
+  font-family: var(--tipo-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tinta-muda);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.placar .val {
+  font-size: 1.62rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.placar .val.neon { color: var(--acento); }
+
+.placar .sub { font-size: 12.5px; color: var(--tinta-muda); display: block; margin-top: 4px; }
+
+/* --- Rodape -------------------------------------------------------------- */
+
+footer {
+  margin-top: 88px;
+  padding-top: 26px;
+  border-top: 1px solid var(--borda);
+  font-size: 13.5px;
+  color: var(--tinta-muda);
+  max-width: var(--medida);
+}
+
+footer code { font-size: 12px; }
+
+a { color: var(--acento); }
+:focus-visible { outline: 2px solid var(--acento); outline-offset: 3px; border-radius: 3px; }
+</style>
+<style>
+/* Impressao: o trilho lateral vira ruido no papel, e as superficies escuras
+   gastam tinta. Em PDF/papel o documento inverte para fundo claro. */
+@media print {
+  @page { margin: 18mm 16mm; }
+  body { background: #fff; color: #14140f; font-size: 11pt; }
+  .trilho { display: none !important; }
+  .casca { display: block; max-width: none; padding: 0; }
+  .corpo { max-width: none; }
+  section { padding-top: 28px; break-inside: auto; }
+  h2.titulo, h3 { break-after: avoid; color: #14140f; }
+  figure, .placar, .nota, .formula, table { break-inside: avoid; }
+  .tecnico, .nota, .como-ler, .placar div, figure { background: #fafaf7; border-color: #d8d8d2; }
+  .formula, code { background: #f2f2ee; border-color: #d8d8d2; color: #14140f; }
+  .simples p, .capa h1, td strong, .placar .val { color: #14140f; }
+  .tecnico p, .tecnico li, td, p { color: #3a3a34; }
+  .selo-simples, .marca, .eyebrow .arquivo, .placar .val.neon { color: #2f7d0a; }
+  .capa { padding-top: 0; }
+  a { color: #2f7d0a; }
+}
+</style>
+</head>
+<body>
+<div class="casca">
+
+<nav class="trilho" aria-label="Sumário">
+  <h2>As partes</h2>
+  <ol>
+    <li><a href="#p1"><span class="n">01</span> Os dados</a></li>
+    <li><a href="#p2"><span class="n">02</span> O modelo</a></li>
+    <li><a href="#p3"><span class="n">03</span> O participante</a></li>
+    <li><a href="#p4"><span class="n">04</span> Os ataques</a></li>
+    <li><a href="#p5"><span class="n">05</span> O score S(t)</a></li>
+    <li><a href="#p6"><span class="n">06</span> A reputação R(t)</a></li>
+    <li><a href="#p7"><span class="n">07</span> O banimento</a></li>
+    <li><a href="#p8"><span class="n">08</span> A agregação</a></li>
+    <li><a href="#p9"><span class="n">09</span> O livro-razão</a></li>
+    <li><a href="#p10"><span class="n">10</span> O programa on-chain</a></li>
+    <li><a href="#p11"><span class="n">11</span> Os experimentos</a></li>
+  </ol>
+  <h2>Como se conecta</h2>
+  <ol>
+    <li><a href="#fluxo">Uma rodada, ponta a ponta</a></li>
+    <li><a href="#camadas">As três camadas</a></li>
+    <li><a href="#resultados">O que os números dizem</a></li>
+  </ol>
+</nav>
+
+<main class="corpo">
+
+<header class="capa">
+  <p class="marca">Documentação técnica · camada off-chain</p>
+  <h1>Anatomia do AwakeFL</h1>
+  <p class="abre">
+    Um sistema em que várias instituições treinam <strong>um modelo em conjunto sem
+    trocar dados</strong>, e uma blockchain guarda o registro de quem contribuiu bem e
+    quem tentou sabotar. Este documento abre o sistema peça por peça: cada parte é
+    explicada primeiro em palavras simples, depois no detalhe técnico — e só no fim
+    tudo é remontado.
+  </p>
+
+  <div class="como-ler">
+    <div>
+      <span class="selo selo-simples">Em palavras simples</span>
+      <p>
+        A ideia da peça, sem jargão e sem fórmula. Se você só ler estes blocos, do
+        começo ao fim, ainda assim entende o sistema inteiro.
+      </p>
+    </div>
+    <div>
+      <span class="selo selo-tecnico">No detalhe técnico</span>
+      <p>
+        Como está implementado de fato, com as fórmulas, os parâmetros e — mais
+        importante — <em>por que</em> foi decidido assim e não de outro jeito.
+      </p>
+    </div>
+  </div>
+</header>
+
+<!-- ================================================================= 01 -->
+<section id="p1">
+  <p class="eyebrow"><span>Parte 01</span> <span class="arquivo">data.py</span></p>
+  <h2 class="titulo">Os dados e as instituições</h2>
+
+  <div class="simples">
+    <span class="selo selo-simples">Em palavras simples</span>
+    <p>
+      Imagine dez hospitais que querem, juntos, treinar um sistema que lê exames.
+      Nenhum deles pode mostrar os prontuários dos pacientes para os outros — é
+      ilegal e seria antiético. A saída é cada um treinar com o que tem em casa e
+      compartilhar só o <strong>aprendizado</strong>, nunca os dados.
+    </p>
+    <p>
+      Para simular isso num computador só, pegamos um conjunto de imagens
+      (dígitos escritos à mão) e cortamos em dez pedaços que não se repetem. Cada
+      pedaço vira o "hospital" de um participante, e ele nunca vê os outros nove.
+    </p>
+    <p>
+      Só que hospitais reais não são iguais: um atende mais idosos, outro é
+      referência em pediatria. Então o corte não é justo de propósito — cada
+      participante recebe uma mistura diferente de dígitos. É isso que torna o
+      problema realista, e difícil.
+    </p>
+  </div>
+
+  <div class="tecnico">
+    <span class="selo selo-tecnico">No detalhe técnico</span>
+    <p>
+      MNIST (ou Fashion-MNIST) é particionado em <em>N</em> shards disjuntos. Dois
+      regimes, selecionáveis por <code>data.partition</code>:
+    </p>
+    <ul>
+      <li>
+        <strong>IID</strong> — amostragem aleatória uniforme. Cenário fácil: as
+        distribuições locais são parecidas, então os updates honestos apontam quase
+        todos na mesma direção e o detector de anomalias tem vida boa.
+      </li>
+      <li>
+        <strong>Não-IID (Dirichlet)</strong> — a proporção de cada classe por
+        participante é sorteada de uma Dirichlet(α). α menor = participantes mais
+        especializados. É o padrão do projeto (α = 0,7).
+      </li>
+    </ul>
+    <p>
+      A escolha do não-IID como padrão é o que dá peso ao trabalho: <strong>updates
+      honestos já divergem naturalmente entre si</strong> nesse regime, então o
+      detector precisa separar "divergente porque os dados são heterogêneos" de
+      "divergente porque é malicioso". Um detector que só funciona em IID não prova
+      nada — o caso IID é justamente aquele em que qualquer limiar ingênuo acerta.
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================= 02 -->
+<section id="p2">
+  <p class="eyebrow"><span>Parte 02</span> <span class="arquivo">model.py</span></p>
+  <h2 class="titulo">O modelo que todos treinam</h2>
+
+  <div class="simples">
+    <span class="selo selo-simples">Em palavras simples</span>
+    <p>
+      Todo mundo treina exatamente a <strong>mesma</strong> rede neural — a mesma
+      arquitetura, os mesmos botões de ajuste. O que muda de participante para
+      participante são só os valores desses botões depois do treino, porque cada um
+      viu dados diferentes.
+    </p>
+    <p>
+      Esses valores é que viajam pela rede. É a diferença central do Federated
+      Learning: circulam <strong>parâmetros do modelo, nunca exames de paciente</strong>.
+    </p>
+  </div>
+
+  <div class="tecnico">
+    <span class="selo selo-tecnico">No detalhe técnico</span>
+    <p>CNN pequena e didática, 215 370 parâmetros treináveis:</p>
+    <div class="formula">
+1×28×28 → conv(16, 5×5) → pool → conv(32, 5×5) → pool → 32·7·7 → 128 → 10</div>
+    <p>
+      <code>padding=2</code> com kernel 5 mantém a resolução, deixando todo o
+      downsample por conta do pooling — assim o tamanho do <em>flatten</em> é
+      trivial de acompanhar a olho, o que importa num código que vai ser lido por
+      banca. Treino local com SGD + momentum, <code>CrossEntropyLoss</code> sobre
+      logits.
+    </p>
+    <p>
+      <code>get_weights()</code> / <code>set_weights()</code> convertem o
+      <code>state_dict</code> para lista de arrays NumPy na ordem do dicionário.
+      Essa ordem é <strong>contrato</strong>: é ela que o hash SHA-256 da Parte 09
+      assume, e o lado Rust precisa reproduzir byte a byte.
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================= 03 -->
+<section id="p3">
+  <p class="eyebrow"><span>Parte 03</span> <span class="arquivo">client.py</span></p>
+  <h2 class="titulo">O participante</h2>
+
+  <div class="simples">
+    <span class="selo selo-simples">Em palavras simples</span>
+    <p>
+      Cada rodada funciona como um ciclo de estudo. O servidor manda o modelo atual
+      para todos; cada participante estuda um pouco com os próprios dados; e devolve
+      o modelo com o que aprendeu, junto de um bilhete dizendo como acha que foi
+      ("acertei 92%").
+    </p>
+    <p>
+      Esse bilhete é <strong>autodeclarado</strong> — ou seja, pode ser mentira. Um
+      atacante escreve o que quiser nele. Por isso o servidor nunca julga ninguém
+      pelo bilhete: ele julga pelo que a pessoa efetivamente entregou.
+    </p>
+  </div>
+
+  <div class="tecnico">
+    <span class="selo selo-tecnico">No detalhe técnico</span>
+    <div class="formula">
+servidor → pesos globais → [ataque nos dados?] → treino local
+         → [ataque nos pesos?] → pesos + métricas declaradas → servidor</div>
+    <p>
+      A mesma classe <code>AwakeFLClient</code> serve aos dois backends (motor local
+      e <code>NumPyClient</code> do Flower). Isso evita a armadilha clássica de "o
+      cliente do teste não é o cliente do experimento" — se o objeto testado não for
+      o mesmo que roda, o teste não prova nada sobre o experimento.
+    </p>
+    <p>
+      Honestidade experimental: o cliente malicioso reporta métricas de verdade dos
+      próprios dados envenenados (ou repete a anterior, no caso do free-rider). O
+      servidor as guarda no livro-razão como <strong>evidência do que foi
+      declarado</strong>, e nunca as usa para decidir reputação.
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================= 04 -->
+<section id="p4">
+  <p class="eyebrow"><span>Parte 04</span> <span class="arquivo">attacks.py</span></p>
+  <h2 class="titulo">Os ataques</h2>
+
+  <div class="simples">
+    <span class="selo selo-simples">Em palavras simples</span>
+    <p>
+      Para provar que a defesa funciona, é preciso ter de quem se defender. O
+      sistema sabe transformar qualquer participante em sabotador, de quatro
+      maneiras diferentes.
+    </p>
+    <p>
+      Duas delas mexem no <strong>material de estudo</strong>: o participante estuda
+      com o gabarito trocado, ou decora um sinal secreto ("toda imagem com um
+      quadradinho branco no canto é a letra A"). As outras duas mexem na
+      <strong>entrega</strong>: manda o dever de casa com tudo invertido e gritado
+      bem alto, ou não estuda nada e devolve o que recebeu, fingindo trabalho.
+    </p>
+  </div>
+
+  <div class="tecnico">
+    <span class="selo selo-tecnico">No detalhe técnico</span>
+    <div class="rolo">
+      <table>
+        <thead>
+          <tr><th>Ataque</th><th>Camada</th><th>O que faz</th><th>Detecção</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>label_flipping</code></td><td>dados</td>
+            <td>troca os rótulos locais (<code>y → 9-y</code>)</td>
+            <td><strong>difícil</strong> — o update fica bem comportado em norma; só a direção denuncia</td>
+          </tr>
+          <tr>
+            <td><code>backdoor</code></td><td>dados + pesos</td>
+            <td>gatilho branco 3×3 no canto inferior direito, classe alvo forçada e update amplificado</td>
+            <td>média — acurácia limpa fica intacta, por isso mede-se a ASR</td>
+          </tr>
+          <tr>
+            <td><code>gradient_poisoning</code></td><td>pesos</td>
+            <td>inverte e amplifica o update (×5)</td>
+            <td>fácil — cai em 2–3 rodadas</td>
+          </tr>
+          <tr>
+            <td><code>free_rider</code></td><td>pesos</td>
+            <td>não treina; devolve o modelo global com ruído</td>
+            <td>fácil — pego pelo termo de magnitude</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      A taxonomia segue a literatura de FL robusto (Bagdasaryan et al. 2020; Fang et
+      al. 2020). Os dois extremos estão cobertos de propósito: ataques de
+      <strong>dados</strong> são sutis e derrotam defesas baseadas só em magnitude;
+      ataques de <strong>pesos</strong> são agressivos e caem rápido. Ter os dois
+      permite discutir o trade-off entre sutileza e latência de detecção em vez de
+      afirmar "a defesa funciona" com um único caso favorável.
+    </p>
+    <p>
+      No backdoor, o relatório reporta a <strong>ASR</strong> (<em>attack success
+      rate</em>): a fração das amostras com gatilho classificadas como a classe alvo.
+      É a métrica que expõe o perigo — a acurácia limpa pode não se mexer enquanto a
+      ASR sobe para perto de 100%.
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================= 05 -->
+<section id="p5">
+  <p class="eyebrow"><span>Parte 05</span> <span class="arquivo">reputation.py</span></p>
+  <h2 class="titulo">O score de consistência S(t)</h2>
+
+  <div class="simples">
+    <span class="selo selo-simples">Em palavras simples</span>
+    <p>
+      Aqui está o detetive do sistema. A cada rodada ele faz uma pergunta simples
+      sobre cada participante: <strong>"você puxou o modelo para o mesmo lado que o
+      grupo, e com força parecida?"</strong>
+    </p>
+    <p>
+      São duas perguntas na verdade. A primeira é sobre <strong>direção</strong>:
+      se todo mundo empurrou o modelo para a direita e você empurrou para a
+      esquerda, algo está errado. A segunda é sobre <strong>força</strong>: se todo
+      mundo deu um empurrãozinho e você deu um tranco — ou nem encostou —, também
+      está errado. Uma pega o sabotador, a outra pega o preguiçoso.
+    </p>
+    <p>
+      A resposta vira uma nota de 0 a 1 para aquela rodada. E — detalhe que faz toda
+      a diferença — a nota é sempre comparada com o participante <em>mediano</em>
+      daquela rodada, não com um valor fixo. Assim o detetive não se assusta quando
+      a turma inteira está tendo um dia difícil.
+    </p>
+  </div>
+
+  <div class="tecnico">
+    <span class="selo selo-tecnico">No detalhe técnico</span>
+    <div class="formula">
+S(t) = 0,7 · clip( max(0, cos) / cos_mediano )  +  0,3 · min(r, 1/r)
+       <span class="cmt">└──────── DIREÇÃO ────────┘         └── MAGNITUDE ──┘</span></div>
+    <p>
+      Opera sobre o <strong>delta</strong> (<code>w_local − w_global</code>), não
+      sobre os pesos absolutos: o que interessa é para onde o participante puxou o
+      modelo nesta rodada, não onde ele está.
+    </p>
+
+    <h3>Por que cosseno e não distância euclidiana</h3>
+    <p>
+      O cosseno é <strong>invariante à escala</strong>. Em cenário não-IID, um
+      hospital com mais dados produz naturalmente um update maior; puni-lo por isso
+      seria falso positivo puro. A pergunta certa é sobre o sentido, não sobre o
+      tamanho — e o tamanho é tratado separadamente, no segundo termo.
+    </p>
+
+    <h3>Por que mediana e não média</h3>
+    <p>
+      A referência é a <strong>mediana por coordenada</strong> dos updates
+      confiáveis. A mediana tem <em>breakdown point</em> de 50%: resiste até que
+      metade da amostra seja adversária. Com média, um único atacante amplificando o
+      update em 100× deslocaria a própria referência e passaria a <em>ser</em> o
+      consenso — o ataque clássico contra defesas ingênuas, em que a vítima é o
+      detector.
+    </p>
+
+    <h3>Por que a magnitude é simétrica</h3>
+    <p>
+      <code>min(r, 1/r)</code> pune igualmente updates gigantes (poisoning, model
+      replacement) e minúsculos (free-rider). O cosseno sozinho não pegaria o
+      free-rider: a direção do ruído dele não é oposta ao consenso, é apenas
+      aleatória.
+    </p>
+
+    <h3>Por que tudo é calibrado pela mediana da rodada</h3>
+    <p>
+      Em dados IID, updates honestos têm cosseno ~0,9 entre si; em não-IID isso cai
+      para ~0,4 <em>sem que ninguém seja malicioso</em>. Um limiar absoluto ou
+      baniria a federação inteira no caso não-IID, ou não pegaria ninguém no caso
+      IID. Calibrando pela mediana, S(t) responde <strong>"quão pior que o
+      participante mediano você está nesta rodada"</strong> — pergunta invariante ao
+      regime de dados.
+    </p>
+
+    <h3>O veto de norma</h3>
+    <p>
+      Um update com mais de 2,5× (ou menos de 1/2,5×) a norma mediana perde o crédito
+      do termo de direção. Fecha a brecha do <em>model replacement</em>: o atacante
+      que alinha perfeitamente a direção com o consenso mas amplifica a magnitude
+      para dominar sozinho o FedAvg tiraria nota alta nos 0,7 do primeiro termo.
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================= 06 -->
+<section id="p6">
+  <p class="eyebrow"><span>Parte 06</span> <span class="arquivo">reputation.py</span></p>
+  <h2 class="titulo">A reputação R(t)</h2>
+
+  <div class="simples">
+    <span class="selo selo-simples">Em palavras simples</span>
+    <p>
+      A nota S(t) é de uma rodada só. Ninguém deve ser condenado por um dia ruim —
+      pode ter sido a internet, pode ter sido azar na amostra. A reputação é a
+      <strong>ficha corrida</strong>: mistura a nota de hoje com a ficha de ontem,
+      meio a meio.
+    </p>
+    <p>
+      Como é sempre meio a meio, o passado vai perdendo peso: o que aconteceu há
+      cinco rodadas responde por 3% da nota de hoje. Na prática o sistema
+      <strong>perdoa um tropeço e condena um padrão</strong>.
+    </p>
+    <p>
+      Todo mundo começa em 0,5 — no meio da escala, nem confiável nem suspeito. Você
+      precisa <em>merecer</em> a confiança contribuindo bem, e um participante
+      honesto chega a ~0,93 em umas quatro rodadas.
+    </p>
+  </div>
+
+  <div class="tecnico">
+    <span class="selo selo-tecnico">No detalhe técnico</span>
+    <div class="formula">
+R(t) = α · R(t−1) + (1 − α) · S(t)          <span class="cmt">α = 0,5</span>
+
+R₀ = 0,5  <span class="cmt">≡ INITIAL_REPUTATION = 500 na escala 0..1000 do Anchor</span></div>
+    <p>
+      É uma média móvel exponencial. O peso de R₀ cai como 0,5<sup>t</sup>: 50% após
+      uma rodada, 3% após cinco. Consequência importante: <strong>R(t) converge para
+      a média de S(t)</strong> independentemente de onde começou. α maior = mais
+      memória, detecção mais lenta; α menor = reativo demais, mais falso positivo.
+    </p>
+
+    <h3>Por que o valor inicial é neutro e não máximo</h3>
+    <p>
+      <code>register_participant</code> é aberto: qualquer wallet se registra pelo
+      custo do <em>rent</em> de uma conta de 66 bytes. Se o recém-chegado nascesse
+      com reputação máxima, o banimento permanente valeria <strong>zero</strong> —
+      bastaria gerar outra wallet e voltar com a ficha limpa. É o
+      <em>whitewashing</em>, e ele anula a arquitetura inteira. Começar no meio da
+      escala faz a identidade acumulada valer alguma coisa.
+    </p>
+
+    <div class="nota">
+      <span class="nota-titulo">Achado experimental</span>
+      <p>
+        <strong>O valor inicial não é um parâmetro de detecção.</strong> Reaplicando
+        a EMA sobre exatamente os mesmos S(t) observados, mudar R₀ de 1,0 para 0,5
+        antecipou o banimento em uma rodada em apenas <strong>um dos três
+        atacantes</strong>. Faz sentido: a EMA esquece R₀ em ~4 rodadas, e quem
+        decide o banimento é o S(t) do atacante.
+      </p>
+      <p>
+        R₀ governa <strong>resistência a whitewashing e proteção ao recém-chegado</strong>,
+        não latência de detecção. Boa parte da literatura de reputação em FL trata o
+        valor inicial como calibração de detector; os dados deste experimento dizem
+        que não é. Reproduza com <code>--rep-initial 1.0</code>.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================= 07 -->
+<section id="p7">
+  <p class="eyebrow"><span>Parte 07</span> <span class="arquivo">reputation.py</span></p>
+  <h2 class="titulo">O banimento</h2>
+
+  <div class="simples">
+    <span class="selo selo-simples">Em palavras simples</span>
+    <p>
+      Quando a ficha corrida de alguém cai abaixo de 0,4, duas coisas acontecem: o
+      que sobrou da reputação é <strong>dividido por dez</strong>, e a pessoa está
+      fora — para sempre, sem apelação. Não volta a receber o modelo, não entra mais
+      na média, não é mais avaliada.
+    </p>
+    <p>
+      A divisão por dez existe por um motivo específico: o atacante paciente. Alguém
+      pode se comportar exemplarmente por vinte rodadas só para atacar na vigésima
+      primeira, contando com a reputação acumulada como escudo. Dividir por dez
+      queima toda a poupança de uma vez.
+    </p>
+    <p>
+      Como punição permanente é coisa séria, os primeiros passos de cada participante
+      são protegidos: as <strong>duas primeiras contribuições de cada um</strong> não
+      podem levar a banimento. E repare no "de cada um" — quem chega na rodada 50 tem
+      exatamente a mesma proteção de quem estava lá desde o início.
+    </p>
+  </div>
+
+  <div class="tecnico">
+    <span class="selo selo-tecnico">No detalhe técnico</span>
+    <div class="formula">
+se R(t) &lt; 0,4  e  contrib_count &gt; 2:
+    R ← R / 10          <span class="cmt">penalidade registrada, evidência auditável</span>
+    banido ← True       <span class="cmt">PERMANENTE — não há instrução de reversão</span></div>
+    <p>
+      A irreversibilidade é proposital e casa com a natureza do livro-razão: um
+      atacante que pudesse "esperar esfriar" teria incentivo a atacar de forma
+      intermitente, que é precisamente o comportamento mais difícil de detectar.
+    </p>
+    <p>
+      O banido sai de tudo: não é amostrado, não entra na agregação e
+      <strong>não entra no cálculo da mediana de referência</strong> — esta última é
+      a parte que importa, porque manter um atacante conhecido na referência
+      envenenaria o critério usado para julgar todos os outros.
+    </p>
+
+    <h3>Graça por tempo de casa, não por rodada global</h3>
+    <p>
+      A imunidade é contada em <code>contrib_count</code> — o mesmo campo que a conta
+      <code>Participant</code> já mantém on-chain — e não pelo número global da
+      rodada. A diferença só aparece na blockchain, mas é decisiva: com graça por
+      rodada global, um hospital que se registrasse na rodada 50 entraria sem
+      proteção alguma, em R = 0,5, a um passo do limiar 0,4, justamente quando é o
+      único carregando aquela distribuição de dados. Na simulação, em que todos
+      entram na rodada 1, os dois critérios coincidem.
+    </p>
+  </div>
+
+  <figure>
+    <div class="rolo">
+      <svg viewBox="0 0 720 320" role="img" aria-label="Curvas de reputação ao longo de 12 rodadas: dois participantes honestos sobem de 0,5 para cerca de 0,95, enquanto três atacantes oscilam e depois despencam abaixo do limiar de 0,4 nas rodadas 6 e 7.">
+        <!-- grade -->
+        <g stroke="rgba(255,255,255,0.06)" stroke-width="1">
+          <line x1="56" y1="20" x2="690" y2="20"/>
+          <line x1="56" y1="82.5" x2="690" y2="82.5"/>
+          <line x1="56" y1="145" x2="690" y2="145"/>
+          <line x1="56" y1="207.5" x2="690" y2="207.5"/>
+          <line x1="56" y1="270" x2="690" y2="270"/>
+        </g>
+        <!-- rótulos y -->
+        <g fill="#7a7877" font-family="JetBrains Mono, monospace" font-size="10.5" text-anchor="end">
+          <text x="44" y="24">1,0</text>
+          <text x="44" y="86.5">0,8</text>
+          <text x="44" y="149">0,6</text>
+          <text x="44" y="211.5">0,4</text>
+          <text x="44" y="274">0,2</text>
+        </g>
+        <!-- limiar -->
+        <line x1="56" y1="170" x2="690" y2="170" stroke="#ff5449" stroke-width="1.25" stroke-dasharray="5 4" opacity="0.75"/>
+        <text x="690" y="163" fill="#ff5449" font-family="JetBrains Mono, monospace" font-size="10.5" text-anchor="end">limiar de banimento · 0,4</text>
+
+        <!-- honestos -->
+        <polyline fill="none" stroke="#a8a5a4" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"
+          points="56,145 108.8,85.5 161.7,52.8 214.5,40 267.3,35.8 320.2,33.3 373,32.5 425.8,49.5 478.7,44 531.5,41.5 584.3,39.5 637.2,29.8 690,43.8"/>
+        <polyline fill="none" stroke="#a8a5a4" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round" opacity="0.6"
+          points="56,145 108.8,88 161.7,56.3 214.5,52.5 267.3,38.5 320.2,30 373,26.5 425.8,34.5 478.7,42 531.5,41.5 584.3,32.3 637.2,26.5 690,42.3"/>
+
+        <!-- atacantes -->
+        <polyline fill="none" stroke="#ff5449" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"
+          points="56,145 108.8,124.3 161.7,146 214.5,88.8 267.3,107 320.2,113.5 373,167.8 425.8,261.8"/>
+        <polyline fill="none" stroke="#ff5449" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round" opacity="0.72"
+          points="56,145 108.8,104.5 161.7,102.8 214.5,86.8 267.3,102.3 320.2,137.8 373,261.5"/>
+        <polyline fill="none" stroke="#ff5449" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"
+          points="56,145 108.8,128.8 161.7,145.8 214.5,105 267.3,129.3 320.2,119.8 373,260.3"/>
+
+        <!-- marcas de banimento -->
+        <circle cx="373" cy="261.5" r="3.6" fill="#ff5449"/>
+        <circle cx="373" cy="260.3" r="3.6" fill="#ff5449"/>
+        <circle cx="425.8" cy="261.8" r="3.6" fill="#ff5449"/>
+        <text x="382" y="252" fill="#ff5449" font-family="JetBrains Mono, monospace" font-size="10.5">banidos r6</text>
+        <text x="434" y="279" fill="#ff5449" font-family="JetBrains Mono, monospace" font-size="10.5">r7</text>
+
+        <!-- ponto de partida -->
+        <circle cx="56" cy="145" r="3.2" fill="#4af403"/>
+        <text x="63" y="136" fill="#4af403" font-family="JetBrains Mono, monospace" font-size="10.5">R₀ = 0,5 · todos</text>
+
+        <!-- eixo x -->
+        <line x1="56" y1="290" x2="690" y2="290" stroke="rgba(255,255,255,0.1)"/>
+        <g fill="#7a7877" font-family="JetBrains Mono, monospace" font-size="10.5" text-anchor="middle">
+          <text x="108.8" y="306">1</text>
+          <text x="214.5" y="306">3</text>
+          <text x="320.2" y="306">5</text>
+          <text x="425.8" y="306">7</text>
+          <text x="531.5" y="306">9</text>
+          <text x="637.2" y="306">11</text>
+        </g>
+        <text x="373" y="306" fill="#7a7877" font-family="JetBrains Mono, monospace" font-size="10.5" text-anchor="middle">6</text>
+      </svg>
+    </div>
+    <figcaption>
+      <strong>Dados reais do cenário C</strong> (label flipping, seed 42, α do Dirichlet
+      0,7). Em cinza, dois participantes honestos: partem de 0,5 e sobem. Em vermelho,
+      os três atacantes: oscilam por cinco rodadas — o label flipping é sutil — até o
+      S(t) desabar, a reputação cruzar o limiar e a penalidade de ÷10 jogá-los ao chão.
+      A oscilação inicial é exatamente o que a média móvel existe para tolerar.
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ================================================================= 08 -->
+<section id="p8">
+  <p class="eyebrow"><span>Parte 08</span> <span class="arquivo">server.py</span></p>
+  <h2 class="titulo">A agregação</h2>
+
+  <div class="simples">
+    <span class="selo selo-simples">Em palavras simples</span>
+    <p>
+      Recebidas todas as entregas, o servidor faz uma média delas para produzir o
+      modelo da próxima rodada. Mas não uma média simples: quem trouxe mais dados
+      pesa mais — e quem tem reputação melhor também.
+    </p>
+    <p>
+      Isso dá à reputação <strong>dois papéis</strong>. Um suave: quem está sob
+      suspeita já influencia menos, mesmo antes de qualquer punição. E um definitivo:
+      quem foi banido pesa zero.
+    </p>
+    <p>
+      A ordem das etapas dentro da rodada importa muito. O banimento acontece
+      <strong>antes</strong> da média, e não depois — assim a entrega que derrubou a
+      reputação de alguém já não contamina o modelo daquela mesma rodada.
+    </p>
+  </div>
+
+  <div class="tecnico">
+    <span class="selo selo-tecnico">No detalhe técnico</span>
+    <div class="formula">
+treino local → deltas → S(t) → R(t) → banimento → agregação → avaliação → ledger
+
+w(t+1) = Σᵢ (nᵢ · Rᵢ) · wᵢ  /  Σᵢ (nᵢ · Rᵢ)      <span class="cmt">i ∈ não-banidos</span></div>
+    <p>
+      FedAvg ponderado por amostras × reputação. Como os pesos são
+      <strong>relativos</strong>, multiplicar todos por uma constante não muda nada:
+      na primeira rodada, com todos em R = 0,5, o resultado é idêntico ao FedAvg
+      clássico. A reputação só começa a deslocar a média quando os participantes
+      divergem entre si.
+    </p>
+    <p>
+      Dois backends com a mesma lógica. <strong>Motor local</strong>
+      (<code>run_federated</code>), o padrão: rodadas sequenciais no processo atual,
+      sem Ray, sem rede, determinístico — num experimento de IC a reprodutibilidade
+      vale mais do que paralelismo. <strong>Flower</strong>
+      (<code>--backend flower</code>): <code>start_simulation</code> com a estratégia
+      <code>AwakeFLStrategy</code>, que herda de <code>FedAvg</code> e injeta a
+      reputação no <code>aggregate_fit</code> — serve para demonstrar que a defesa é
+      um plug-in de estratégia Flower legítimo, e não um simulador caseiro.
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================= 09 -->
+<section id="p9">
+  <p class="eyebrow"><span>Parte 09</span> <span class="arquivo">onchain_interface.py</span></p>
+  <h2 class="titulo">O livro-razão e o hash</h2>
+
+  <div class="simples">
+    <span class="selo selo-simples">Em palavras simples</span>
+    <p>
+      A blockchain não guarda o modelo — seria caro e, dependendo do caso, revelaria
+      informação demais. Ela guarda uma <strong>impressão digital</strong> dele: um
+      código de 64 caracteres calculado a partir dos números entregues.
+    </p>
+    <p>
+      A graça é que a impressão digital muda completamente se um único número mudar.
+      Então, meses depois, um auditor pega o arquivo que o participante diz ter
+      enviado, recalcula o código e compara com o que está gravado. Bateu, era aquilo
+      mesmo. Não bateu, alguém mexeu.
+    </p>
+    <p>
+      Junto vão o número da rodada, as métricas declaradas e a nota recebida. É a
+      trilha de auditoria: o registro de quem entregou o quê, quando, e como foi
+      avaliado.
+    </p>
+  </div>
+
+  <div class="tecnico">
+    <span class="selo selo-tecnico">No detalhe técnico</span>
+    <p>
+      <code>hash_weights()</code> produz um SHA-256 <strong>canônico</strong>. As
+      regras de serialização são contrato com o lado Rust — se divergirem, a
+      verificação on-chain nunca fecha:
+    </p>
+    <ol class="lista">
+      <li>tensores na ordem do <code>state_dict</code>;</li>
+      <li>por tensor: <code>ndim</code> (u32 LE) + cada dimensão (u32 LE) + dados em float32 little-endian, ordem C;</li>
+      <li>hash acumulado sobre a concatenação.</li>
+    </ol>
+    <p>
+      float32 é fixado mesmo quando o cálculo interno usa float64: é a precisão em
+      que os pesos realmente trafegam, e evita que uma diferença de ULP (ordem de
+      soma distinta entre máquinas) altere o hash.
+    </p>
+    <p>
+      O <code>SimulatedOnChainLedger</code> encadeia cada bloco com o hash do
+      anterior — uma mini-blockchain didática. Dá para demonstrar em banca que
+      alterar uma métrica antiga quebra a cadeia inteira, via
+      <code>verify_chain()</code>. Cada registro guarda
+      <code>(participant, round, weights_hash, metrics, score, reputation_bps)</code>
+      e é exportado para <code>ledger_*.json</code>.
+    </p>
+    <p>
+      As métricas são <strong>declaradas</strong>, potencialmente mentira, e vão para
+      a cadeia como evidência do que foi dito — não como base da avaliação. Essa
+      separação entre "o que você afirmou" e "o que você entregou" é o que torna o
+      sistema robusto a um participante que mente bem.
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================= 10 -->
+<section id="p10">
+  <p class="eyebrow"><span>Parte 10</span> <span class="arquivo">programs/awakefl/src/lib.rs</span></p>
+  <h2 class="titulo">O programa on-chain</h2>
+
+  <div class="simples">
+    <span class="selo selo-simples">Em palavras simples</span>
+    <p>
+      Do lado da blockchain existe um programa publicado na Devnet da Solana com seis
+      operações. Instituições podem se registrar e enviar suas impressões digitais.
+      O agregador — quem conduz a rodada — pode avaliar, punir e virar a rodada.
+    </p>
+    <p>
+      O ponto sutil é <em>onde</em> a conta é feita: o servidor manda apenas a
+      <strong>nota</strong>, e a fórmula da reputação roda dentro do programa. Se o
+      servidor mandasse a reputação já calculada, seria preciso confiar nele. Assim
+      qualquer pessoa recalcula e confere.
+    </p>
+  </div>
+
+  <div class="tecnico">
+    <span class="selo selo-tecnico">No detalhe técnico</span>
+    <div class="rolo">
+      <table>
+        <thead>
+          <tr><th>Instrução</th><th>Assina</th><th>Efeito</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>initialize</code></td><td>autoridade</td><td>cria o <code>Config</code> global, PDA <code>["config"]</code></td></tr>
+          <tr><td><code>register_participant</code></td><td>instituição</td><td>PDA <code>["participant", wallet]</code>, reputação 500</td></tr>
+          <tr><td><code>submit_contribution</code></td><td>instituição</td><td>PDA <code>["contribution", participant_pda, round]</code>; banido é barrado por <em>constraint</em></td></tr>
+          <tr><td><code>validate_contribution</code></td><td>autoridade</td><td><code>R = (R + S) / 2</code>; aprova se <code>S ≥ 500</code></td></tr>
+          <tr><td><code>penalize_participant</code></td><td>autoridade</td><td><code>R /= 10</code>, <code>is_banned = true</code>, sem reversão</td></tr>
+          <tr><td><code>advance_round</code></td><td>autoridade</td><td>incrementa <code>current_round</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      A EMA roda em <strong>aritmética inteira</strong> (<code>(R + S) / 2</code>,
+      escala 0..1000) porque contas Solana não guardam ponto flutuante — validadores
+      precisam chegar ao mesmo bit. A divisão trunca, perdendo no máximo 1 ponto por
+      rodada. Toda mudança emite evento (<code>ContributionValidated</code>,
+      <code>ParticipantPenalized</code>…), que é a trilha de auditoria imutável.
+    </p>
+    <p>
+      A autoridade é o agregador da rodada — o <code>server.py</code> deste projeto.
+      Do lado Python há um <em>stub</em> documentado por instrução, com nome e
+      argumentos idênticos, mais os derivadores de PDA. Duas armadilhas já
+      registradas ali: <code>update_hash</code> viaja como <strong>String
+      hexadecimal</strong> de 64 caracteres (não bytes), e o PDA da contribuição usa
+      como seed o <strong>PDA do Participant</strong>, não a wallet — derivar da
+      wallet gera um endereço válido que o programa rejeita com
+      <code>ConstraintSeeds</code>.
+    </p>
+  </div>
+</section>
+
+<!-- ================================================================= 11 -->
+<section id="p11">
+  <p class="eyebrow"><span>Parte 11</span> <span class="arquivo">run_experiments.py</span></p>
+  <h2 class="titulo">Os três experimentos</h2>
+
+  <div class="simples">
+    <span class="selo selo-simples">Em palavras simples</span>
+    <p>
+      Para provar qualquer coisa, é preciso comparar. O sistema roda a mesma
+      federação três vezes: <strong>sem atacante</strong>, <strong>com atacante e sem
+      defesa</strong>, e <strong>com atacante e com defesa</strong>.
+    </p>
+    <p>
+      A primeira mostra o teto que dá para alcançar. A segunda mostra o estrago. A
+      terceira mostra quanto do estrago a defesa recupera. As três partem do mesmo
+      sorteio de dados e do mesmo modelo inicial — se não fosse assim, qualquer
+      diferença poderia ser só sorte.
+    </p>
+  </div>
+
+  <div class="tecnico">
+    <span class="selo selo-tecnico">No detalhe técnico</span>
+    <div class="rolo">
+      <table>
+        <thead>
+          <tr><th>Cenário</th><th>Atacante</th><th>Defesa</th><th>O que prova</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>A — baseline</strong></td><td>não</td><td>não</td><td>o teto de acurácia da federação honesta</td></tr>
+          <tr><td><strong>B — ataque</strong></td><td>sim</td><td>não</td><td>que o ataque causa dano real</td></tr>
+          <tr><td><strong>C — defesa</strong></td><td>sim</td><td>sim</td><td>que a reputação detecta, bane e recupera</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Controle experimental: mesma seed, mesma partição, mesma inicialização do modelo
+      global. Entre B e C a <strong>única</strong> variável é a defesa estar ligada —
+      é isso que permite atribuir a diferença ao mecanismo e não ao acaso.
+    </p>
+    <p>
+      Detalhe que rende no texto da IC: no cenário B a reputação
+      <strong>continua sendo calculada</strong>, apenas não é aplicada. Por isso o
+      gráfico <code>reputacao_B.png</code> existe e é útil — ele mostra que o sinal
+      de detecção já estava lá, e que a única diferença para C é a decisão de agir
+      sobre ele.
+    </p>
+    <p>
+      Saídas: <code>relatorio.md</code> comparativo, <code>resultados.json</code> com
+      as métricas por rodada, curvas de convergência e de reputação em PNG, e os três
+      livros-razão em JSON.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================== FLUXO -->
+<section id="fluxo">
+  <p class="eyebrow"><span>Como se conecta · 1</span></p>
+  <h2 class="titulo">Uma rodada, ponta a ponta</h2>
+
+  <p>
+    Agora as peças remontadas. Uma rodada do AwakeFL percorre este caminho, e a ordem
+    das etapas é parte do projeto — não uma consequência da implementação.
+  </p>
+
+  <figure>
+    <div class="rolo">
+      <svg viewBox="0 0 720 440" role="img" aria-label="Diagrama do fluxo de uma rodada: o servidor envia o modelo global aos participantes, que treinam localmente e devolvem pesos; o servidor calcula deltas, score, reputação, aplica banimento, agrega e registra no livro-razão.">
+        <defs>
+          <marker id="seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#7a7877"/>
+          </marker>
+          <marker id="seta-neon" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#4af403"/>
+          </marker>
+        </defs>
+
+        <!-- servidor topo -->
+        <rect x="230" y="10" width="260" height="46" rx="7" fill="#201f1f" stroke="rgba(255,255,255,0.16)"/>
+        <text x="360" y="31" fill="#e5e2e1" font-family="Geist, sans-serif" font-size="14" font-weight="600" text-anchor="middle">SERVIDOR · modelo global w(t)</text>
+        <text x="360" y="47" fill="#7a7877" font-family="JetBrains Mono, monospace" font-size="10.5" text-anchor="middle">server.py</text>
+
+        <!-- setas para clientes -->
+        <g stroke="#7a7877" stroke-width="1.25" fill="none" marker-end="url(#seta)">
+          <path d="M 300 56 L 300 74 L 100 74 L 100 92"/>
+          <path d="M 340 56 L 340 74 L 280 74 L 280 92"/>
+          <path d="M 380 56 L 380 74 L 450 74 L 450 92"/>
+          <path d="M 420 56 L 420 74 L 620 74 L 620 92"/>
+        </g>
+        <text x="512" y="70" fill="#7a7877" font-family="JetBrains Mono, monospace" font-size="10">1 · envia w(t)</text>
+
+        <!-- clientes -->
+        <g font-family="Geist, sans-serif" font-size="12" text-anchor="middle">
+          <rect x="40" y="92" width="120" height="62" rx="7" fill="#1c1b1b" stroke="rgba(255,255,255,0.1)"/>
+          <text x="100" y="114" fill="#e5e2e1" font-weight="500">instituição 0</text>
+          <text x="100" y="132" fill="#7a7877" font-family="JetBrains Mono, monospace" font-size="10">honesta</text>
+          <text x="100" y="147" fill="#7a7877" font-family="JetBrains Mono, monospace" font-size="10">treino local</text>
+
+          <rect x="220" y="92" width="120" height="62" rx="7" fill="#1c1b1b" stroke="#ff5449" stroke-opacity="0.55"/>
+          <text x="280" y="114" fill="#ff5449" font-weight="500">instituição 1</text>
+          <text x="280" y="132" fill="#ff5449" font-family="JetBrains Mono, monospace" font-size="10" opacity="0.85">ATACANTE</text>
+          <text x="280" y="147" fill="#7a7877" font-family="JetBrains Mono, monospace" font-size="10">dados/pesos</text>
+
+          <rect x="390" y="92" width="120" height="62" rx="7" fill="#1c1b1b" stroke="rgba(255,255,255,0.1)"/>
+          <text x="450" y="114" fill="#e5e2e1" font-weight="500">instituição 2</text>
+          <text x="450" y="132" fill="#7a7877" font-family="JetBrains Mono, monospace" font-size="10">honesta</text>
+          <text x="450" y="147" fill="#7a7877" font-family="JetBrains Mono, monospace" font-size="10">treino local</text>
+
+          <rect x="560" y="92" width="120" height="62" rx="7" fill="#1c1b1b" stroke="rgba(255,255,255,0.1)"/>
+          <text x="620" y="114" fill="#e5e2e1" font-weight="500">instituição N−1</text>
+          <text x="620" y="132" fill="#7a7877" font-family="JetBrains Mono, monospace" font-size="10">honesta</text>
+          <text x="620" y="147" fill="#7a7877" font-family="JetBrains Mono, monospace" font-size="10">treino local</text>
+        </g>
+
+        <!-- setas de volta -->
+        <g stroke="#7a7877" stroke-width="1.25" fill="none" marker-end="url(#seta)">
+          <path d="M 100 154 L 100 172 L 360 172 L 360 190"/>
+          <path d="M 280 154 L 280 172"/>
+          <path d="M 450 154 L 450 172"/>
+          <path d="M 620 154 L 620 172 L 360 172"/>
+        </g>
+        <text x="376" y="186" fill="#7a7877" font-family="JetBrains Mono, monospace" font-size="10">2 · pesos + métricas declaradas</text>
+
+        <!-- pipeline servidor -->
+        <rect x="120" y="190" width="480" height="182" rx="9" fill="#0e0e0e" stroke="rgba(255,255,255,0.16)"/>
+        <text x="140" y="212" fill="#7a7877" font-family="JetBrains Mono, monospace" font-size="10.5">DENTRO DO SERVIDOR</text>
+
+        <g font-family="Geist, sans-serif" font-size="12.5" fill="#e5e2e1">
+          <rect x="140" y="224" width="200" height="30" rx="5" fill="#201f1f" stroke="rgba(255,255,255,0.1)"/>
+          <text x="152" y="244">3 · delta = w_local − w(t)</text>
+
+          <rect x="140" y="262" width="200" height="30" rx="5" fill="#201f1f" stroke="rgba(255,255,255,0.1)"/>
+          <text x="152" y="282">4 · mediana dos confiáveis</text>
+
+          <rect x="140" y="300" width="200" height="30" rx="5" fill="#201f1f" stroke="#4af403" stroke-opacity="0.5"/>
+          <text x="152" y="320">5 · S(t) por participante</text>
+
+          <rect x="360" y="224" width="220" height="30" rx="5" fill="#201f1f" stroke="#4af403" stroke-opacity="0.5"/>
+          <text x="372" y="244">6 · R(t) = ½R(t−1) + ½S(t)</text>
+
+          <rect x="360" y="262" width="220" height="30" rx="5" fill="#201f1f" stroke="#ff5449" stroke-opacity="0.5"/>
+          <text x="372" y="282" fill="#ff5449">7 · banimento (R &lt; 0,4)</text>
+
+          <rect x="360" y="300" width="220" height="30" rx="5" fill="#201f1f" stroke="rgba(255,255,255,0.1)"/>
+          <text x="372" y="320">8 · FedAvg ponderado</text>
+
+          <rect x="140" y="338" width="440" height="26" rx="5" fill="#131313" stroke="rgba(255,255,255,0.1)"/>
+          <text x="152" y="356" font-size="12">9 · avalia w(t+1) no teste global → acurácia, perda, ASR</text>
+        </g>
+
+        <!-- setas internas -->
+        <g stroke="#7a7877" stroke-width="1.1" fill="none" marker-end="url(#seta)">
+          <path d="M 240 254 L 240 262"/>
+          <path d="M 240 292 L 240 300"/>
+          <path d="M 340 315 L 352 315 L 352 239 L 360 239"/>
+          <path d="M 470 254 L 470 262"/>
+          <path d="M 470 292 L 470 300"/>
+          <path d="M 470 330 L 470 338"/>
+        </g>
+
+        <!-- ledger -->
+        <rect x="230" y="394" width="260" height="38" rx="7" fill="#131313" stroke="#4af403" stroke-opacity="0.45"/>
+        <text x="360" y="411" fill="#4af403" font-family="Geist, sans-serif" font-size="12.5" font-weight="500" text-anchor="middle">10 · LIVRO-RAZÃO</text>
+        <text x="360" y="426" fill="#7a7877" font-family="JetBrains Mono, monospace" font-size="10" text-anchor="middle">id · rodada · SHA-256 · métricas · S · R</text>
+        <path d="M 360 372 L 360 394" stroke="#4af403" stroke-width="1.25" fill="none" marker-end="url(#seta-neon)" opacity="0.8"/>
+      </svg>
+    </div>
+    <figcaption>
+      <strong>A ordem é o projeto.</strong> O banimento (7) vem antes da agregação (8):
+      a entrega que derrubou a reputação já não entra no modelo daquela rodada. E a
+      mediana (4) é calculada só entre os confiáveis — manter um atacante conhecido na
+      referência envenenaria o critério de julgamento de todos os outros.
+    </figcaption>
+  </figure>
+
+  <h3>O que se passa entre uma rodada e a seguinte</h3>
+  <p>
+    O modelo agregado vira o <code>w(t+1)</code> enviado no passo 1 da próxima rodada.
+    A reputação persiste entre rodadas — é o único estado que sobrevive, e é
+    exatamente por isso que ela precisa estar na blockchain: <strong>é a memória do
+    sistema</strong>. Os pesos são efêmeros; a ficha corrida não.
+  </p>
+</section>
+
+<!-- ============================================================ CAMADAS -->
+<section id="camadas">
+  <p class="eyebrow"><span>Como se conecta · 2</span></p>
+  <h2 class="titulo">As três camadas</h2>
+
+  <p>
+    O projeto inteiro tem três camadas. As três funcionam hoje — e é importante ser
+    honesto sobre isto: <strong>ainda não conversam entre si</strong>. São três provas
+    de conceito com as fronteiras já desenhadas, e a integração é a próxima etapa.
+  </p>
+
+  <figure>
+    <div class="rolo">
+      <svg viewBox="0 0 720 400" role="img" aria-label="Diagrama das três camadas do AwakeFL: camada de modelo em Python, camada de livro-razão em Rust na Solana, e camada de apresentação em Next.js. As conexões entre elas ainda são stubs e dados fixos.">
+        <!-- camada 1 -->
+        <rect x="30" y="18" width="660" height="96" rx="10" fill="#1c1b1b" stroke="rgba(255,255,255,0.16)"/>
+        <text x="52" y="46" fill="#4af403" font-family="JetBrains Mono, monospace" font-size="10.5">CAMADA DE MODELO · awakefl-fl/ · Python</text>
+        <text x="52" y="72" fill="#e5e2e1" font-family="Geist, sans-serif" font-size="15" font-weight="600">Treina, sofre o ataque, calcula S(t) e R(t), decide o banimento</text>
+        <text x="52" y="94" fill="#a8a5a4" font-family="Geist, sans-serif" font-size="12.5">data · model · client · attacks · reputation · server · run_experiments</text>
+        <rect x="600" y="34" width="66" height="22" rx="11" fill="rgba(74,244,3,0.1)"/>
+        <text x="633" y="49" fill="#4af403" font-family="JetBrains Mono, monospace" font-size="10.5" text-anchor="middle">funciona</text>
+
+        <!-- conector 1-2 -->
+        <path d="M 360 114 L 360 150" stroke="#fab219" stroke-width="1.4" stroke-dasharray="5 4" fill="none"/>
+        <rect x="196" y="122" width="328" height="22" rx="11" fill="#131313" stroke="#fab219" stroke-opacity="0.5"/>
+        <text x="360" y="137" fill="#fab219" font-family="JetBrains Mono, monospace" font-size="10.5" text-anchor="middle">stubs anchor_* · assinaturas prontas, não conectadas</text>
+
+        <!-- camada 2 -->
+        <rect x="30" y="150" width="660" height="96" rx="10" fill="#1c1b1b" stroke="rgba(255,255,255,0.16)"/>
+        <text x="52" y="178" fill="#4af403" font-family="JetBrains Mono, monospace" font-size="10.5">CAMADA DE LIVRO-RAZÃO · programs/awakefl/ · Rust / Anchor</text>
+        <text x="52" y="204" fill="#e5e2e1" font-family="Geist, sans-serif" font-size="15" font-weight="600">Guarda hash e métricas, recalcula a EMA, aplica o banimento</text>
+        <text x="52" y="226" fill="#a8a5a4" font-family="JetBrains Mono, monospace" font-size="11">GhMhTkv7jeHMejEyypQaEFPqduHgXDSzE5g7jE3rXGRA · Devnet</text>
+        <rect x="600" y="166" width="66" height="22" rx="11" fill="rgba(74,244,3,0.1)"/>
+        <text x="633" y="181" fill="#4af403" font-family="JetBrains Mono, monospace" font-size="10.5" text-anchor="middle">no ar</text>
+
+        <!-- conector 2-3 -->
+        <path d="M 360 246 L 360 282" stroke="#fab219" stroke-width="1.4" stroke-dasharray="5 4" fill="none"/>
+        <rect x="212" y="254" width="296" height="22" rx="11" fill="#131313" stroke="#fab219" stroke-opacity="0.5"/>
+        <text x="360" y="269" fill="#fab219" font-family="JetBrains Mono, monospace" font-size="10.5" text-anchor="middle">lib/simulation.ts · scores tabelados à mão</text>
+
+        <!-- camada 3 -->
+        <rect x="30" y="282" width="660" height="96" rx="10" fill="#1c1b1b" stroke="rgba(255,255,255,0.16)"/>
+        <text x="52" y="310" fill="#4af403" font-family="JetBrains Mono, monospace" font-size="10.5">CAMADA DE APRESENTAÇÃO · web/ · Next.js</text>
+        <text x="52" y="336" fill="#e5e2e1" font-family="Geist, sans-serif" font-size="15" font-weight="600">Mostra a federação, a reputação e a área do participante</text>
+        <text x="52" y="358" fill="#a8a5a4" font-family="Geist, sans-serif" font-size="12.5">/simulacao · /painel · /devnet</text>
+        <rect x="600" y="298" width="66" height="22" rx="11" fill="rgba(74,244,3,0.1)"/>
+        <text x="633" y="313" fill="#4af403" font-family="JetBrains Mono, monospace" font-size="10.5" text-anchor="middle">no ar</text>
+      </svg>
+    </div>
+    <figcaption>
+      As linhas tracejadas em âmbar são as fronteiras ainda abertas. Não são lacunas de
+      projeto — as assinaturas, os nomes de instrução, os PDAs e o formato do hash já
+      estão alinhados dos dois lados. Falta trocar o <code>SimulatedOnChainLedger</code>
+      por um cliente <code>anchorpy</code> e fazer a web ler os JSON gerados.
+    </figcaption>
+  </figure>
+
+  <h3>Como a integração vai fechar</h3>
+  <ol class="lista">
+    <li>
+      <strong>Registro</strong> — cada instituição chama <code>register_participant</code>
+      com a própria wallet e nasce com reputação 500.
+    </li>
+    <li>
+      <strong>Contribuição</strong> — ao fim do treino local, o cliente calcula
+      <code>hash_weights()</code> e chama <code>submit_contribution</code> com o hex, o
+      número de amostras e as métricas declaradas. Os pesos em si seguem por fora, para
+      o agregador.
+    </li>
+    <li>
+      <strong>Avaliação</strong> — o servidor calcula S(t), converte com
+      <code>to_program_scale()</code> e chama <code>validate_contribution(score)</code>.
+      A EMA roda dentro do programa; o servidor não envia reputação pronta.
+    </li>
+    <li>
+      <strong>Punição</strong> — cruzado o limiar, <code>penalize_participant</code>. A
+      partir daí a própria <em>constraint</em> do programa impede novas submissões
+      daquela conta.
+    </li>
+    <li>
+      <strong>Virada</strong> — <code>advance_round</code>, e a rodada seguinte começa.
+    </li>
+  </ol>
+
+  <div class="nota">
+    <span class="nota-titulo">O que ainda está em aberto</span>
+    <p>
+      O <em>whitewashing</em> ficou mais caro com a reputação inicial neutra, mas não
+      impossível: o atacante banido ainda pode registrar outra wallet e perde apenas
+      ~4 rodadas de peso reduzido. A solução completa é o campo
+      <code>stake_amount</code>, que já está reservado na conta <code>Participant</code>
+      mas ainda não tem instrução que o utilize — colateral que o banimento confisca.
+      Se o escopo da IC não comportar, vale registrar como trabalho futuro.
+    </p>
+  </div>
+</section>
+
+<!-- ========================================================= RESULTADOS -->
+<section id="resultados">
+  <p class="eyebrow"><span>Como se conecta · 3</span></p>
+  <h2 class="titulo">O que os números dizem</h2>
+
+  <p>
+    Configuração padrão: MNIST não-IID (α = 0,7), 10 participantes, 12 rodadas,
+    <code>label_flipping</code> nos participantes 1, 6 e 7, seed 42.
+  </p>
+
+  <div class="placar">
+    <div>
+      <span class="rot">A · baseline</span>
+      <span class="val">98,65%</span>
+      <span class="sub">federação honesta</span>
+    </div>
+    <div>
+      <span class="rot">B · sob ataque</span>
+      <span class="val">83,95%</span>
+      <span class="sub">−14,70 pp de dano</span>
+    </div>
+    <div>
+      <span class="rot">C · com defesa</span>
+      <span class="val neon">98,20%</span>
+      <span class="sub">+14,25 pp recuperados</span>
+    </div>
+    <div>
+      <span class="rot">Detecção</span>
+      <span class="val neon">1,00</span>
+      <span class="sub">precisão e recall</span>
+    </div>
+  </div>
+
+  <div class="rolo">
+    <table>
+      <thead>
+        <tr><th>Leitura</th><th>Pergunta que responde</th><th class="num">Resultado</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>A vs B</strong></td>
+          <td>o ataque funciona mesmo?</td>
+          <td class="num">queda de 14,70 pp <span class="pill pill-mal">sim</span></td>
+        </tr>
+        <tr>
+          <td><strong>B vs C</strong></td>
+          <td>a defesa recupera o dano?</td>
+          <td class="num">+14,25 pp <span class="pill pill-ok">sim</span></td>
+        </tr>
+        <tr>
+          <td><strong>A vs C</strong></td>
+          <td>quanto custa a defesa?</td>
+          <td class="num">0,45 pp de resíduo</td>
+        </tr>
+        <tr>
+          <td><strong>Precisão</strong></td>
+          <td>algum honesto foi punido?</td>
+          <td class="num">1,00 <span class="pill pill-ok">nenhum</span></td>
+        </tr>
+        <tr>
+          <td><strong>Recall</strong></td>
+          <td>algum atacante escapou?</td>
+          <td class="num">1,00 <span class="pill pill-ok">nenhum</span></td>
+        </tr>
+        <tr>
+          <td><strong>Latência</strong></td>
+          <td>quantas rodadas até pegar?</td>
+          <td class="num">6, 6 e 7</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Como ler isso com honestidade</h3>
+  <p>
+    Precisão e recall de 1,00 são um resultado forte, mas de <strong>uma</strong>
+    configuração. O que sustenta a conclusão não é o número perfeito — é o fato de A,
+    B e C partirem da mesma seed, da mesma partição e da mesma inicialização, de modo
+    que a diferença só pode vir da defesa.
+  </p>
+  <p>
+    Para o texto da IC, os eixos que valem varrer são: <code>--attack</code> (os quatro
+    ataques têm latências bem diferentes), <code>--alpha</code> do Dirichlet (quanto
+    mais heterogêneo, mais difícil separar divergência legítima de maliciosa),
+    <code>--malicious-fraction</code> (o ponto em que a mediana deixa de ser referência
+    confiável fica perto de 50%) e <code>--threshold</code> (o trade-off direto entre
+    precisão e latência).
+  </p>
+</section>
+
+<footer>
+  <p>
+    AwakeFL · camada off-chain · branch <code>camada-off-chain</code>. Reproduza tudo
+    com <code>pip install -r requirements.txt</code> e
+    <code>python run_experiments.py</code>. Os números deste documento vêm da execução
+    de referência guardada em <code>awakefl-fl/results/</code>.
+  </p>
+</footer>
+
+</main>
+</div>
+
+<script>
+// Destaca no sumário a seção que está sendo lida. Sem isso o trilho é só uma
+// lista de links; com isso ele vira posição no documento.
+(function () {
+  var secoes = Array.prototype.slice.call(document.querySelectorAll("main section"));
+  var links = {};
+  Array.prototype.forEach.call(document.querySelectorAll(".trilho a"), function (a) {
+    links[a.getAttribute("href").slice(1)] = a;
+  });
+
+  if (!("IntersectionObserver" in window)) return;
+
+  var visiveis = new Set();
+  var obs = new IntersectionObserver(function (entradas) {
+    entradas.forEach(function (e) {
+      if (e.isIntersecting) visiveis.add(e.target.id);
+      else visiveis.delete(e.target.id);
+    });
+    var atual = secoes.filter(function (s) { return visiveis.has(s.id); })[0];
+    Object.keys(links).forEach(function (id) {
+      links[id].classList.toggle("ativo", !!atual && atual.id === id);
+    });
+  }, { rootMargin: "-10% 0px -70% 0px" });
+
+  secoes.forEach(function (s) { obs.observe(s); });
+})();
+</script>
+</body>
+</html>
