@@ -412,33 +412,35 @@ Esta é a sequência que já roda na Devnet, assinada por carteira pelo painel:
 
 *Como se conecta · 3*
 
-Configuração padrão: MNIST não-IID (α = 0,7), 10 participantes, 12 rodadas, `label_flipping` nos participantes 1, 6 e 7, seed 42.
+Configuração padrão: MNIST não-IID (α = 0,7), 10 participantes, 12 rodadas, `label_flipping` nos participantes 1, 6 e 7. Os números abaixo são a média de **dez sementes independentes**, com as correções do viés de tamanho ligadas.
 
 | | Resultado | |
 | --- | ---: | --- |
-| **A · baseline** | 98,65% | federação honesta |
-| **B · sob ataque** | 83,95% | −14,70 pp de dano |
-| **C · com defesa** | 98,20% | +14,25 pp recuperados |
-| **Detecção** | 1,00 | precisão e recall |
+| **A · baseline** | 98,23% ± 0,33 | federação honesta |
+| **B · sob ataque** | 69,13% ± 26,78 | −29,10 pp de dano |
+| **C · com defesa** | 98,02% ± 0,35 | +28,89 pp recuperados |
+| **Detecção** | 1,00 ± 0,00 | precisão e recall |
 
 | Leitura | Pergunta que responde | Resultado |
 | --- | --- | ---: |
-| **A vs B** | o ataque funciona mesmo? | queda de 14,70 pp · **sim** |
-| **B vs C** | a defesa recupera o dano? | +14,25 pp · **sim** |
-| **A vs C** | quanto custa a defesa? | 0,45 pp de resíduo |
-| **Precisão** | algum honesto foi punido? | 1,00 · **nenhum** |
-| **Recall** | algum atacante escapou? | 1,00 · **nenhum** |
-| **Latência** | quantas rodadas até pegar? | 6, 6 e 7 |
+| **A vs B** | o ataque funciona mesmo? | queda de 29,10 pp · **sim** |
+| **B vs C** | a defesa recupera o dano? | +28,89 pp · **sim** |
+| **A vs C** | quanto custa a defesa? | 0,21 pp de resíduo |
+| **Precisão** | algum honesto foi punido? | 1,00 ± 0,00 · **nenhum** |
+| **Recall** | algum atacante escapou? | 1,00 ± 0,00 · **nenhum** |
+| **Latência** | quantas rodadas até pegar? | 5,40 ± 0,68 |
 
 ### Como ler isso com honestidade
 
-Precisão e recall de 1,00 são um resultado forte, mas de **uma** configuração. O que sustenta a conclusão não é o número perfeito — é o fato de A, B e C partirem da mesma seed, da mesma partição e da mesma inicialização, de modo que a diferença só pode vir da defesa.
+Precisão e recall de 1,00 ± 0,00 são um resultado forte, e vêm de dez execuções independentes — não de uma configuração de sorte. O que sustenta a conclusão não é o número perfeito: é o fato de A, B e C partirem, **dentro de cada semente**, da mesma partição e da mesma inicialização, de modo que a diferença só pode vir da defesa.
+
+E o número que mais informa não é a média, é o desvio: **26,78 pp** no cenário B. O ataque não apenas derruba a acurácia — torna o resultado imprevisível. A defesa devolve a dispersão ao patamar da federação honesta, e é isso que permite alguém depender do modelo para alguma coisa.
 
 Para o texto da IC, os eixos que valem varrer são: `--attack` (os quatro ataques têm latências bem diferentes), `--alpha` do Dirichlet (quanto mais heterogêneo, mais difícil separar divergência legítima de maliciosa), `--malicious-fraction` (o ponto em que a mediana deixa de ser referência confiável fica perto de 50%) e `--threshold` (o trade-off direto entre precisão e latência).
 
 ---
 
-*AwakeFL · camada off-chain · branch camada-off-chain . Reproduza tudo
- com pip install -r requirements.txt e
- python run_experiments.py . Os números deste documento vêm da execução
- de referência guardada em awakefl-fl/results/ .*
+*AwakeFL · camada off-chain. Reproduza com `pip install -r requirements.txt` e
+`python sweep.py` — é a varredura de dez sementes que produz os números deste
+documento; `run_experiments.py` roda uma semente só. As saídas ficam em
+`awakefl-fl/results_sweep/`, que não é versionado.*

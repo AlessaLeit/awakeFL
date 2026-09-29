@@ -169,8 +169,11 @@ como o AwakeFL se compara a Krum, mediana pura e FLTrust?
 **Por que ficou.** O projeto sempre se comparou consigo mesmo — cenário A contra
 B contra C. Isso mede se a defesa funciona, não se ela funciona **melhor**.
 
-**O que já existe.** Os números internos são sólidos: A = 98,25%, B = 86,60%,
-C = 98,25%; em 10 sementes, precisão e recall 1,00 ± 0,00. Não há régua externa.
+**O que já existe.** Os números internos são sólidos, em dez sementes: A = 98,23%
+± 0,33, B = 69,13% ± 26,78 e C = 98,02% ± 0,35, com precisão e recall de detecção
+em 1,00 ± 0,00. (Na semente 42 isolada, a mesma configuração dá A = 98,25%,
+B = 86,60% e C = 98,25% — é execução única, e não substitui a varredura.) O que
+não há é régua externa.
 
 **Como responder.** Implementar as três regras como estratégias de agregação
 alternativas e rodar o mesmo `run_experiments.py`. Krum e mediana são baratos.
