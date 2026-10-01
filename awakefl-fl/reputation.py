@@ -432,10 +432,6 @@ class ReputationLedger:
     def banned_ids(self) -> List[int]:
         return sorted(cid for cid, s in self.states.items() if s.banned)
 
-    @property
-    def trusted_ids(self) -> List[int]:
-        return sorted(cid for cid, s in self.states.items() if not s.banned)
-
     def reputation_of(self, cid: int) -> float:
         return self.states[cid].reputation
 

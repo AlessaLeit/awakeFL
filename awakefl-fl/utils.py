@@ -71,17 +71,6 @@ def flatten(weights: Sequence[np.ndarray]) -> np.ndarray:
     return np.concatenate([np.asarray(w, dtype=np.float64).ravel() for w in weights])
 
 
-def unflatten(vector: np.ndarray, reference: Sequence[np.ndarray]) -> Weights:
-    """Operacao inversa de :func:`flatten`, usando `reference` como molde de shapes."""
-    out: Weights = []
-    offset = 0
-    for ref in reference:
-        size = int(np.prod(ref.shape)) if ref.shape else 1
-        out.append(vector[offset : offset + size].reshape(ref.shape).astype(ref.dtype, copy=False))
-        offset += size
-    return out
-
-
 def subtract(a: Sequence[np.ndarray], b: Sequence[np.ndarray]) -> Weights:
     """Delta elemento a elemento (`a - b`), preservando os shapes."""
     return [np.asarray(x, dtype=np.float64) - np.asarray(y, dtype=np.float64) for x, y in zip(a, b)]

@@ -6,6 +6,17 @@ node_modules
 test-ledger
 .yarn
 
+# Cache do Python. O awakefl-fl/.gitignore ja cobre o dele, mas scripts/
+# tambem tem Python e ficava de fora.
+__pycache__/
+*.py[cod]
+
 # Configuracao local do Claude Code: permissoes concedidas nesta maquina.
 # O launch.json fica versionado de proposito — descreve como subir o dev server.
 .claude/settings.local.json
+
+# Gerados pelo `next dev` (node_modules/next/dist/server/lib/generate-agent-files.js).
+# Nao sao documentacao do projeto: sao instrucoes que a propria ferramenta reescreve
+# a cada execucao. Versiona-los so produz diff que ninguem escreveu.
+web/AGENTS.md
+web/CLAUDE.md

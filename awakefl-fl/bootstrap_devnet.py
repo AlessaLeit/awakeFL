@@ -44,8 +44,7 @@ import argparse
 import json
 import sys
 import time
-from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict
 
 LAMPORTS_POR_SOL = 1_000_000_000
 
