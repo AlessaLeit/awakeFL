@@ -273,7 +273,7 @@ awakeFL/
 │   ├── onchain_interface.py  formato canônico e ledger simulado
 │   ├── anchor_client.py      cliente real da Devnet
 │   ├── run_experiments.py    ponto de entrada dos cenários A/B/C
-│   └── docs/                 (na branch documentacao)
+│   └── docs/                 documentos longos (+ docs/img/)
 ├── web/                      site e painel (Next.js 16, React 19)
 ├── tests/awakefl.ts          testes do programa Anchor
 ├── playground/lib.rs         cópia em arquivo único para o Solana Playground
@@ -384,7 +384,7 @@ propósito, para instalação local ter folga de resolução.
 
 Resumo do que está aberto. A lista completa, com o desenho experimental de cada
 item, está em
-[O Que Falta no AwakeFL](https://github.com/AlessaLeit/awakeFL/blob/documentacao/awakefl-fl/docs/o-que-falta.md).
+[O Que Falta no AwakeFL](awakefl-fl/docs/o-que-falta.md).
 
 | Limitação | Estado |
 | --- | --- |
@@ -400,13 +400,13 @@ item, está em
 
 ## Documentação de apoio
 
-Na branch `documentacao`:
+Em [`awakefl-fl/docs/`](awakefl-fl/docs/):
 
-- [Anatomia do AwakeFL](https://github.com/AlessaLeit/awakeFL/blob/documentacao/awakefl-fl/docs/anatomia-awakefl.html) — a arquitetura em dois níveis de leitura
-- [Aritmética da Reputação](https://github.com/AlessaLeit/awakeFL/blob/documentacao/awakefl-fl/docs/aritmetica-reputacao.html) — as contas passo a passo, com números reais
-- [Registro de decisões](https://github.com/AlessaLeit/awakeFL/blob/documentacao/awakefl-fl/docs/registro-de-decisoes.md) — 23 decisões, 7 achados experimentais, 6 erros
-- [Trajetória do desenvolvimento](https://github.com/AlessaLeit/awakeFL/blob/documentacao/awakefl-fl/docs/trajetoria-do-desenvolvimento.md) — a história e os trabalhos relacionados
-- [O Que Falta](https://github.com/AlessaLeit/awakeFL/blob/documentacao/awakefl-fl/docs/o-que-falta.md) — as 12 perguntas em aberto
+- [Anatomia do AwakeFL](awakefl-fl/docs/anatomia-awakefl.md) — a arquitetura em dois níveis de leitura
+- [Aritmética da Reputação](awakefl-fl/docs/aritmetica-reputacao.md) — as contas passo a passo, com números reais
+- [Registro de decisões](awakefl-fl/docs/registro-de-decisoes.md) — 23 decisões, 7 achados experimentais, 7 erros
+- [Trajetória do desenvolvimento](awakefl-fl/docs/trajetoria-do-desenvolvimento.md) — a história e os trabalhos relacionados
+- [O Que Falta](awakefl-fl/docs/o-que-falta.md) — as 14 perguntas em aberto
 
 E nos subprojetos: [`awakefl-fl/README.md`](awakefl-fl/README.md) e
 [`web/README.md`](web/README.md).

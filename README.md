@@ -10,7 +10,7 @@ histórico registrado de forma que ninguém possa reescrever.
 
 [![Devnet](https://img.shields.io/badge/Solana-Devnet-14F195?style=flat-square)](https://explorer.solana.com/address/GhMhTkv7jeHMejEyypQaEFPqduHgXDSzE5g7jE3rXGRA?cluster=devnet)
 [![Anchor](https://img.shields.io/badge/Anchor-0.31-blue?style=flat-square)](https://www.anchor-lang.com/)
-[![Status](https://img.shields.io/badge/status-MVP%20em%20pesquisa-orange?style=flat-square)](#-status-do-projeto)
+[![Status](https://img.shields.io/badge/status-MVP%20em%20pesquisa-orange?style=flat-square)](#status-do-projeto)
 
 ### **[▶ Ver rodando](https://awake-fl.vercel.app/)** · **[Simulação, sem carteira](https://awake-fl.vercel.app/simulacao)** · **[Visão técnica](README-TECNICO.md)**
 
@@ -159,7 +159,7 @@ projeto promete.
 
 ---
 
-## 🚧 Status do projeto
+## Status do projeto
 
 **Isto é um MVP de pesquisa em desenvolvimento ativo — não é um produto pronto
 para produção.**
@@ -200,13 +200,12 @@ respondê-lo — não como intenção vaga, mas como pergunta de pesquisa formul
 | Documento | Para quem |
 | --- | --- |
 | **[Visão técnica](README-TECNICO.md)** | quem quer rodar, entender por dentro ou contribuir |
-| [Anatomia do AwakeFL](https://github.com/AlessaLeit/awakeFL/blob/documentacao/awakefl-fl/docs/anatomia-awakefl.html) | a arquitetura em dois níveis de leitura |
-| [Aritmética da Reputação](https://github.com/AlessaLeit/awakeFL/blob/documentacao/awakefl-fl/docs/aritmetica-reputacao.html) | as contas passo a passo, com números reais |
-| [Registro de decisões](https://github.com/AlessaLeit/awakeFL/blob/documentacao/awakefl-fl/docs/registro-de-decisoes.md) | por que cada escolha, e o que se paga por ela |
-| [Trajetória do desenvolvimento](https://github.com/AlessaLeit/awakeFL/blob/documentacao/awakefl-fl/docs/trajetoria-do-desenvolvimento.md) | a história do projeto e os trabalhos relacionados |
-| [O Que Falta](https://github.com/AlessaLeit/awakeFL/blob/documentacao/awakefl-fl/docs/o-que-falta.md) | as perguntas em aberto, e como respondê-las |
+| [Anatomia do AwakeFL](awakefl-fl/docs/anatomia-awakefl.md) | a arquitetura em dois níveis de leitura |
+| [Aritmética da Reputação](awakefl-fl/docs/aritmetica-reputacao.md) | as contas passo a passo, com números reais |
+| [Registro de decisões](awakefl-fl/docs/registro-de-decisoes.md) | por que cada escolha, e o que se paga por ela |
+| [Trajetória do desenvolvimento](awakefl-fl/docs/trajetoria-do-desenvolvimento.md) | a história do projeto e os trabalhos relacionados |
+| [O Que Falta](awakefl-fl/docs/o-que-falta.md) | as perguntas em aberto, e como respondê-las |
 
-> Os documentos acima vivem na branch `documentacao`.
 
 ---
 
