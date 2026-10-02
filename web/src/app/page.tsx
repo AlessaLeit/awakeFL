@@ -1,484 +1,469 @@
+import Image from "next/image";
 import Link from "next/link";
+import Coluna from "@/components/Coluna";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import Federacao from "@/components/ilustracoes/Federacao";
+import Orbita from "@/components/ilustracoes/Orbita";
 
-const REPO = "https://github.com/AlessaLeit/awakeFL";
+const FERRAMENTAS = [
+  "Solana",
+  "Anchor",
+  "Rust",
+  "Next.js",
+  "Flower",
+  "PyTorch",
+];
 
 const PASSOS = [
   {
     n: "01",
     titulo: "Registrar",
     texto:
-      "Cada instituição cria sua conta de participante on-chain e entra com reputação 500, o ponto neutro da escala.",
-    instrucao: "register_participant",
+      "A instituição entra na federação com uma carteira e ganha uma conta de reputação na chain.",
   },
   {
     n: "02",
     titulo: "Contribuir",
     texto:
-      "A cada rodada, o nó publica o hash da atualização de pesos e suas métricas. Os dados nunca saem da instituição — só o compromisso criptográfico.",
-    instrucao: "submit_contribution",
+      "A cada rodada, o hash da atualização do modelo é gravado — os dados nunca saem de casa.",
   },
   {
     n: "03",
     titulo: "Validar",
     texto:
-      "O agregador pontua a contribuição de 0 a 1000. A reputação move por média móvel exponencial: metade do histórico, metade da rodada atual.",
-    instrucao: "validate_contribution",
+      "O agregador da rodada pontua a contribuição, e o score fica registrado onde ninguém reescreve.",
   },
   {
     n: "04",
     titulo: "Penalizar",
     texto:
-      "Detectado envenenamento, a reputação é dividida por 10 e o banimento é permanente. Sem instrução de reversão, nem para a autoridade.",
-    instrucao: "penalize_participant",
+      "Contribuição envenenada derruba a reputação numa transação — e o histórico fica como prova.",
+    destaque: true,
   },
 ];
 
-const FAQ = [
-  {
-    p: "Os dados de treinamento vão para a blockchain?",
-    r: "Não. Só o hash da atualização de pesos, as métricas declaradas e o score. O dado clínico ou financeiro nunca sai da instituição — é essa a premissa do Federated Learning, e o sistema a preserva.",
-  },
-  {
-    p: "Por que blockchain em vez de um banco de dados?",
-    r: "Porque num consórcio não existe autoridade central em quem todos confiem. Um banco de dados pertence a alguém, e esse alguém pode reescrever o histórico de reputação. Na chain, o registro é imutável e qualquer participante audita sem pedir permissão.",
-  },
-  {
-    p: "Quem decide o score de cada contribuição?",
-    r: "No MVP, o agregador da rodada. É a limitação honesta desta versão: ele é confiável por construção. Descentralizar essa decisão — votação por comitê ou Krum on-chain — é o próximo passo do roteiro.",
-  },
-  {
-    p: "O banimento pode ser revertido?",
-    r: "Não. O programa não expõe nenhuma instrução que remova a marca de banido, nem para a autoridade. É uma decisão de projeto: um banimento reversível é um banimento negociável.",
-  },
-  {
-    p: "Em que estágio o projeto está?",
-    r: "MVP. O programa Anchor está escrito e versionado, com testes de integração cobrindo o ciclo completo. A demo deste site é uma simulação determinística das mesmas regras.",
-  },
+/* A ficha é a parte mais importante da página para o projeto: ela é onde o
+   site diz o que NÃO foi medido. A latência aparece aqui como lacuna, com a
+   mesma tipografia do resto — não escondida numa nota de rodapé. */
+const FICHA = [
+  ["Rede", "Solana Devnet"],
+  ["Programa", "Anchor · publicado"],
+  ["Ciclo", "registrar → contribuir → validar → penalizar"],
+  ["Custo", "0,0019 SOL / contribuição"],
+  ["Latência", "ainda não medida", true],
+  ["Quem pontua", "agregador da rodada (MVP)"],
+] as const;
+
+const LEGENDA = [
+  { cor: "#4af403", texto: "Bloco cheio — contribuição validada" },
+  { contorno: "#9fe870", texto: "Contorno — aguardando validação" },
+  { cor: "#e0474e", texto: "Vermelho cortado — participante banido" },
 ];
 
 export default function Home() {
   return (
-    <>
+    <Coluna>
       <Nav />
+
       <main>
-        {/* Hero */}
-        <section className="mx-auto max-w-6xl px-5 pt-16 pb-14 md:pt-24 md:pb-20">
-          <div className="max-w-3xl">
-            <span className="chip">
-              <span
-                aria-hidden
-                className="inline-block h-1.5 w-1.5 rounded-full"
-                style={{
-                  background: "var(--acento)",
-                  boxShadow: "0 0 8px 1px var(--acento-brilho)",
-                }}
-              />
-              Solana · Anchor · MVP em Devnet
+        {/* ===== HERO =====
+            A torre é elemento de FUNDO: fica atrás, à direita, e flutua. Em
+            tela estreita ela recua e vira marca d'água atrás do texto. */}
+        <section className="relative min-h-[520px] overflow-hidden lg:min-h-[680px]">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute right-[-92px] top-[270px] z-0 hidden h-[635px] w-[740px] opacity-20 lg:block lg:opacity-100"
+          >
+            <div
+              className="brilho absolute bottom-[-34px] left-[-60%] right-[-60%] h-24"
+              style={{
+                background:
+                  "radial-gradient(ellipse at 50% 50%, rgba(74,244,3,.32), transparent 68%)",
+              }}
+            />
+            <div
+              className="sombra absolute bottom-[-10px] left-[6%] right-[6%] h-[22px] rounded-[50%]"
+              style={{
+                background:
+                  "radial-gradient(ellipse at 50% 50%, rgba(15,26,11,.22), transparent 70%)",
+              }}
+            />
+          </div>
+
+          <Image
+            src="/torre.webp"
+            alt=""
+            aria-hidden
+            width={525}
+            height={1102}
+            priority
+            className="torre pointer-events-none absolute left-[624px] top-1 hidden w-[525px] lg:block"
+            style={{ objectFit: "cover", objectPosition: "0% 100%" }}
+          />
+
+          <div className="relative z-10 max-w-[620px] px-5 pb-16 pt-16 sm:px-12 sm:pt-20">
+            <span className="rotulo">
+              [ Reputação on-chain para Federated Learning ]
             </span>
-
-            <h1 className="mt-5 text-4xl font-semibold leading-[1.08] tracking-tight md:text-6xl">
-              Prove quem envenenou
-              <br />o modelo.
+            <h1 className="titulo mt-7 text-[clamp(44px,8vw,76px)]">
+              Prove quem <span className="marca">envenenou</span> o modelo.
             </h1>
-
-            <p
-              className="mt-5 max-w-2xl text-lg leading-relaxed"
-              style={{ color: "var(--tinta-2)" }}
-            >
-              No Federated Learning, várias instituições treinam uma IA sem
-              trocar dados — e um único participante malicioso pode corromper o
-              modelo de todos sem deixar rastro. O AwakeFL é uma camada sobre a
-              federação que você já tem: não treina, não substitui o seu
-              agregador. Ele mede a confiança de cada contribuição, registra o
-              resultado de forma imutável na Solana e bane quem ataca.
+            <p className="corpo mt-7 max-w-[460px]">
+              Uma camada de reputação on-chain sobre a federação que você já
+              tem. Ela não treina e não substitui o seu agregador — mede a
+              confiança de cada contribuição e grava o resultado onde ninguém
+              reescreve.
             </p>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/painel" className="btn-neon px-6 py-3.5 text-sm">
+            <div className="mt-9 flex flex-wrap items-center gap-3">
+              <Link href="/painel" className="btn-lima h-[46px] px-5">
                 Entrar como participante
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
               </Link>
-              <Link
-                href="/simulacao"
-                className="btn-contorno px-5 py-3.5 text-sm"
-              >
-                Ver a demo interativa
+              <Link href="/como-funciona" className="btn-fio h-[46px] px-5">
+                Como funciona
               </Link>
-              <a
-                href={REPO}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-fantasma px-5 py-3.5 text-sm"
-              >
-                Ler o código
-              </a>
             </div>
-
-            <p className="mt-4 text-xs" style={{ color: "var(--tinta-muda)" }}>
+            <div
+              className="mono mt-16 flex flex-wrap gap-7 text-[12.5px]"
+              style={{ color: "var(--tinta-muda)" }}
+            >
+              <span className="inline-flex items-center gap-2">
+                <span
+                  className="pisca h-[7px] w-[7px]"
+                  style={{ background: "var(--acento)" }}
+                />
+                Programa Anchor na Devnet
+              </span>
+              <span>0,0019 SOL / contribuição</span>
+            </div>
+            <p
+              className="mt-5 max-w-[460px] text-xs leading-relaxed"
+              style={{ color: "var(--tinta-muda)" }}
+            >
               A área do participante pede uma carteira Solana em Devnet (Phantom
               ou Solflare). A demo não pede nada.
             </p>
           </div>
-
-          {/* Números da simulação — o gancho do sleepy adversary */}
-          <dl className="mt-14 grid gap-3 sm:grid-cols-3">
-            {[
-              {
-                v: "8 rodadas",
-                l: "de comportamento impecável é o que um sleepy adversary investe antes de atacar",
-              },
-              {
-                v: "935 → 30",
-                l: "a reputação que ele levou oito rodadas para construir, destruída numa transação",
-              },
-              {
-                v: "0 dados",
-                l: "de treinamento saem da instituição: só hashes e scores vão para a chain",
-              },
-            ].map((s) => (
-              <div key={s.v} className="vidro p-5">
-                <dt className="text-2xl font-semibold tracking-tight">{s.v}</dt>
-                <dd
-                  className="mt-2 text-sm leading-relaxed"
-                  style={{ color: "var(--tinta-2)" }}
-                >
-                  {s.l}
-                </dd>
-              </div>
-            ))}
-          </dl>
         </section>
 
-        {/* Problema */}
-        <section
-          id="problema"
-          className="border-y py-16 md:py-24"
-          style={{
-            borderColor: "var(--borda)",
-            background: "var(--superficie)",
-          }}
-        >
-          <div className="mx-auto max-w-6xl px-5">
-            <h2 className="max-w-2xl text-3xl font-semibold tracking-tight md:text-4xl">
-              O atacante mais perigoso é o mais paciente
-            </h2>
-            <p
-              className="mt-4 max-w-2xl text-base leading-relaxed"
-              style={{ color: "var(--tinta-2)" }}
-            >
-              Um envenenador óbvio é fácil de barrar. O problema real é o{" "}
-              <strong style={{ color: "var(--tinta)" }}>
-                sleepy adversary
-              </strong>
-              : ele contribui honestamente por muitas rodadas, acumula reputação
-              e peso na agregação, e só então começa a envenenar — sutilmente o
-              bastante para que a detecção demore.
-            </p>
+        {/* ===== CONSTRUÍDO COM ===== */}
+        <section className="secao">
+          <span className="cruz cruz-e" aria-hidden />
+          <span className="cruz cruz-d" aria-hidden />
+          {/* 120px é o mínimo que ainda cabe os sete blocos (rótulo + seis
+              ferramentas) numa linha só na coluna de 1200. Com 140 o PyTorch
+              caía sozinho numa segunda linha abaixo de 1000px de viewport. */}
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))]">
+            <div className="celula rotulo flex items-center px-6 py-6">
+              Construído com
+            </div>
+            {FERRAMENTAS.map((f) => (
+              <div
+                key={f}
+                className="celula px-6 py-6 text-lg font-semibold tracking-[-0.02em]"
+              >
+                {f}
+              </div>
+            ))}
+          </div>
+        </section>
 
-            <div className="mt-10 grid gap-4 md:grid-cols-3">
-              {[
-                {
-                  t: "Ninguém consegue provar quem foi",
-                  d: "Sem registro imutável, a contribuição de cada rodada é uma alegação. Depois do dano, o histórico já pode ter sido reescrito por quem controla o servidor.",
-                },
-                {
-                  t: "A reputação vira uma arma",
-                  d: "Sistemas que dão mais peso a quem tem histórico bom entregam ao atacante paciente exatamente a alavanca de que ele precisa.",
-                },
-                {
-                  t: "A média móvel reage devagar",
-                  d: "É o que a torna estável contra ruído — e o que abre a janela de dano. Por isso a punição precisa ser abrupta, não gradual.",
-                },
-              ].map((c) => (
-                <div key={c.t} className="vidro p-5">
-                  <h3 className="text-base font-semibold">{c.t}</h3>
-                  <p
-                    className="mt-2 text-sm leading-relaxed"
-                    style={{ color: "var(--tinta-2)" }}
-                  >
-                    {c.d}
-                  </p>
-                </div>
-              ))}
+        {/* ===== [01] O PROBLEMA ===== */}
+        <section className="secao" id="problema">
+          <span className="cruz cruz-e" aria-hidden />
+          <span className="cruz cruz-d" aria-hidden />
+          <div className="px-5 pb-10 pt-16 sm:px-12 sm:pt-20">
+            <span className="rotulo">[01] O problema</span>
+            <h2 className="titulo mt-5 max-w-[760px] text-[clamp(32px,5vw,52px)]">
+              O atacante mais perigoso é o mais paciente.
+            </h2>
+          </div>
+          <div
+            className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] border-t"
+            style={{ borderColor: "var(--borda)" }}
+          >
+            <div
+              className="celula px-8 pb-10 pt-9"
+              style={{ background: "var(--tinta)", color: "var(--plano)" }}
+            >
+              <span className="rotulo-claro">Rodadas</span>
+              <div
+                className="titulo mt-16 text-7xl"
+                style={{ color: "var(--acento)" }}
+              >
+                8
+              </div>
+              <p
+                className="mt-4 text-[15px] leading-relaxed"
+                style={{ color: "rgba(244,244,238,.8)" }}
+              >
+                de comportamento impecável é o que um atacante paciente investe
+                antes de envenenar.
+              </p>
+            </div>
+            <div className="celula px-8 pb-10 pt-9">
+              <span className="rotulo">Reputação</span>
+              <div className="titulo tabular mt-16 whitespace-nowrap text-7xl">
+                935<span style={{ color: "var(--critico)" }}>→30</span>
+              </div>
+              <p
+                className="mt-4 text-[15px] leading-relaxed"
+                style={{ color: "var(--tinta-2)" }}
+              >
+                a reputação que ele levou oito rodadas para construir, destruída
+                numa transação.
+              </p>
+            </div>
+            <div className="celula px-8 pb-10 pt-9">
+              <span className="rotulo">Dados</span>
+              <div className="titulo mt-16 text-7xl">0</div>
+              <p
+                className="mt-4 text-[15px] leading-relaxed"
+                style={{ color: "var(--tinta-2)" }}
+              >
+                de treinamento saem da instituição: só hashes e scores vão para
+                a chain.
+              </p>
             </div>
           </div>
         </section>
 
-        {/* Como funciona */}
-        <section
-          id="funcionamento"
-          className="mx-auto max-w-6xl px-5 py-16 md:py-24"
-        >
-          <h2 className="max-w-2xl text-3xl font-semibold tracking-tight md:text-4xl">
-            Quatro instruções, um ciclo fechado
-          </h2>
-          <p
-            className="mt-4 max-w-2xl text-base leading-relaxed"
-            style={{ color: "var(--tinta-2)" }}
-          >
-            Todo o mecanismo cabe em quatro chamadas ao programa Anchor. Cada
-            uma deixa um registro que ninguém — nem a autoridade — consegue
-            apagar.
-          </p>
+        {/* ===== [02] COMO FUNCIONA ===== */}
+        <section className="secao" id="funcionamento">
+          <span className="cruz cruz-e" aria-hidden />
+          <span className="cruz cruz-d" aria-hidden />
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))]">
+            <div
+              className="border-r px-5 pb-12 pt-16 sm:px-12 sm:pt-20"
+              style={{ borderColor: "var(--borda)" }}
+            >
+              <span className="rotulo">[02] Como funciona</span>
+              <h2 className="titulo mt-5 text-[clamp(32px,5vw,52px)]">
+                Uma camada sobre a federação que você já tem.
+              </h2>
+              <p className="corpo mt-6 max-w-[440px]">
+                Cada instituição continua treinando em casa. O AwakeFL só
+                registra quem contribuiu, com que confiança, e o que aconteceu
+                depois.
+              </p>
+            </div>
+            <div className="hachura flex items-center justify-center p-8">
+              <div
+                className="w-full max-w-[520px] rounded-lg border p-3"
+                style={{
+                  background: "var(--superficie)",
+                  borderColor: "var(--borda)",
+                }}
+              >
+                <Federacao />
+              </div>
+            </div>
+          </div>
 
-          <ol className="mt-10 grid gap-4 md:grid-cols-2">
+          <div
+            className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] border-t"
+            style={{ borderColor: "var(--borda)" }}
+          >
             {PASSOS.map((p) => (
-              <li key={p.n} className="vidro p-6">
-                <div className="flex items-baseline gap-3">
-                  <span
-                    className="tabular text-sm font-semibold"
-                    style={{ color: "var(--acento)" }}
-                  >
-                    {p.n}
-                  </span>
-                  <h3 className="text-lg font-semibold">{p.titulo}</h3>
-                </div>
+              <div
+                key={p.n}
+                className="celula px-8 pb-10 pt-8"
+                style={
+                  p.destaque
+                    ? { background: "var(--acento-lavado)" }
+                    : undefined
+                }
+              >
+                <span
+                  className="mono text-[13px]"
+                  style={{ color: "var(--tinta-muda)" }}
+                >
+                  {p.n}
+                </span>
+                <h3 className="mt-10 text-xl font-semibold tracking-[-0.02em]">
+                  {p.titulo}
+                </h3>
                 <p
-                  className="mt-2.5 text-sm leading-relaxed"
+                  className="mt-2.5 text-[15px] leading-relaxed"
                   style={{ color: "var(--tinta-2)" }}
                 >
                   {p.texto}
                 </p>
-                <code
-                  className="mono mt-4 inline-block rounded border px-2 py-1 text-xs"
-                  style={{
-                    borderColor: "var(--borda)",
-                    background: "var(--superficie-baixa)",
-                    color: "var(--acento)",
-                  }}
-                >
-                  {p.instrucao}()
-                </code>
-              </li>
+              </div>
             ))}
-          </ol>
+          </div>
+        </section>
 
+        {/* ===== [03] POR QUE ON-CHAIN ===== */}
+        <section className="secao p-5 sm:p-12">
+          <span className="cruz cruz-e" aria-hidden />
+          <span className="cruz cruz-d" aria-hidden />
           <div
-            className="vidro mt-10 p-6"
-            style={{ boxShadow: "inset 3px 0 0 0 var(--acento)" }}
+            className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-center gap-6 rounded-xl px-6 py-12 sm:px-12 sm:py-14"
+            style={{ background: "var(--tinta)", color: "var(--plano)" }}
           >
-            <h3 className="text-base font-semibold">A regra que define tudo</h3>
-            <p
-              className="mt-2 text-sm leading-relaxed"
-              style={{ color: "var(--tinta-2)" }}
-            >
-              A reputação sobe devagar e cai de uma vez. A média móvel
-              exponencial pondera metade do histórico e metade da rodada atual,
-              então nenhuma rodada isolada — boa ou ruim — domina o resultado.
-              Já a penalidade não negocia: divide por dez e bane em definitivo.
-            </p>
-            <p
-              className="mono tabular mt-4 rounded border px-3 py-2.5 text-sm"
-              style={{
-                borderColor: "var(--borda)",
-                background: "var(--superficie-baixa)",
-                color: "var(--acento)",
-              }}
-            >
-              R(t) = 0,5 · R(t−1) + 0,5 · S(t)
-            </p>
-          </div>
-        </section>
+            <div>
+              <span className="rotulo-claro">[03] Por que on-chain</span>
+              <h2
+                className="titulo mt-5 text-[clamp(30px,4.5vw,48px)]"
+                style={{ color: "var(--plano)" }}
+              >
+                Depois do dano, o histórico não pode ser reescrito.
+              </h2>
+              <p
+                className="mt-6 max-w-[460px] text-base leading-relaxed"
+                style={{ color: "rgba(244,244,238,.8)" }}
+              >
+                Ele contribui honestamente por muitas rodadas, acumula reputação
+                e peso na agregação, e só então começa a envenenar. Sem registro
+                imutável, quem controla o servidor pode apagar o rastro.
+              </p>
 
-        {/* Por que blockchain */}
-        <section
-          className="border-y py-16 md:py-24"
-          style={{
-            borderColor: "var(--borda)",
-            background: "var(--superficie)",
-          }}
-        >
-          <div className="mx-auto max-w-6xl px-5">
-            <h2 className="max-w-2xl text-3xl font-semibold tracking-tight md:text-4xl">
-              Por que não um banco de dados
-            </h2>
-            <p
-              className="mt-4 max-w-2xl text-base leading-relaxed"
-              style={{ color: "var(--tinta-2)" }}
-            >
-              Esta é a pergunta que todo projeto com blockchain precisa
-              responder sem rodeios. A resposta aqui é específica: um consórcio
-              de instituições concorrentes não tem um terceiro em quem todas
-              confiem.
-            </p>
+              <div
+                className="mono mt-8 flex flex-col gap-2.5 text-[13px]"
+                style={{ color: "rgba(244,244,238,.75)" }}
+              >
+                {LEGENDA.map((l) => (
+                  <span key={l.texto} className="flex items-center gap-2.5">
+                    <span
+                      aria-hidden
+                      className="h-2.5 w-2.5 shrink-0 box-border"
+                      style={
+                        l.contorno
+                          ? { border: `1.5px solid ${l.contorno}` }
+                          : { background: l.cor }
+                      }
+                    />
+                    {l.texto}
+                  </span>
+                ))}
+              </div>
 
-            <div className="mt-8 overflow-x-auto">
-              <table className="w-full min-w-[560px] border-collapse text-sm">
-                <thead>
-                  <tr style={{ color: "var(--tinta-2)" }}>
-                    <th
-                      scope="col"
-                      className="border-b py-3 pr-4 text-left font-medium"
-                      style={{ borderColor: "var(--borda)" }}
-                    >
-                      Requisito
-                    </th>
-                    <th
-                      scope="col"
-                      className="border-b px-4 py-3 text-left font-medium"
-                      style={{ borderColor: "var(--borda)" }}
-                    >
-                      Servidor central
-                    </th>
-                    <th
-                      scope="col"
-                      className="border-b px-4 py-3 text-left font-medium"
-                      style={{ borderColor: "var(--borda)" }}
-                    >
-                      AwakeFL
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    [
-                      "Histórico à prova de reescrita",
-                      "Depende de quem administra",
-                      "Imutável por construção",
-                    ],
-                    [
-                      "Auditoria por qualquer participante",
-                      "Só o que o dono expõe",
-                      "Aberta, sem pedir acesso",
-                    ],
-                    [
-                      "Regra de punição não negociável",
-                      "Alterável a qualquer momento",
-                      "Fixada no programa publicado",
-                    ],
-                    [
-                      "Custo de operação",
-                      "Baixo",
-                      "0,0019 SOL por contribuição, medido na Devnet",
-                    ],
-                    ["Latência", "Milissegundos", "Ainda não medida"],
-                  ].map(([req, central, chain]) => (
-                    <tr key={req}>
-                      <th
-                        scope="row"
-                        className="border-b py-3 pr-4 text-left font-normal"
-                        style={{
-                          borderColor: "var(--borda)",
-                          color: "var(--tinta)",
-                        }}
-                      >
-                        {req}
-                      </th>
-                      <td
-                        className="border-b px-4 py-3"
-                        style={{
-                          borderColor: "var(--borda)",
-                          color: "var(--tinta-2)",
-                        }}
-                      >
-                        {central}
-                      </td>
-                      <td
-                        className="border-b px-4 py-3"
-                        style={{
-                          borderColor: "var(--borda)",
-                          color: "var(--tinta)",
-                        }}
-                      >
-                        {chain}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="mt-8">
+                <Link href="/como-funciona" className="btn-lima h-[46px] px-5">
+                  Ver como o AwakeFL barra isso
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                </Link>
+              </div>
             </div>
-            <p className="mt-4 text-sm" style={{ color: "var(--tinta-muda)" }}>
-              Um servidor central ganha em latência e custo. Perde no único
-              ponto que importa aqui: quem controla o histórico.
-            </p>
+            <div className="flex justify-center">
+              <div className="w-full max-w-[500px]">
+                <Orbita />
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* FAQ */}
-        <section
-          className="border-t py-16 md:py-24"
-          style={{
-            borderColor: "var(--borda)",
-            background: "var(--superficie)",
-          }}
-        >
-          <div className="mx-auto max-w-3xl px-5">
-            <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
-              Perguntas frequentes
-            </h2>
+        {/* ===== [04] ESTADO DA DEVNET ===== */}
+        <section className="secao">
+          <span className="cruz cruz-e" aria-hidden />
+          <span className="cruz cruz-d" aria-hidden />
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))]">
             <div
-              className="mt-8 divide-y"
+              className="border-r px-5 py-16 sm:px-12 sm:py-[72px]"
               style={{ borderColor: "var(--borda)" }}
             >
-              {FAQ.map((f) => (
-                <details key={f.p} className="group py-4">
-                  <summary
-                    className="cursor-pointer list-none text-base font-medium marker:content-none"
-                    style={{ color: "var(--tinta)" }}
-                  >
-                    <span className="flex items-start gap-3">
-                      <span
-                        aria-hidden
-                        className="mt-0.5 transition-transform group-open:rotate-45"
-                        style={{ color: "var(--acento)" }}
-                      >
-                        +
-                      </span>
-                      {f.p}
-                    </span>
-                  </summary>
-                  <p
-                    className="mt-3 pl-6 text-sm leading-relaxed"
-                    style={{ color: "var(--tinta-2)" }}
-                  >
-                    {f.r}
-                  </p>
-                </details>
-              ))}
+              <span className="rotulo">[04] Estado da Devnet</span>
+              <h2 className="titulo mt-5 text-[clamp(28px,4vw,44px)]">
+                O que já roda — e o que ainda não foi medido.
+              </h2>
+              <p className="corpo mt-6 max-w-[420px]">
+                O AwakeFL é um MVP acadêmico, não um produto em produção. Esta
+                ficha diz só o que está comprovado.
+              </p>
             </div>
+            <dl className="mono m-0 text-sm">
+              {FICHA.map(([termo, valor, lacuna], i) => (
+                <div
+                  key={termo}
+                  className="flex justify-between gap-6 px-5 py-[22px] sm:px-12"
+                  style={
+                    i < FICHA.length - 1
+                      ? { borderBottom: "1px solid var(--borda)" }
+                      : undefined
+                  }
+                >
+                  <dt style={{ color: "var(--tinta-muda)" }}>{termo}</dt>
+                  <dd
+                    className="m-0 text-right"
+                    style={{
+                      color: lacuna ? "var(--tinta-muda)" : "var(--tinta)",
+                    }}
+                  >
+                    {valor}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
         </section>
 
-        {/* CTA final */}
-        <section className="mx-auto max-w-6xl px-5 py-16 md:py-24">
+        {/* ===== FECHO ===== */}
+        <section className="secao hachura p-5 sm:p-12">
+          <span className="cruz cruz-e" aria-hidden />
+          <span className="cruz cruz-d" aria-hidden />
           <div
-            className="vidro p-8 md:p-12"
+            className="rounded-xl border px-6 py-16 text-center sm:px-8 sm:py-[72px]"
             style={{
-              // O acento aqui é luz de fundo, não preenchimento: um halo atrás
-              // do vidro, para o cartão final puxar o olho sem virar um bloco
-              // verde chapado.
-              backgroundImage:
-                "radial-gradient(circle at 15% 0%, var(--acento-lavado), transparent 60%)",
+              background: "var(--plano)",
+              borderColor: "var(--borda)",
             }}
           >
-            <h2 className="max-w-2xl text-3xl font-semibold tracking-tight md:text-4xl">
-              Entre na rede — ou veja um sleepy adversary perder tudo
+            <span className="rotulo">[ Comece agora ]</span>
+            <h2 className="titulo mx-auto mt-5 max-w-[760px] text-[clamp(36px,6vw,64px)]">
+              A camada de reputação da sua federação.
             </h2>
-            <p
-              className="mt-4 max-w-xl text-base leading-relaxed"
-              style={{ color: "var(--tinta-2)" }}
-            >
-              A área do participante conecta sua carteira ao programa na Devnet:
-              registre seu nó, submeta contribuições e acompanhe a reputação
-              real. A demo, sem carteira, roda as doze rodadas com as mesmas
-              regras e mostra o momento exato do banimento.
-            </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link href="/painel" className="btn-neon px-6 py-3.5 text-sm">
+            <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+              <Link href="/painel" className="btn-lima h-[46px] px-5">
                 Entrar como participante
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
               </Link>
-              <Link
-                href="/simulacao"
-                className="btn-contorno px-5 py-3.5 text-sm"
-              >
-                Abrir a demo
+              <Link href="/simulacao" className="btn-fio h-[46px] px-5">
+                Ver a demo
               </Link>
             </div>
           </div>
         </section>
       </main>
+
       <Footer />
-    </>
+    </Coluna>
   );
 }

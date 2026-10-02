@@ -342,7 +342,7 @@ export default function Dashboard() {
             target="_blank"
             rel="noopener noreferrer"
             className="underline"
-            style={{ color: "var(--acento)" }}
+            style={{ color: "var(--texto-bom)" }}
           >
             README do projeto
           </a>
