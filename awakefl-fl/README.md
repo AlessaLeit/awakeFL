@@ -14,6 +14,17 @@ para JSON. A lógica de reputação implementada em [`reputation.py`](reputation
 
 ---
 
+## Sumário
+
+- [1. Instalação](#1-instalação)
+- [2. Execução](#2-execução)
+- [3. Como o sistema funciona](#3-como-o-sistema-funciona)
+- [4. Como interpretar o relatório](#4-como-interpretar-o-relatório)
+- [5. Resultado com desvio padrão](#5-resultado-com-desvio-padrão)
+- [6. Estrutura dos arquivos](#6-estrutura-dos-arquivos)
+
+---
+
 ## 1. Instalação
 
 Requer **Python 3.10+** (testado em 3.13, Windows, CPU).
@@ -517,7 +528,10 @@ três coisas na mesma tabela.
 | [`sweep.py`](sweep.py) | varredura de sementes e ataques, com média ± desvio padrão |
 | [`analise_tamanho.py`](analise_tamanho.py) | mede o viés do detector contra participantes pequenos |
 | [`bootstrap_devnet.py`](bootstrap_devnet.py) | prepara carteiras, saldo e registro para rodar na Devnet |
+| [`publicar_avaliacoes.py`](publicar_avaliacoes.py) | transforma o livro-razão de um experimento no `avaliacoes.json` que o painel lê |
+| [`roteiro_demo.py`](roteiro_demo.py) | imprime o roteiro da demonstração a partir de um experimento já executado |
 | [`tests/`](tests) | testes unitários de reputação e ataques |
+| [`docs/`](docs) | os documentos longos do projeto |
 
 `reputation.py` é deliberadamente **puro**: opera sobre vetores NumPy, não
 conhece PyTorch nem Flower e não tem estado global. Assim dá para portar para

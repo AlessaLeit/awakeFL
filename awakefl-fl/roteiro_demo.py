@@ -24,7 +24,7 @@ import hashlib
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 INITIAL_REPUTATION = 500
 MAX_REPUTATION = 1000

@@ -35,7 +35,7 @@ import statistics
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 import matplotlib
 
