@@ -159,10 +159,11 @@ export default function NovaContribuicao() {
           </p>
           <p>
             O que entra aqui é o arquivo <code className="mono">.awfl</code> com
-            os pesos que o seu treino local produziu <strong>nesta rodada</strong>.
-            Não é a sua base de dados, e não é o modelo final: é o estado do
-            modelo depois do treino desta volta. Ele é gerado pela camada de
-            simulação, em <code className="mono">awakefl-fl/</code>:
+            os pesos que o seu treino local produziu{" "}
+            <strong>nesta rodada</strong>. Não é a sua base de dados, e não é o
+            modelo final: é o estado do modelo depois do treino desta volta. Ele
+            é gerado pela camada de simulação, em{" "}
+            <code className="mono">awakefl-fl/</code>:
           </p>
           <pre
             className="mono overflow-x-auto rounded border p-3 text-xs"
@@ -207,7 +208,7 @@ export default function NovaContribuicao() {
           <Link
             href="/painel"
             className="underline"
-            style={{ color: "var(--acento)" }}
+            style={{ color: "var(--texto-bom)" }}
           >
             Visão Geral
           </Link>
@@ -297,7 +298,7 @@ export default function NovaContribuicao() {
           >
             <span
               className="mono shrink-0"
-              style={{ color: "var(--acento)" }}
+              style={{ color: "var(--texto-bom)" }}
               aria-hidden
             >
               #
@@ -317,7 +318,7 @@ export default function NovaContribuicao() {
               descobriria o problema na tela do validador — onde não apareceria
               score nenhum para assinar. */}
           {reconhecido && (
-            <p className="mt-2 text-xs" style={{ color: "var(--acento)" }}>
+            <p className="mt-2 text-xs" style={{ color: "var(--texto-bom)" }}>
               ✓ Artefato reconhecido — rodada {publicado.rodada}. Já existe uma
               avaliação publicada para este hash, então o validador terá o score
               calculado para assinar.
@@ -399,7 +400,7 @@ export default function NovaContribuicao() {
         {publicado ? (
           <p
             className="mt-5 text-xs leading-relaxed"
-            style={{ color: "var(--acento)" }}
+            style={{ color: "var(--texto-bom)" }}
           >
             As três métricas acima vieram do próprio treino que gerou este
             arquivo, e por isso não são editáveis: quem as produz é o processo,

@@ -274,7 +274,7 @@ export default function Extrato() {
                       </a>
                       <button
                         onClick={() => void copiar(l.referencia)}
-                        className="text-xs transition-colors hover:text-[var(--acento)]"
+                        className="text-xs transition-colors hover:text-[var(--texto-bom)]"
                         style={{ color: "var(--tinta-muda)" }}
                         aria-label={`Copiar ${l.referencia}`}
                       >

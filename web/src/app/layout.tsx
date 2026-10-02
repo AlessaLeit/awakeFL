@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
-import { Geist, JetBrains_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-/* Geist na interface, JetBrains Mono em rótulos, hashes e métricas — a dupla
-   definida pelo design system. As variáveis são consumidas em globals.css. */
+/* Geist na interface, Geist Mono em rótulos, hashes e fichas técnicas. O mono
+   é da mesma família do texto de propósito: no sistema editorial o rótulo
+   mono fica colado no título, e duas famílias diferentes brigavam ali.
+   As variáveis são consumidas em globals.css. */
 const geist = Geist({
   subsets: ["latin"],
   variable: "--fonte-geist",
   display: "swap",
 });
 
-const mono = JetBrains_Mono({
+const mono = Geist_Mono({
   subsets: ["latin"],
   variable: "--fonte-mono",
   display: "swap",

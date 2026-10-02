@@ -270,7 +270,7 @@ function SemConfig() {
         <Link
           href="/painel/validador"
           className="underline"
-          style={{ color: "var(--acento)" }}
+          style={{ color: "var(--texto-bom)" }}
         >
           Validador
         </Link>

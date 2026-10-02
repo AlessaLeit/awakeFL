@@ -84,7 +84,7 @@ export default function PainelShell({
             <Link href="/" title="AwakeFL · Devnet · Solana">
               <div
                 className="text-2xl font-bold tracking-tight"
-                style={{ color: "var(--acento-forte)" }}
+                style={{ color: "var(--texto-bom)" }}
               >
                 A
               </div>
@@ -93,7 +93,7 @@ export default function PainelShell({
             <div className="px-2">
               <Link href="/">
                 <div className="text-2xl font-bold tracking-tight">
-                  <span style={{ color: "var(--acento-forte)" }}>Awake</span>
+                  <span style={{ color: "var(--texto-bom)" }}>Awake</span>
                   <span style={{ color: "var(--tinta)" }}>FL</span>
                 </div>
               </Link>
@@ -246,7 +246,7 @@ export default function PainelShell({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline"
-                  style={{ color: "var(--acento)" }}
+                  style={{ color: "var(--texto-bom)" }}
                 >
                   faucet oficial
                 </a>{" "}
@@ -282,7 +282,7 @@ function ProgramaNaoConfigurado() {
   return (
     <div className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center px-5 py-16">
       <div className="text-2xl font-bold tracking-tight">
-        <span style={{ color: "var(--acento-forte)" }}>Awake</span>
+        <span style={{ color: "var(--texto-bom)" }}>Awake</span>
         <span style={{ color: "var(--tinta)" }}>FL</span>
       </div>
       <div
@@ -307,7 +307,7 @@ function ProgramaNaoConfigurado() {
           <Link
             href="/simulacao"
             className="underline"
-            style={{ color: "var(--acento)" }}
+            style={{ color: "var(--texto-bom)" }}
           >
             simulação do ciclo
           </Link>{" "}

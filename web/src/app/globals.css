@@ -1,66 +1,72 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   AwakeFL — design system.
+   AwakeFL — design system "editorial técnico".
 
-   Os valores vêm do DESIGN.md das telas do participante. É um sistema
-   deliberadamente MONO-TEMA: a paleta é construída sobre um grafite profundo
-   para que o verde neon funcione como fonte de luz. Não existe variante clara —
-   uma versão clara seria outro design, não o mesmo com as cores invertidas.
+   Papel quente, tinta verde-preta, e o lima entrando APENAS como
+   preenchimento: marca-texto, pastilha, bloco de número. Lima como cor de
+   texto em fundo claro dá 1,5:1 — é proibido aqui, e a regra está codificada
+   nos tokens (--acento nunca é cor de texto; para isso existe --texto-bom).
 
-   Os nomes de token são os mesmos de antes (--plano, --tinta, --acento...),
-   então as páginas já existentes recebem o tema novo sem reescrita.
+   O sistema é CHAPADO: a única profundidade é fio de 1px. Não há sombra,
+   brilho nem desfoque — a hierarquia sai de fio, hachura e escala.
+
+   Os nomes de token são os MESMOS do tema escuro anterior (--plano, --tinta,
+   --acento...), de propósito: as páginas que ainda não foram redesenhadas
+   recebem o tema novo sem reescrita.
 --------------------------------------------------------------------------- */
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* Superfícies — grafite em camadas tonais, do fundo para a frente */
-  --plano: #131313;
-  /* Um passo ABAIXO do plano: sidebar e campos, que devem recuar, não avançar */
-  --superficie-baixa: #0e0e0e;
-  --superficie: #1c1b1b;
-  --superficie-2: #201f1f;
-  --superficie-3: #2a2a2a;
+  /* Superfícies — papel em camadas, do fundo para a frente */
+  --plano: #f4f4ee;
+  /* Um passo ABAIXO do plano: campos e calhas, que devem recuar */
+  --superficie-baixa: #ebebe3;
+  --superficie: #fbfbf7;
+  --superficie-2: #fbfbf7;
+  --superficie-3: #e3e6da;
 
-  /* Vidro: as camadas 1 e 2 do sistema de elevação. Não são cores sólidas —
-     deixam o plano de fundo atravessar, que é o que dá profundidade. */
-  --vidro: rgba(32, 31, 31, 0.6);
-  --vidro-alto: rgba(42, 42, 42, 0.8);
-  --vidro-desfoque: 20px;
+  /* Antes eram camadas de vidro translúcido. No sistema chapado elas viraram
+     papel sólido, e o desfoque virou zero — mantido como token porque
+     componentes ainda não redesenhados leem blur(var(--vidro-desfoque)). */
+  --vidro: #fbfbf7;
+  --vidro-alto: #ffffff;
+  --vidro-desfoque: 0px;
 
-  /* Tinta */
-  --tinta: #e5e2e1;
-  --tinta-2: #a8a5a4;
-  --tinta-muda: #7a7877;
+  /* Tinta — verde quase preto, nunca preto puro */
+  --tinta: #0f1a0b;
+  --tinta-2: #4a5246;
+  --tinta-muda: #5a6155;
 
-  /* Traços */
-  --grade: rgba(255, 255, 255, 0.05);
-  --linha-base: rgba(255, 255, 255, 0.12);
-  --borda: rgba(255, 255, 255, 0.1);
-  --borda-luz: rgba(255, 255, 255, 0.12);
+  /* Traços — o fio de 1px é o único relevo do sistema */
+  --grade: rgba(15, 26, 11, 0.05);
+  --linha-base: #d3d6ca;
+  --borda: #d3d6ca;
+  --borda-luz: #c9ccbf;
+  --hachura: #dcdfd3;
 
-  /* Acento — "Neon Venom". Usado com parcimônia: ação primária, status,
-     foco. Se estiver em todo lugar, deixa de ser fonte de luz. */
+  /* Acento — lima. SÓ preenchimento. */
   --acento: #4af403;
-  --acento-forte: #7bff51;
+  --acento-forte: #3ad402;
   --acento-fundo: #44e400;
-  --acento-lavado: rgba(74, 244, 3, 0.1);
-  --acento-brilho: rgba(74, 244, 3, 0.15);
-  /* Tinta que vai SOBRE o acento. Verde neon é claro: texto branco em cima
-     dele fica ilegível, por isso o par correto é um verde quase preto. */
-  --sobre-acento: #042100;
-  --recuo: #7a7877;
+  --acento-lavado: #e9fbe0;
+  --acento-brilho: rgba(74, 244, 3, 0.18);
+  /* Tinta que vai SOBRE o lima */
+  --sobre-acento: #0f1a0b;
+  --recuo: #5a6155;
 
-  /* Semânticos */
+  /* Semânticos. Os de PREENCHIMENTO (--bom, --critico) marcam pastilha e
+     ponto; os de TEXTO (--texto-bom) são versões escurecidas, porque a cor
+     de preenchimento não passa de 4,5:1 sobre papel. */
   --bom: #4af403;
-  --aviso: #fab219;
-  --serio: #ffb4ab;
-  --critico: #ff5449;
-  --critico-lavado: rgba(255, 84, 73, 0.12);
-  --texto-bom: #cdffb5;
+  --texto-bom: #2a6d02;
+  --aviso: #a86a00;
+  --serio: #c4262e;
+  --critico: #c4262e;
+  --critico-lavado: rgba(196, 38, 46, 0.1);
 
-  /* Tipografia — Geist na interface, JetBrains Mono em rótulos e hashes.
+  /* Tipografia — Geist na interface, Geist Mono em rótulos, hashes e fichas.
      As variáveis --fonte-* são injetadas pelo next/font no layout raiz. */
   --tipo-ui: var(--fonte-geist), system-ui, -apple-system, "Segoe UI", sans-serif;
   --tipo-mono: var(--fonte-mono), ui-monospace, "SF Mono", Menlo, monospace;
@@ -90,14 +96,15 @@ body {
   }
 }
 
-/* Foco visível consistente — o padrão do browser some sobre o grafite */
+/* Foco visível consistente. Sobre papel, o lima puro não se vê como contorno —
+   por isso o anel de foco é tinta, com um halo lima por fora. */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--acento);
+  outline: 2px solid var(--tinta);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* Números que alinham em coluna (tabelas, eixos) — nunca em número grande */
+/* Números que alinham em coluna (tabelas, fichas, eixos) */
 .tabular {
   font-variant-numeric: tabular-nums;
 }
@@ -106,126 +113,234 @@ body {
    Primitivos do sistema
 --------------------------------------------------------------------------- */
 
-/* Rótulo técnico: mono, pequeno, tracking aberto para legibilidade no escuro */
+/* Rótulo técnico: mono, pequeno, caixa alta com tracking aberto */
 .rotulo {
   font-family: var(--tipo-mono);
   font-size: 12px;
   font-weight: 500;
   line-height: 16px;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--tinta-2);
+  color: var(--tinta-muda);
+}
+
+/* O mesmo rótulo sobre painel de tinta */
+.rotulo-claro {
+  font-family: var(--tipo-mono);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a9b3a2;
 }
 
 .mono {
   font-family: var(--tipo-mono);
+  letter-spacing: 0.02em;
 }
 
-/* Card de vidro — nível 1 de elevação */
+/* Título: Geist 600 com entreletra negativa e entrelinha 1 — a voz editorial
+   do sistema. O tamanho é escolhido no uso, nunca aqui. */
+.titulo {
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.corpo {
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--tinta-2);
+}
+
+/* Hachura diagonal: as calhas laterais e os painéis de respiro. É o que dá a
+   textura de prancha técnica sem custar nenhuma imagem. */
+.hachura {
+  background-color: var(--plano);
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--hachura) 0 1px,
+    transparent 1px 9px
+  );
+}
+
+/* Marca-texto lima: o único jeito de o lima tocar em texto. O texto fica
+   tinta; o lima passa por trás. */
+.marca {
+  background: linear-gradient(
+    transparent 12%,
+    var(--acento) 12%,
+    var(--acento) 92%,
+    transparent 92%
+  );
+  padding: 0 0.08em;
+}
+
+/* Seção = faixa com fio no topo e uma cruz em cada canto, sobre os fios
+   verticais da coluna. */
+.secao {
+  position: relative;
+  border-top: 1px solid var(--borda);
+}
+
+.cruz {
+  position: absolute;
+  top: -6px;
+  width: 11px;
+  height: 11px;
+}
+
+.cruz::before,
+.cruz::after {
+  content: "";
+  position: absolute;
+  background: var(--tinta);
+}
+
+.cruz::before {
+  left: 5px;
+  top: 0;
+  width: 1px;
+  height: 11px;
+}
+
+.cruz::after {
+  top: 5px;
+  left: 0;
+  height: 1px;
+  width: 11px;
+}
+
+.cruz-e {
+  left: -6px;
+}
+
+.cruz-d {
+  right: -6px;
+}
+
+/* Célula de grade: divide por fio à direita, e o último não tem fio */
+.celula {
+  box-sizing: border-box;
+  border-right: 1px solid var(--borda);
+}
+
+.celula:last-child {
+  border-right: 0;
+}
+
+/* Cartão — papel um passo à frente do plano, com fio. Sem sombra. */
 .vidro {
   background: var(--vidro);
-  backdrop-filter: blur(var(--vidro-desfoque));
-  -webkit-backdrop-filter: blur(var(--vidro-desfoque));
   border: 1px solid var(--borda);
-  border-radius: 0.5rem;
+  border-radius: 8px;
 }
 
-/* Nível 2 — modais, popovers: mais opaco e com a borda que "pega luz" */
 .vidro-alto {
   background: var(--vidro-alto);
-  backdrop-filter: blur(var(--vidro-desfoque));
-  -webkit-backdrop-filter: blur(var(--vidro-desfoque));
   border: 1px solid var(--borda-luz);
-  border-radius: 0.5rem;
+  border-radius: 8px;
 }
 
-/* Ação primária: neon sólido com texto quase preto e emissão de luz */
+/* ---------------------------------------------------------------------------
+   Botões — quase retos (6px), nunca pílula. Três pesos:
+   lima (ação primária), tinta (ação forte sobre papel), fio (secundária).
+   Os nomes antigos (--neon, --contorno, --fantasma) continuam valendo para as
+   telas ainda não redesenhadas, apontando para o peso equivalente.
+--------------------------------------------------------------------------- */
+
+.btn-lima,
 .btn-neon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 0.25rem;
+  border-radius: 6px;
   background: var(--acento);
   color: var(--sobre-acento);
-  font-weight: 600;
-  box-shadow: 0 0 24px 2px var(--acento-brilho);
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  font-weight: 500;
+  transition: background 0.2s ease;
 }
 
+.btn-lima:hover,
 .btn-neon:hover {
   background: var(--acento-forte);
-  box-shadow: 0 0 32px 4px var(--acento-brilho);
+  color: var(--sobre-acento);
 }
 
+.btn-lima:disabled,
 .btn-neon:disabled {
   background: var(--superficie-3);
   color: var(--tinta-muda);
-  box-shadow: none;
   cursor: not-allowed;
 }
 
-/* Ação secundária: só o contorno neon, sem preenchimento */
-.btn-contorno {
+.btn-tinta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 0.25rem;
-  border: 1px solid var(--acento);
-  color: var(--acento);
-  background: transparent;
+  border-radius: 6px;
+  background: var(--tinta);
+  color: var(--plano);
   font-weight: 500;
-  transition: background 0.15s ease;
+  transition: background 0.2s ease;
 }
 
-.btn-contorno:hover {
-  background: var(--acento-lavado);
+.btn-tinta:hover {
+  background: #24361c;
+  color: var(--plano);
 }
 
-/* Ação terciária: discreta, para "Cancelar" e afins */
+.btn-fio,
+.btn-contorno,
 .btn-fantasma {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 0.25rem;
-  border: 1px solid var(--borda);
-  color: var(--tinta-2);
-  background: transparent;
-  transition: color 0.15s ease, border-color 0.15s ease;
-}
-
-.btn-fantasma:hover {
+  border-radius: 6px;
+  border: 1px solid var(--borda-luz);
+  background: var(--superficie);
   color: var(--tinta);
-  border-color: var(--borda-luz);
+  font-weight: 500;
+  transition: border-color 0.2s ease;
 }
 
-/* Chip: pílula de contorno com texto mono */
+.btn-fio:hover,
+.btn-contorno:hover,
+.btn-fantasma:hover {
+  border-color: var(--tinta);
+  color: var(--tinta);
+}
+
+/* Chip: pastilha de fio com texto mono */
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
   border-radius: 9999px;
   border: 1px solid var(--borda);
+  background: var(--superficie);
   padding: 0.25rem 0.625rem;
   font-family: var(--tipo-mono);
   font-size: 12px;
   letter-spacing: 0.05em;
-  color: var(--tinta-2);
+  color: var(--tinta-muda);
 }
 
-/* Campo: grafite fundo, borda que acende no foco */
+/* Campo: papel recuado, fio que escurece no foco */
 .campo {
   width: 100%;
-  border-radius: 0.25rem;
-  border: 1px solid var(--borda);
+  border-radius: 6px;
+  border: 1px solid var(--borda-luz);
   background: var(--superficie-baixa);
   padding: 0.75rem 0.875rem;
   color: var(--tinta);
   font-family: var(--tipo-mono);
   font-size: 14px;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.2s ease;
 }
 
 .campo::placeholder {
@@ -233,12 +348,107 @@ body {
 }
 
 .campo:focus {
-  border-color: var(--acento);
+  border-color: var(--tinta);
   outline: none;
 }
 
-/* Texto que emite luz — reservado para o número-herói de um painel */
+/* Era texto com emissão de luz, no tema escuro. Sobre papel, luz não existe:
+   o número-herói é tinta, e quem destaca é a escala. */
 .neon {
-  color: var(--acento);
-  text-shadow: 0 0 18px var(--acento-brilho);
+  color: var(--tinta);
+}
+
+/* ---------------------------------------------------------------------------
+   Movimento
+
+   Tudo aqui é lento e contínuo, nunca disparado por rolagem: a página é uma
+   prancha, e o que se move são os objetos desenhados nela — a torre, os
+   pacotes que sobem pelos fios, o ponto de status. Todo o conjunto para em
+   prefers-reduced-motion pela regra global no topo do arquivo.
+--------------------------------------------------------------------------- */
+
+/* A torre: sobe e desce, e a sombra encolhe junto — é o que vende o flutuar */
+@keyframes balancar {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-18px);
+  }
+}
+
+@keyframes sombra {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scaleX(0.82);
+    opacity: 0.55;
+  }
+}
+
+@keyframes respirar {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.75;
+  }
+}
+
+@keyframes piscar {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.torre {
+  animation: balancar 6s ease-in-out infinite;
+}
+
+.sombra {
+  animation: sombra 6s ease-in-out infinite;
+}
+
+.brilho {
+  animation: respirar 6s ease-in-out infinite;
+}
+
+.pisca {
+  animation: piscar 2.4s ease-in-out infinite;
+}
+
+/* Os pacotes de atualização subindo pelos fios até o agregador */
+@keyframes correr {
+  to {
+    stroke-dashoffset: -44;
+  }
+}
+
+.corre {
+  stroke-dasharray: 6 14;
+  animation: correr 3.4s linear infinite;
+}
+
+/* Os cubos pairando. O delay negativo é setado no uso, para dessincronizar. */
+@keyframes flutuar {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.flutua {
+  animation: flutuar 7s ease-in-out infinite;
 }

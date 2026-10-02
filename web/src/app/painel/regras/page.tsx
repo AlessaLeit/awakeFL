@@ -148,7 +148,7 @@ export default function Regras() {
             style={{
               borderColor: "var(--borda)",
               background: "var(--superficie-baixa)",
-              color: "var(--acento)",
+              color: "var(--texto-bom)",
             }}
           >
             R(t) = 0,5 · R(t−1) + 0,5 · S(t)
@@ -166,7 +166,7 @@ export default function Regras() {
                 style={{ borderColor: "var(--borda)", color: "var(--tinta-2)" }}
               >
                 <span>{rotulo}</span>
-                <span className="tabular" style={{ color: "var(--acento)" }}>
+                <span className="tabular" style={{ color: "var(--texto-bom)" }}>
                   {peso}
                 </span>
               </li>

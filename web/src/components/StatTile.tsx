@@ -29,7 +29,7 @@ export default function StatTile({
           <span
             aria-hidden
             className="text-sm"
-            style={{ color: "var(--acento)" }}
+            style={{ color: "var(--texto-bom)" }}
           >
             {icone}
           </span>

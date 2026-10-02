@@ -37,7 +37,7 @@ export default function ConexaoWallet() {
         <div className="flex justify-center">
           <div className="text-center">
             <div className="text-3xl font-bold tracking-tight">
-              <span style={{ color: "var(--acento-forte)" }}>Awake</span>
+              <span style={{ color: "var(--texto-bom)" }}>Awake</span>
               <span style={{ color: "var(--tinta)" }}>FL</span>
             </div>
           </div>

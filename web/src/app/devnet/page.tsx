@@ -339,7 +339,7 @@ export default function Devnet() {
               <a
                 href="/simulacao"
                 className="underline"
-                style={{ color: "var(--acento)" }}
+                style={{ color: "var(--texto-bom)" }}
               >
                 simulação do ciclo
               </a>{" "}
@@ -372,7 +372,7 @@ export default function Devnet() {
               <Link
                 href="/painel"
                 className="underline"
-                style={{ color: "var(--acento)" }}
+                style={{ color: "var(--texto-bom)" }}
               >
                 área do participante
               </Link>
@@ -785,7 +785,7 @@ export default function Devnet() {
                           {meu && (
                             <span
                               className="ml-2 text-xs"
-                              style={{ color: "var(--acento)" }}
+                              style={{ color: "var(--texto-bom)" }}
                             >
                               você
                             </span>

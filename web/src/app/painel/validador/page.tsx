@@ -248,7 +248,7 @@ export default function Validador() {
               </span>
               <span
                 className="tabular font-semibold"
-                style={{ color: "var(--acento)" }}
+                style={{ color: "var(--texto-bom)" }}
               >
                 {progresso === null ? "—" : `${progresso}%`}
               </span>
